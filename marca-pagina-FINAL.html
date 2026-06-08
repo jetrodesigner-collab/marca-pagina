@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>marca·página</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--accent-g:linear-gradient(135deg,#C4B8E8,#9A88C8);--rose-g:linear-gradient(180deg,#E8B4C8,#C884A8);--green:#7AAA8A;--red:#C05050;}
+body.L{--bg:linear-gradient(160deg,#F5F2F8,#EEF0F8,#F2EEF5);--text:#2A2435;--text2:#7A6E8A;--muted:#B0A8C0;--accent:#8B6FAE;--sur:rgba(255,255,255,.62);--sur2:rgba(255,255,255,.4);--bor:rgba(255,255,255,.95);--bor2:rgba(200,190,220,.3);--nav:rgba(255,255,255,.7);--shad:rgba(120,100,160,.12);--btn-shad:rgba(139,111,174,.3);--bl1:rgba(196,184,232,.35);--bl2:rgba(232,180,200,.3);--bl3:rgba(184,216,200,.25);--bl4:rgba(240,200,168,.2);--gl:rgba(180,160,210,.4);--tbor:rgba(180,160,210,.15);--qbg:rgba(255,255,255,.55);--inp:rgba(255,255,255,.7);--fade:#F2EEF5;--lendo-bg:rgba(184,208,232,.5);--lendo-b:rgba(184,208,232,.8);--lendo-c:#5A8AAE;--lido-bg:rgba(184,216,200,.5);--lido-b:rgba(184,216,200,.8);--lido-c:#4A8A6A;--quero-bg:rgba(196,184,232,.5);--quero-b:rgba(196,184,232,.8);--quero-c:#8B6FAE;--sl:#7AAACE;--sd:#7AAA8A;--sq:#8B6FAE;--dp:#7AAA8A;--dpr:rgba(180,160,210,.35);--add-bor:rgba(139,111,174,.3);--add-bg:rgba(255,255,255,.3);--add-c:rgba(139,111,174,.45);--cat-on:linear-gradient(135deg,#C4B8E8,#9A88C8);--cat-off:rgba(255,255,255,.5);--cat-off-c:#B0A8C0;--cat-off-b:rgba(200,190,220,.35);}
+body.D{--bg:linear-gradient(160deg,#1A1720,#161420,#1C1828);--text:#F0ECF8;--text2:#C0B4D0;--muted:#8A7EA0;--accent:#C4A8F0;--sur:rgba(255,255,255,.07);--sur2:rgba(255,255,255,.04);--bor:rgba(255,255,255,.11);--bor2:rgba(180,160,220,.15);--nav:rgba(18,16,26,.88);--shad:rgba(0,0,0,.28);--btn-shad:rgba(100,70,160,.4);--bl1:rgba(120,90,180,.18);--bl2:rgba(180,90,130,.14);--bl3:rgba(70,130,100,.12);--bl4:rgba(160,100,60,.1);--gl:rgba(160,130,210,.2);--tbor:rgba(160,130,210,.12);--qbg:rgba(255,255,255,.05);--inp:rgba(255,255,255,.07);--fade:#161420;--lendo-bg:rgba(80,120,160,.22);--lendo-b:rgba(80,120,160,.4);--lendo-c:#9ACAEF;--lido-bg:rgba(70,140,100,.22);--lido-b:rgba(70,140,100,.4);--lido-c:#9ADAAA;--quero-bg:rgba(120,90,180,.22);--quero-b:rgba(120,90,180,.4);--quero-c:#C4A8F0;--sl:#7AAACE;--sd:#7AAA8A;--sq:#C4A8F0;--dp:#7AAA8A;--dpr:rgba(160,140,200,.3);--add-bor:rgba(180,150,230,.25);--add-bg:rgba(255,255,255,.04);--add-c:rgba(180,150,230,.45);--cat-on:linear-gradient(135deg,#C4B8E8,#9A88C8);--cat-off:rgba(255,255,255,.06);--cat-off-c:#5A5268;--cat-off-b:rgba(160,130,210,.2);}
+body{font-family:'Figtree',sans-serif;background:var(--bg);display:flex;justify-content:center;min-height:100vh;transition:background .4s;}
+.phone{width:390px;min-height:100vh;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 80px rgba(0,0,0,.3);transition:background .4s;}
+.blob{position:absolute;border-radius:50%;filter:blur(55px);pointer-events:none;z-index:0;}
+.b1{width:260px;height:260px;background:var(--bl1);top:-80px;left:-80px;}
+.b2{width:220px;height:220px;background:var(--bl2);top:100px;right:-70px;}
+.b3{width:240px;height:240px;background:var(--bl3);bottom:120px;left:-60px;}
+.b4{width:200px;height:200px;background:var(--bl4);bottom:40px;right:-50px;}
+.z{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;}
+.screen{display:none;flex-direction:column;height:100vh;position:relative;z-index:1;}.screen.on{display:flex;}
+.tc{display:none;}.tc.on{display:block;}
+/* UTILS */
+.sbar{padding:14px 22px 6px;display:flex;justify-content:space-between;flex-shrink:0;}
+.sbar-t{font-size:13px;font-weight:600;color:var(--text);}
+.sbar-i{font-size:11px;color:var(--text2);}
+.topbar{padding:6px 22px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.logo{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;cursor:pointer;}
+.logo em{font-style:italic;font-weight:300;color:var(--accent);}
+.av{width:36px;height:36px;border-radius:50%;background:var(--accent-g);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;box-shadow:0 4px 12px var(--btn-shad);cursor:pointer;transition:transform .15s;}
+.av:hover{transform:scale(1.06);}
+.ph{display:flex;align-items:center;padding:6px 22px 12px;gap:12px;flex-shrink:0;}
+.bk{width:34px;height:34px;border-radius:50%;background:var(--sur);border:1px solid var(--bor);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent);cursor:pointer;flex-shrink:0;}
+.ph-t{font-size:16px;font-weight:700;color:var(--text);}
+.gl{width:calc(100% - 44px);height:1px;background:linear-gradient(90deg,transparent,var(--gl),transparent);margin:0 22px;flex-shrink:0;}
+.qbox{margin:0 22px 14px;padding:12px 15px 10px;border-radius:18px;background:var(--qbg);border:1px solid var(--bor);backdrop-filter:blur(16px);position:relative;flex-shrink:0;}
+.qbig{font-size:30px;line-height:1;color:rgba(139,111,174,.18);position:absolute;top:3px;left:11px;font-style:italic;}
+.qt{font-size:12px;font-style:italic;color:var(--text2);line-height:1.6;padding-left:2px;margin-bottom:6px;}
+.qa{font-size:10px;font-weight:700;color:var(--accent);text-align:right;}
+.mtabs{display:flex;padding:0 22px;border-bottom:1px solid var(--tbor);flex-shrink:0;margin-top:2px;}
+.mt{flex:1;padding:11px 0;text-align:center;font-size:13px;font-weight:400;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.mt.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+.itabs{display:flex;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:4px;margin-bottom:16px;backdrop-filter:blur(12px);}
+.it{flex:1;padding:8px 4px;text-align:center;font-size:11px;color:var(--muted);cursor:pointer;border-radius:10px;transition:all .2s;}
+.it.on{background:rgba(255,255,255,.85);color:var(--accent);font-weight:700;}
+body.D .it.on{background:rgba(255,255,255,.14);}
+.sc{flex:1;overflow-y:auto;padding:16px 22px;scrollbar-width:none;}
+.sc::-webkit-scrollbar{display:none;}
+/* STATUS */
+.ss{margin-bottom:24px;}
+.sh{display:flex;align-items:center;gap:10px;margin-bottom:13px;}
+.sb{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;backdrop-filter:blur(8px);}
+.BL{background:var(--lendo-bg);border:1px solid var(--lendo-b);color:var(--lendo-c);}
+.BD{background:var(--lido-bg);border:1px solid var(--lido-b);color:var(--lido-c);}
+.BQ{background:var(--quero-bg);border:1px solid var(--quero-b);color:var(--quero-c);}
+.dot{width:6px;height:6px;border-radius:50%;}
+.DL{background:var(--sl);}.DD{background:var(--sd);}.DQ{background:var(--sq);}
+.sc-n{font-size:10px;color:var(--muted);margin-left:auto;}
+/* FILEIRA CARDS */
+.brow{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;}
+.brow::-webkit-scrollbar{display:none;}
+.bc{flex-shrink:0;width:90px;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:8px;cursor:pointer;transition:all .25s;backdrop-filter:blur(16px);box-shadow:0 4px 14px var(--shad);position:relative;display:flex;flex-direction:column;gap:6px;}
+.bc:hover{transform:translateY(-3px);}
+.cov{width:100%;height:105px;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.2);}
+.btit{font-size:10px;font-weight:700;color:var(--text);line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.baut{font-size:8.5px;color:var(--muted);margin-top:-2px;}
+.pd{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;}
+.DP{background:var(--dp);box-shadow:0 0 5px rgba(100,170,120,.5);}
+.DPR{background:var(--dpr);}
+.addc{flex-shrink:0;width:90px;height:158px;border:1.5px dashed var(--add-bor);border-radius:14px;background:var(--add-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;color:var(--add-c);font-size:22px;}
+.addc span{font-size:9px;color:var(--muted);}
+/* BIBLIOTECA */
+.bib-t{font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.01em;margin-bottom:12px;display:block;}
+.bib-srch{width:100%;background:var(--inp);border:1px solid var(--bor2);border-radius:14px;padding:11px 16px;font-family:'Figtree',sans-serif;font-size:13px;color:var(--text);outline:none;margin-bottom:14px;box-shadow:0 2px 8px var(--shad);}
+.bib-srch::placeholder{color:var(--muted);}
+.cats{display:flex;gap:7px;overflow-x:auto;padding-bottom:14px;scrollbar-width:none;}
+.cats::-webkit-scrollbar{display:none;}
+.cat{flex-shrink:0;padding:7px 14px;border-radius:20px;border:none;font-family:'Figtree',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.cat.on{background:var(--cat-on);color:#fff;box-shadow:0 3px 12px var(--btn-shad);}
+.cat:not(.on){background:var(--cat-off);color:var(--cat-off-c);border:1px solid var(--cat-off-b);}
+/* GRADE SCROLL HORIZONTAL */
+.grid-sw{overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:4px;}
+.grid-sw::-webkit-scrollbar{display:none;}
+.grid-h{display:grid;grid-template-rows:repeat(3,auto);grid-auto-flow:column;gap:10px;width:max-content;}
+.gc{background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:8px;cursor:pointer;transition:all .25s;backdrop-filter:blur(16px);box-shadow:0 4px 14px var(--shad);position:relative;display:flex;flex-direction:column;gap:6px;width:108px;}
+.gc:hover{transform:translateY(-2px);}
+.gcov{width:100%;aspect-ratio:2/3;border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.2);}
+.gtit{font-size:10px;font-weight:700;color:var(--text);line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.gaut{font-size:8px;color:var(--muted);}
+.ver-mais{width:100%;padding:12px;border:1.5px dashed var(--add-bor);border-radius:14px;background:var(--add-bg);color:var(--accent);font-family:'Figtree',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-align:center;margin-bottom:20px;transition:all .2s;}
+/* HERO DETALHE */
+.hero{background:var(--sur);border:1px solid var(--bor);border-radius:22px;padding:16px;display:flex;gap:14px;margin-bottom:16px;backdrop-filter:blur(20px);box-shadow:0 6px 24px var(--shad);}
+.hcov{border-radius:12px;flex-shrink:0;width:88px;height:126px;box-shadow:4px 8px 20px rgba(0,0,0,.25);}
+.hm{flex:1;display:flex;flex-direction:column;justify-content:center;gap:5px;}
+.ht{font-size:18px;font-weight:800;color:var(--text);line-height:1.15;letter-spacing:-.01em;}
+.hs{font-size:12px;color:var(--text2);}
+.hy{font-size:11px;color:var(--muted);}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px;}
+.tag{padding:3px 9px;border-radius:20px;font-size:9px;font-weight:600;background:rgba(196,184,232,.2);border:1px solid rgba(196,184,232,.35);color:var(--accent);}
+/* NOTA ESTRELAS */
+.nota-card{background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:14px 16px;margin-bottom:14px;backdrop-filter:blur(16px);box-shadow:0 4px 16px var(--shad);display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.nota-lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.nota-val{font-size:22px;font-weight:800;color:var(--accent);line-height:1;}
+.nota-desc{font-size:10px;color:var(--muted);font-style:italic;margin-top:3px;}
+.stars{display:flex;gap:5px;}
+.star{font-size:26px;cursor:pointer;transition:transform .15s;color:rgba(196,184,232,.25);}
+.star.on{color:#C4A8F0;}
+body.L .star{color:rgba(180,160,210,.2);}
+body.L .star.on{color:#8B6FAE;}
+.star:hover{transform:scale(1.2);}
+/* RESENHA */
+.bl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
+.rbox{background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:14px;margin-bottom:12px;backdrop-filter:blur(16px);}
+.rtxt{font-size:13px;color:var(--text2);line-height:1.65;}
+.rph{font-size:12px;color:var(--muted);font-style:italic;line-height:1.6;min-height:80px;}
+.priv{display:flex;gap:8px;margin-bottom:12px;}
+.pb{flex:1;padding:10px 0;border-radius:12px;border:1px solid var(--bor2);background:var(--sur);color:var(--muted);font-family:'Figtree',sans-serif;font-size:11px;cursor:pointer;text-align:center;transition:all .2s;}
+.pb.on{border-color:rgba(139,111,174,.45);color:var(--accent);background:rgba(196,184,232,.15);}
+.savebtn{width:100%;padding:13px;background:var(--accent-g);border:none;border-radius:14px;color:#fff;font-family:'Figtree',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px var(--btn-shad);}
+.addt{width:100%;padding:11px;border:1.5px dashed var(--add-bor);border-radius:12px;background:var(--add-bg);color:var(--accent);font-family:'Figtree',sans-serif;font-size:12px;text-align:center;cursor:pointer;margin-bottom:14px;}
+.tcrd{background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:13px 14px;margin-bottom:10px;backdrop-filter:blur(16px);}
+.ttxt{font-size:13px;font-style:italic;color:var(--text2);line-height:1.65;margin-bottom:8px;}
+.tpg{font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;}
+/* COMENTARIOS */
+.cmc{display:flex;gap:10px;background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:12px 14px;margin-bottom:10px;backdrop-filter:blur(16px);}
+.cmav{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;}
+.A1{background:linear-gradient(135deg,#C4B8E8,#9A88C8);}
+.A2{background:linear-gradient(135deg,#B8D8C8,#88B898);}
+.A3{background:linear-gradient(135deg,#E8B4C8,#C884A8);}
+.A4{background:linear-gradient(135deg,#B8D0E8,#88A8C8);}
+.cmb{flex:1;}
+.cmn{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:3px;}
+.cmt{font-size:12px;color:var(--text2);line-height:1.5;}
+.cmtime{font-size:10px;color:var(--muted);margin-top:4px;}
+.cmin{display:flex;gap:8px;padding:12px 22px 20px;flex-shrink:0;background:var(--nav);border-top:1px solid var(--bor);backdrop-filter:blur(12px);}
+.ci{flex:1;background:var(--sur);border:1px solid var(--bor);border-radius:20px;padding:10px 16px;color:var(--text);font-family:'Figtree',sans-serif;font-size:12px;outline:none;}
+.ci::placeholder{color:var(--muted);}
+.sb2{width:38px;height:38px;border-radius:50%;background:var(--accent-g);border:none;color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+/* COMUNIDADE */
+.srch{display:flex;align-items:center;gap:8px;background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:11px 16px;margin-bottom:18px;backdrop-filter:blur(16px);}
+.srch input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Figtree',sans-serif;font-size:13px;}
+.srch input::placeholder{color:var(--muted);}
+.slb{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:13px;}
+.uc{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--sur);border:1px solid var(--bor);border-radius:18px;margin-bottom:10px;cursor:pointer;transition:all .2s;backdrop-filter:blur(16px);}
+.uc:hover{transform:translateY(-2px);}
+.uav{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;}
+.U1{background:linear-gradient(135deg,#C4B8E8,#9A88C8);}
+.U2{background:linear-gradient(135deg,#B8D8C8,#88B898);}
+.U3{background:linear-gradient(135deg,#B8D0E8,#88A8C8);}
+.U4{background:linear-gradient(135deg,#E8B4C8,#C884A8);}
+.U5{background:linear-gradient(135deg,#F0C8A8,#C8A078);}
+.U6{background:linear-gradient(135deg,#D4C0E8,#B490C8);}
+.ui{flex:1;}
+.un{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.us{font-size:11px;color:var(--text2);}
+.mcs{display:flex;gap:4px;}
+.mcc{width:24px;height:34px;border-radius:4px;}
+.on-d{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 7px rgba(122,170,138,.6);flex-shrink:0;}
+.off-d{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+/* PERFIL */
+.phero{background:var(--sur);border:1px solid var(--bor);border-radius:24px;padding:22px 18px 18px;display:flex;flex-direction:column;align-items:center;margin-bottom:14px;backdrop-filter:blur(20px);}
+.pav{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;margin-bottom:12px;box-shadow:0 12px 32px var(--btn-shad),0 0 0 4px rgba(255,255,255,.15);animation:fl 4s ease-in-out infinite;}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.pn{font-size:20px;font-weight:800;color:var(--text);margin-bottom:3px;}
+.ph2{font-size:12px;color:var(--muted);margin-bottom:11px;}
+.bio{width:100%;background:var(--sur2);border:1px solid var(--bor2);border-radius:12px;padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.55;text-align:center;margin-bottom:11px;}
+.slinks{display:flex;gap:8px;width:100%;margin-bottom:16px;}
+.sl2{flex:1;display:flex;align-items:center;gap:7px;background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:9px 11px;font-size:10px;color:var(--accent);font-weight:600;cursor:pointer;overflow:hidden;}
+.psts{display:flex;width:100%;border-top:1px solid rgba(196,184,232,.15);padding-top:14px;}
+.pst{flex:1;text-align:center;}
+.pstn{font-size:20px;font-weight:800;color:var(--accent);display:block;}
+.pstl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.acc{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--sur);border:1px solid var(--bor);border-radius:16px;margin-bottom:10px;cursor:pointer;transition:all .2s;backdrop-filter:blur(16px);}
+.acc:hover{transform:translateY(-1px);}
+.aci{width:36px;height:36px;border-radius:10px;background:rgba(196,184,232,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.acb{flex:1;}
+.act{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.acs{font-size:11px;color:var(--text2);}
+.aca{font-size:16px;color:var(--muted);}
+.logout{width:100%;padding:13px;border:1px solid rgba(192,80,80,.25);border-radius:14px;background:rgba(192,80,80,.07);color:var(--red);font-family:'Figtree',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;}
+/* BUSCA */
+.srr{display:flex;gap:12px;padding:12px;background:var(--sur);border:1px solid var(--bor);border-radius:14px;margin-bottom:10px;cursor:pointer;transition:all .2s;backdrop-filter:blur(16px);}
+.srr:hover{border-color:rgba(139,111,174,.3);}
+.srcov{width:50px;height:72px;border-radius:8px;flex-shrink:0;}
+.srm{flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px;}
+.srt{font-size:15px;font-weight:700;color:var(--text);}
+.sra{font-size:11px;color:var(--text2);}
+.sry{font-size:10px;color:var(--muted);}
+/* MINI BOOKS PERFIL */
+.mnr{display:flex;gap:10px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none;}
+.mnr::-webkit-scrollbar{display:none;}
+.mnc{flex-shrink:0;width:90px;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:8px;backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all .2s;}
+.mnc:hover{transform:translateY(-2px);}
+.mncov{width:100%;height:105px;border-radius:8px;}
+.mnt{font-size:10px;font-weight:700;color:var(--text);line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.mna{font-size:8.5px;color:var(--muted);}
+.prc{background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:12px 14px;margin-bottom:10px;display:flex;gap:10px;backdrop-filter:blur(16px);}
+.prcc{width:38px;height:54px;border-radius:7px;flex-shrink:0;}
+.prcb{flex:1;}
+.prcbk{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.prct{font-size:11px;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.prcd{font-size:10px;color:var(--muted);margin-top:5px;}
+.lkc{background:var(--sur2);border:1px solid var(--bor);border-radius:16px;padding:12px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:center;opacity:.55;}
+.lki{width:38px;height:54px;border-radius:7px;background:rgba(196,184,232,.2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+/* LOGIN */
+.lwrap{flex:1;overflow-y:auto;padding:0 22px 30px;scrollbar-width:none;display:flex;flex-direction:column;}
+.lwrap::-webkit-scrollbar{display:none;}
+.cw{width:100%;overflow:hidden;position:relative;height:155px;flex-shrink:0;mask-image:linear-gradient(to bottom,rgba(0,0,0,.6),transparent);-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.6),transparent);}
+.cw::before,.cw::after{content:'';position:absolute;top:0;bottom:0;width:50px;z-index:2;pointer-events:none;}
+body.L .cw::before{left:0;background:linear-gradient(to right,rgba(242,238,245,.95),transparent);}
+body.L .cw::after{right:0;background:linear-gradient(to left,rgba(242,238,245,.95),transparent);}
+body.D .cw::before{left:0;background:linear-gradient(to right,rgba(22,20,32,.95),transparent);}
+body.D .cw::after{right:0;background:linear-gradient(to left,rgba(22,20,32,.95),transparent);}
+.ct{display:flex;gap:10px;animation:cs 24s linear infinite;width:max-content;}
+.ct2{display:flex;gap:10px;animation:cs2 30s linear infinite;width:max-content;margin-top:10px;}
+@keyframes cs{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes cs2{0%{transform:translateX(-50%)}100%{transform:translateX(0)}}
+.cc{width:64px;height:88px;border-radius:10px;flex-shrink:0;border:1px solid rgba(255,255,255,.15);}
+.llogo{text-align:center;margin-bottom:8px;margin-top:4px;}
+.lan{font-size:34px;font-weight:800;color:var(--text);letter-spacing:-.03em;line-height:1;}
+.lan em{font-style:italic;font-weight:300;color:var(--accent);}
+.ltag{font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:24px;text-align:center;}
+.lcard{background:var(--sur);border:1px solid var(--bor);border-radius:24px;padding:22px 20px;backdrop-filter:blur(20px);box-shadow:0 8px 32px var(--shad);}
+.flab{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;display:block;}
+.finp{width:100%;background:var(--inp);border:1px solid var(--bor2);border-radius:12px;padding:12px 14px;font-family:'Figtree',sans-serif;font-size:13px;color:var(--text);outline:none;margin-bottom:13px;}
+.finp::placeholder{color:var(--muted);}
+.flink{text-align:right;font-size:11px;color:var(--accent);font-weight:600;margin-top:-6px;margin-bottom:18px;cursor:pointer;}
+.dor{display:flex;align-items:center;gap:10px;margin:14px 0;}
+.dor::before,.dor::after{content:'';flex:1;height:1px;background:var(--bor2);}
+.dor span{font-size:11px;color:var(--muted);}
+.gbtn{width:100%;padding:13px;background:var(--sur);border:1px solid var(--bor2);border-radius:14px;color:var(--text);font-family:'Figtree',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+.srow{text-align:center;margin-top:18px;font-size:12px;color:var(--text2);}
+.srow a{color:var(--accent);font-weight:700;cursor:pointer;}
+/* ADICIONAR MANUAL */
+.photo-up{width:100%;aspect-ratio:3/4;max-height:220px;border:2px dashed var(--add-bor);border-radius:20px;background:var(--add-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;margin-bottom:20px;position:relative;overflow:hidden;backdrop-filter:blur(8px);}
+.photo-up:hover{border-color:var(--accent);}
+.pico{font-size:36px;opacity:.5;}
+.plab{font-size:13px;font-weight:600;color:var(--muted);}
+.psub{font-size:11px;color:var(--muted);opacity:.7;}
+.sel-w{position:relative;}
+.sel-w::after{content:'›';position:absolute;right:16px;top:50%;transform:translateY(-50%) rotate(90deg);font-size:16px;color:var(--muted);pointer-events:none;}
+select.finp{appearance:none;cursor:pointer;}
+.sts-row{display:flex;gap:8px;}
+.sts-btn{flex:1;padding:11px 0;border-radius:12px;border:1px solid var(--bor2);background:var(--sur);color:var(--muted);font-family:'Figtree',sans-serif;font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s;}
+.sts-btn.on{border-color:rgba(139,111,174,.45);color:var(--accent);background:rgba(196,184,232,.15);}
+.sec-t{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin:4px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--bor2);}
+.type-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px;}
+.tb-l{background:rgba(184,208,232,.2);border:1px solid rgba(184,208,232,.4);color:#5A8AAE;}
+.tb-f{background:rgba(120,90,180,.2);border:1px solid rgba(120,90,180,.4);color:#9A70CE;}
+/* NAV */
+.bnav{display:flex;padding:10px 0 30px;flex-shrink:0;background:var(--nav);backdrop-filter:blur(20px);border-top:1px solid var(--bor);transition:all .4s;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:5px 0;transition:all .15s;}
+.nic{font-size:20px;line-height:1;}
+.nla{font-size:9px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;transition:color .2s;}
+.ni.on .nla{color:var(--accent);font-weight:700;}
+/* TOGGLE */
+.tog{position:fixed;top:16px;right:16px;z-index:999;display:flex;background:var(--sur);border:1px solid var(--bor);border-radius:30px;padding:4px;gap:3px;backdrop-filter:blur(16px);box-shadow:0 4px 16px var(--shad);}
+.tb{padding:6px 14px;border-radius:24px;border:none;font-family:'Figtree',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .25s;background:transparent;color:var(--muted);}
+.tb.on{background:var(--accent-g);color:#fff;box-shadow:0 2px 8px var(--btn-shad);}
+/* CORES */
+.c1{background:linear-gradient(145deg,#C8A0C0,#A07890,#785868);}
+.c2{background:linear-gradient(145deg,#A0B8D8,#7090B8,#486888);}
+.c3{background:linear-gradient(145deg,#A0C8B0,#70A880,#488058);}
+.c4{background:linear-gradient(145deg,#D8B8A0,#B89070,#906848);}
+.c5{background:linear-gradient(145deg,#B8A0D8,#9070B8,#684888);}
+.c6{background:linear-gradient(145deg,#A0C8D8,#70A8B8,#488098);}
+.c7{background:linear-gradient(145deg,#D8C8A0,#B8A070,#907848);}
+.c8{background:linear-gradient(145deg,#C0B0D0,#9888B0,#706088);}
+.c9{background:linear-gradient(145deg,#D8A0B0,#B87888,#905060);}
+.f1{background:linear-gradient(145deg,#1a1a2e,#4a3a6a,#8a6aaa);}
+.f2{background:linear-gradient(145deg,#1a2a1a,#3a6a4a,#6aaa8a);}
+.f3{background:linear-gradient(145deg,#2e1a1a,#6a3a3a,#aa6a6a);}
+.f4{background:linear-gradient(145deg,#1a2a2e,#3a5a6a,#6a9aaa);}
+.f5{background:linear-gradient(145deg,#2a1a2e,#5a3a6a,#8a6aaa);}
+.f6{background:linear-gradient(145deg,#2e2a1a,#6a5a3a,#aa9a6a);}
+</style>
+</head>
+<body class="D">
+<div class="tog"><button class="tb" id="tL" onclick="setT('L')">☀️</button><button class="tb on" id="tD" onclick="setT('D')">🌙</button></div>
+<div class="phone">
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+
+<!-- S1 LOGIN -->
+<div class="screen on" id="S1"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="cw">
+<div class="ct"><div class="cc c1"></div><div class="cc f1"></div><div class="cc c3"></div><div class="cc c5"></div><div class="cc f2"></div><div class="cc c7"></div><div class="cc c2"></div><div class="cc f3"></div><div class="cc c9"></div><div class="cc c4"></div><div class="cc c6"></div><div class="cc f4"></div><div class="cc c1"></div><div class="cc f1"></div><div class="cc c3"></div><div class="cc c5"></div><div class="cc f2"></div><div class="cc c7"></div><div class="cc c2"></div><div class="cc f3"></div><div class="cc c9"></div><div class="cc c4"></div><div class="cc c6"></div><div class="cc f4"></div></div>
+<div class="ct2"><div class="cc c6"></div><div class="cc c8"></div><div class="cc f5"></div><div class="cc c2"></div><div class="cc c4"></div><div class="cc f6"></div><div class="cc c1"></div><div class="cc c7"></div><div class="cc c3"></div><div class="cc f2"></div><div class="cc c5"></div><div class="cc c9"></div><div class="cc c6"></div><div class="cc c8"></div><div class="cc f5"></div><div class="cc c2"></div><div class="cc c4"></div><div class="cc f6"></div><div class="cc c1"></div><div class="cc c7"></div><div class="cc c3"></div><div class="cc f2"></div><div class="cc c5"></div><div class="cc c9"></div></div>
+</div>
+<div class="lwrap">
+<div class="llogo"><div class="lan">marca<em>·página</em></div></div>
+<div class="ltag">sua biblioteca pessoal</div>
+<div class="lcard">
+<span class="flab">E-mail</span><input class="finp" type="email" placeholder="seu@email.com">
+<span class="flab">Senha</span><input class="finp" type="password" placeholder="••••••••">
+<div class="flink">Esqueci minha senha</div>
+<button class="savebtn" onclick="go('S2')">Entrar →</button>
+<div class="dor"><span>ou</span></div>
+<button class="gbtn" onclick="go('S2')"><span style="font-size:16px;font-weight:800">G</span> Continuar com Google</button>
+</div>
+<div class="srow">Não tem conta? <a onclick="go('S2')">Criar agora</a></div>
+</div>
+</div></div>
+
+<!-- S2 BIBLIOTECA -->
+<div class="screen" id="S2"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="topbar"><div class="logo">marca<em>·página</em></div><div class="av" onclick="go('S8')">J</div></div>
+<div class="qbox"><div class="qbig">"</div><div class="qt" id="qt"></div><div class="qa" id="qa"></div></div>
+<div class="gl"></div>
+<div class="mtabs"><div class="mt on" id="ml" onclick="swLib('L')">📚 Livros</div><div class="mt" id="mf" onclick="swLib('F')">🎬 Filmes</div></div>
+<!-- LIVROS -->
+<div class="sc" id="libL">
+<div class="ss"><div class="sh"><div class="sb BL"><div class="dot DL"></div>Lendo</div><span class="sc-n">2 livros</span></div><div class="brow"><div class="bc" onclick="go('S3')"><div class="cov c2"></div><div class="btit">Duna</div><div class="baut">Frank Herbert</div><div class="pd DP"></div></div><div class="bc" onclick="go('S3')"><div class="cov c8"></div><div class="btit">1984</div><div class="baut">George Orwell</div><div class="pd DPR"></div></div><div class="addc" onclick="go('S9')">＋<span>Adicionar</span></div></div></div>
+<div class="ss"><div class="sh"><div class="sb BQ"><div class="dot DQ"></div>Quero Ler</div><span class="sc-n">3 livros</span></div><div class="brow"><div class="bc" onclick="go('S3')"><div class="cov c5"></div><div class="btit">Grande Sertão</div><div class="baut">Guimarães Rosa</div><div class="pd DPR"></div></div><div class="bc" onclick="go('S3')"><div class="cov c6"></div><div class="btit">O Processo</div><div class="baut">Franz Kafka</div><div class="pd DPR"></div></div><div class="bc" onclick="go('S3')"><div class="cov c1"></div><div class="btit">Macunaíma</div><div class="baut">Mário de Andrade</div><div class="pd DPR"></div></div><div class="addc" onclick="go('S9')">＋<span>Adicionar</span></div></div></div>
+<div class="ss"><div class="sh"><div class="sb BD"><div class="dot DD"></div>Lidos</div><span class="sc-n">5 livros</span></div><div class="brow"><div class="bc" onclick="go('S3')"><div class="cov c1"></div><div class="btit">Crime e Castigo</div><div class="baut">Dostoiévski</div><div class="pd DP"></div></div><div class="bc" onclick="go('S3')"><div class="cov c4"></div><div class="btit">Dom Casmurro</div><div class="baut">Machado de Assis</div><div class="pd DPR"></div></div><div class="bc" onclick="go('S3')"><div class="cov c7"></div><div class="btit">O Alquimista</div><div class="baut">Paulo Coelho</div><div class="pd DP"></div></div><div class="bc" onclick="go('S3')"><div class="cov c3"></div><div class="btit">Sapiens</div><div class="baut">Yuval Harari</div><div class="pd DPR"></div></div><div class="bc" onclick="go('S3')"><div class="cov c9"></div><div class="btit">A Metamorfose</div><div class="baut">Franz Kafka</div><div class="pd DP"></div></div></div></div>
+<div><span class="bib-t">Biblioteca</span>
+<input class="bib-srch" placeholder="Buscar na biblioteca..." oninput="srchG(this,'gL')">
+<div class="cats"><button class="cat on" onclick="fcat(this,'L','T')">Todos</button><button class="cat" onclick="fcat(this,'L','FC')">Ficção Científica</button><button class="cat" onclick="fcat(this,'L','LB')">Lit. Brasileira</button><button class="cat" onclick="fcat(this,'L','LI')">Lit. Internacional</button><button class="cat" onclick="fcat(this,'L','FL')">Filosofia</button><button class="cat" onclick="fcat(this,'L','FN')">Fantasia</button><button class="cat" onclick="fcat(this,'L','RM')">Romance</button><button class="cat" onclick="fcat(this,'L','HT')">História</button><button class="cat" onclick="fcat(this,'L','BG')">Biografia</button><button class="cat" onclick="fcat(this,'L','PS')">Psicologia</button><button class="cat" onclick="fcat(this,'L','NG')">Negócios</button><button class="cat" onclick="fcat(this,'L','AU')">Autoajuda</button><button class="cat" onclick="fcat(this,'L','PL')">Policial</button><button class="cat" onclick="fcat(this,'L','OT')">Outros</button></div>
+<div class="grid-sw"><div class="grid-h" id="gL">
+<div class="gc" onclick="go('S3')"><div class="gcov c2"></div><div class="gtit">Duna</div><div class="gaut">Frank Herbert</div><div class="pd DP"></div></div>
+<div class="gc" onclick="go('S3')"><div class="gcov c1"></div><div class="gtit">Crime e Castigo</div><div class="gaut">Dostoiévski</div><div class="pd DP"></div></div>
+<div class="gc" onclick="go('S3')"><div class="gcov c5"></div><div class="gtit">Grande Sertão</div><div class="gaut">Guimarães Rosa</div><div class="pd DPR"></div></div>
+<div class="gc" onclick="go('S3')"><div class="gcov c8"></div><div class="gtit">1984</div><div class="gaut">George Orwell</div><div class="pd DPR"></div></div>
+<div class="gc" onclick="go('S3')"><div class="gcov c4"></div><div class="gtit">Dom Casmurro</div><div class="gaut">Machado de Assis</div><div class="pd DPR"></div></div>
+<div class="gc" onclick="go('S3')"><div class="gcov c6"></div><div class="gtit">O Processo</div><div class="gaut">Franz Kafka</div><div class="pd DPR"></div></div>
+<div class="gc" onclick="go('S3')"><div class="gcov c7"></div><div class="gtit">O Alquimista</div><div class="gaut">Paulo Coelho</div><div class="pd DP"></div></div>
+<div class="gc" onclick="go('S3')"><div class="gcov c9"></div><div class="gtit">A Metamorfose</div><div class="gaut">Franz Kafka</div><div class="pd DP"></div></div>
+<div class="gc" onclick="go('S3')"><div class="gcov c3"></div><div class="gtit">Sapiens</div><div class="gaut">Yuval Harari</div><div class="pd DPR"></div></div>
+</div></div>
+<button class="ver-mais" id="vmL" onclick="verM('L')">Ver mais</button>
+</div>
+</div>
+<!-- FILMES -->
+<div class="sc" id="libF" style="display:none">
+<div class="ss"><div class="sh"><div class="sb BD"><div class="dot DD"></div>Assistidos</div><span class="sc-n">6 filmes</span></div><div class="brow"><div class="bc" onclick="go('S4')"><div class="cov f1"></div><div class="btit">Oppenheimer</div><div class="baut">Christopher Nolan</div><div class="pd DP"></div></div><div class="bc" onclick="go('S4')"><div class="cov f2"></div><div class="btit">Interestelar</div><div class="baut">Christopher Nolan</div><div class="pd DP"></div></div><div class="bc" onclick="go('S4')"><div class="cov f3"></div><div class="btit">Clube da Luta</div><div class="baut">David Fincher</div><div class="pd DPR"></div></div><div class="bc" onclick="go('S4')"><div class="cov f4"></div><div class="btit">Parasite</div><div class="baut">Bong Joon-ho</div><div class="pd DP"></div></div><div class="bc" onclick="go('S4')"><div class="cov f5"></div><div class="btit">Whiplash</div><div class="baut">Damien Chazelle</div><div class="pd DPR"></div></div><div class="bc" onclick="go('S4')"><div class="cov f6"></div><div class="btit">Matrix</div><div class="baut">Wachowski</div><div class="pd DP"></div></div><div class="addc" onclick="go('S10')">＋<span>Adicionar</span></div></div></div>
+<div class="ss"><div class="sh"><div class="sb BQ"><div class="dot DQ"></div>Quero Ver</div><span class="sc-n">3 filmes</span></div><div class="brow"><div class="bc" onclick="go('S4')"><div class="cov f3"></div><div class="btit">Seven</div><div class="baut">David Fincher</div><div class="pd DPR"></div></div><div class="bc" onclick="go('S4')"><div class="cov f1"></div><div class="btit">2001: Uma Odisseia</div><div class="baut">Stanley Kubrick</div><div class="pd DPR"></div></div><div class="bc" onclick="go('S4')"><div class="cov f6"></div><div class="btit">Blade Runner</div><div class="baut">Ridley Scott</div><div class="pd DPR"></div></div><div class="addc" onclick="go('S10')">＋<span>Adicionar</span></div></div></div>
+<div><span class="bib-t">Biblioteca</span>
+<input class="bib-srch" placeholder="Buscar na biblioteca..." oninput="srchG(this,'gF')">
+<div class="cats"><button class="cat on" onclick="fcat(this,'F','T')">Todos</button><button class="cat" onclick="fcat(this,'F','DR')">Drama</button><button class="cat" onclick="fcat(this,'F','CM')">Comédia</button><button class="cat" onclick="fcat(this,'F','FC')">Ficção Científica</button><button class="cat" onclick="fcat(this,'F','AC')">Ação</button><button class="cat" onclick="fcat(this,'F','TR')">Terror</button><button class="cat" onclick="fcat(this,'F','SP')">Suspense</button><button class="cat" onclick="fcat(this,'F','RO')">Romance</button><button class="cat" onclick="fcat(this,'F','AN')">Animação</button><button class="cat" onclick="fcat(this,'F','DC')">Documentário</button><button class="cat" onclick="fcat(this,'F','HT')">Histórico</button><button class="cat" onclick="fcat(this,'F','CR')">Crime</button><button class="cat" onclick="fcat(this,'F','OT')">Outros</button></div>
+<div class="grid-sw"><div class="grid-h" id="gF">
+<div class="gc" onclick="go('S4')"><div class="gcov f1"></div><div class="gtit">Oppenheimer</div><div class="gaut">Christopher Nolan</div><div class="pd DP"></div></div>
+<div class="gc" onclick="go('S4')"><div class="gcov f3"></div><div class="gtit">Clube da Luta</div><div class="gaut">David Fincher</div><div class="pd DPR"></div></div>
+<div class="gc" onclick="go('S4')"><div class="gcov f5"></div><div class="gtit">Whiplash</div><div class="gaut">Damien Chazelle</div><div class="pd DPR"></div></div>
+<div class="gc" onclick="go('S4')"><div class="gcov f2"></div><div class="gtit">Interestelar</div><div class="gaut">Christopher Nolan</div><div class="pd DP"></div></div>
+<div class="gc" onclick="go('S4')"><div class="gcov f4"></div><div class="gtit">Parasite</div><div class="gaut">Bong Joon-ho</div><div class="pd DP"></div></div>
+<div class="gc" onclick="go('S4')"><div class="gcov f6"></div><div class="gtit">Matrix</div><div class="gaut">Wachowski</div><div class="pd DP"></div></div>
+<div class="gc" onclick="go('S4')"><div class="gcov f3"></div><div class="gtit">Seven</div><div class="gaut">David Fincher</div><div class="pd DPR"></div></div>
+<div class="gc" onclick="go('S4')"><div class="gcov f1"></div><div class="gtit">2001: Uma Odisseia</div><div class="gaut">Stanley Kubrick</div><div class="pd DPR"></div></div>
+<div class="gc" onclick="go('S4')"><div class="gcov f6"></div><div class="gtit">Blade Runner</div><div class="gaut">Ridley Scott</div><div class="pd DPR"></div></div>
+</div></div>
+<button class="ver-mais" id="vmF" onclick="verM('F')">Ver mais</button>
+</div>
+</div>
+<div class="bnav"><div class="ni on"><span class="nic">📚</span><span class="nla">Biblioteca</span></div><div class="ni" onclick="go('S5')"><span class="nic">👥</span><span class="nla">Comunidade</span></div><div class="ni" onclick="go('S7')"><span class="nic">🔍</span><span class="nla">Buscar</span></div><div class="ni" onclick="go('S8')"><span class="nic">👤</span><span class="nla">Perfil</span></div></div>
+</div></div>
+
+<!-- S3 DETALHE LIVRO -->
+<div class="screen" id="S3"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="ph"><div class="bk" onclick="back()">←</div><div class="ph-t">Detalhes do Livro</div></div>
+<div class="gl"></div>
+<div class="sc" id="S3s">
+<div class="hero"><div class="hcov c1"></div><div class="hm"><div class="ht">Crime e Castigo</div><div class="hs">Fiódor Dostoiévski</div><div class="hy">1866 · Romance Russo</div><div class="tags"><span class="tag">Clássico</span><span class="tag">Psicológico</span><span class="tag">Filosófico</span></div></div></div>
+<div class="nota-card"><div><div class="nota-lbl">Sua nota</div><div style="display:flex;align-items:baseline;gap:6px;margin-top:4px;"><div class="nota-val" id="nv-l">4.0</div><div style="font-size:11px;color:var(--muted)">/5</div></div><div class="nota-desc" id="nd-l">Muito bom</div></div><div class="stars" id="st-l"><span class="star on" onclick="sN('l',1)">★</span><span class="star on" onclick="sN('l',2)">★</span><span class="star on" onclick="sN('l',3)">★</span><span class="star on" onclick="sN('l',4)">★</span><span class="star" onclick="sN('l',5)">★</span></div></div>
+<div class="itabs"><div class="it on" onclick="swI('S3','R',this)">✍️ Resenha</div><div class="it" onclick="swI('S3','T',this)">💬 Trechos</div><div class="it" onclick="swI('S3','C',this)">👥 Comunidade</div></div>
+<div class="tc on" id="S3R"><div class="bl">Sua resenha pessoal</div><div class="rbox"><div class="rtxt">Dostoiévski consegue algo raro: fazer o leitor sentir culpa junto com o protagonista. Raskolnikov não é um vilão — é um espelho desconfortável. A leitura me deixou inquieto por dias.</div></div><div class="bl">Privacidade</div><div class="priv"><button class="pb on">🔒 Privado</button><button class="pb">🌐 Público</button></div><button class="savebtn">Salvar Resenha</button></div>
+<div class="tc" id="S3T"><button class="addt">＋ Adicionar trecho</button><div class="tcrd"><div class="ttxt">"Acima de tudo, não minta para si mesmo. Um homem que mente a si mesmo chega a um ponto em que não consegue distinguir a verdade."</div><div class="tpg">Página 84</div></div><div class="tcrd"><div class="ttxt">"A dor e o sofrimento são sempre inevitáveis para uma consciência ampla e um coração profundo."</div><div class="tpg">Página 212</div></div><div class="tcrd"><div class="ttxt">"Ir além é difícil para o homem, ele tem medo de dar seus próprios passos."</div><div class="tpg">Página 341</div></div><div class="bl" style="margin-top:8px">Privacidade dos trechos</div><div class="priv"><button class="pb on">🔒 Privado</button><button class="pb">🌐 Público</button></div><button class="savebtn">Salvar</button></div>
+<div class="tc" id="S3C"><div class="cmc"><div class="cmav A1">M</div><div class="cmb"><div class="cmn">Maria Silva</div><div class="cmt">Um dos livros mais perturbadores que li. Raskolnikov me incomodou do início ao fim.</div><div class="cmtime">há 2 dias</div></div></div><div class="cmc"><div class="cmav A2">R</div><div class="cmb"><div class="cmn">Rafael T.</div><div class="cmt">Li duas vezes e cada vez entendi algo diferente. A segunda leitura foi outra experiência.</div><div class="cmtime">há 5 dias</div></div></div><div class="cmc"><div class="cmav A3">A</div><div class="cmb"><div class="cmn">Ana P.</div><div class="cmt">Dostoiévski entendeu de psicologia antes de Freud existir.</div><div class="cmtime">há 1 semana</div></div></div></div>
+</div>
+<div id="S3cm" style="display:none"><div class="cmin"><input class="ci" placeholder="Escreva um comentário público..."><button class="sb2">➤</button></div></div>
+</div></div>
+
+<!-- S4 DETALHE FILME -->
+<div class="screen" id="S4"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="ph"><div class="bk" onclick="back()">←</div><div class="ph-t">Detalhes do Filme</div></div>
+<div class="gl"></div>
+<div class="sc">
+<div class="hero"><div class="hcov f1"></div><div class="hm"><div class="ht">Oppenheimer</div><div class="hs">Dir. Christopher Nolan</div><div class="hy">2023 · Drama Histórico</div><div class="tags"><span class="tag">IMAX</span><span class="tag">Ciência</span><span class="tag">Guerra</span></div></div></div>
+<div class="nota-card"><div><div class="nota-lbl">Sua nota</div><div style="display:flex;align-items:baseline;gap:6px;margin-top:4px;"><div class="nota-val" id="nv-f">—</div></div><div class="nota-desc" id="nd-f">Toque para avaliar</div></div><div class="stars" id="st-f"><span class="star" onclick="sN('f',1)">★</span><span class="star" onclick="sN('f',2)">★</span><span class="star" onclick="sN('f',3)">★</span><span class="star" onclick="sN('f',4)">★</span><span class="star" onclick="sN('f',5)">★</span></div></div>
+<div class="itabs"><div class="it on" onclick="swI('S4','R',this)">✍️ Resenha</div><div class="it" onclick="swI('S4','C',this)">👥 Comunidade</div></div>
+<div class="tc on" id="S4R"><div class="bl">Sua resenha pessoal</div><div class="rbox"><div class="rph">Escreva aqui o que esse filme representou para você. Suas impressões, o que te marcou, como ele te afetou...</div></div><div class="bl">Privacidade</div><div class="priv"><button class="pb">🔒 Privado</button><button class="pb on">🌐 Público</button></div><button class="savebtn">Salvar Resenha</button></div>
+<div class="tc" id="S4C"><div class="cmc"><div class="cmav A4">L</div><div class="cmb"><div class="cmn">Lucas M.</div><div class="cmt">Cillian Murphy foi incrível. Saí do cinema sem conseguir falar nada por 10 minutos.</div><div class="cmtime">há 3 dias</div></div></div><div class="cmc"><div class="cmav A1">C</div><div class="cmb"><div class="cmn">Carla F.</div><div class="cmt">A cena do teste Trinity me deixou sem ar. Nunca senti isso num cinema.</div><div class="cmtime">há 1 semana</div></div></div></div>
+</div>
+<div id="S4cm" style="display:none"><div class="cmin"><input class="ci" placeholder="Escreva um comentário público..."><button class="sb2">➤</button></div></div>
+</div></div>
+
+<!-- S5 COMUNIDADE -->
+<div class="screen" id="S5"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="topbar"><div class="logo">marca<em>·página</em></div><div class="av" onclick="go('S8')">J</div></div>
+<div class="gl"></div>
+<div class="sc">
+<div class="srch"><span style="font-size:14px;color:var(--muted)">🔍</span><input placeholder="Buscar pessoa..."></div>
+<div class="slb">Ativos recentemente</div>
+<div class="uc" onclick="go('S6')"><div class="uav U2">M</div><div class="ui"><div class="un">Maria Silva</div><div class="us">12 livros · 8 resenhas</div></div><div class="mcs"><div class="mcc c1"></div><div class="mcc c3"></div><div class="mcc c6"></div></div><div class="on-d"></div></div>
+<div class="uc" onclick="go('S6')"><div class="uav U3">R</div><div class="ui"><div class="un">Rafael Torres</div><div class="us">24 livros · 19 resenhas</div></div><div class="mcs"><div class="mcc c2"></div><div class="mcc c5"></div><div class="mcc c9"></div></div><div class="on-d"></div></div>
+<div class="uc" onclick="go('S6')"><div class="uav U4">A</div><div class="ui"><div class="un">Ana Pereira</div><div class="us">7 livros · 5 resenhas</div></div><div class="mcs"><div class="mcc c4"></div><div class="mcc c7"></div><div class="mcc c8"></div></div><div class="off-d"></div></div>
+<div class="uc" onclick="go('S6')"><div class="uav U5">L</div><div class="ui"><div class="un">Lucas Mendes</div><div class="us">31 livros · 22 resenhas</div></div><div class="mcs"><div class="mcc c1"></div><div class="mcc c6"></div><div class="mcc c9"></div></div><div class="off-d"></div></div>
+<div class="uc" onclick="go('S6')"><div class="uav U6">C</div><div class="ui"><div class="un">Carla Fonseca</div><div class="us">18 livros · 14 resenhas</div></div><div class="mcs"><div class="mcc c3"></div><div class="mcc c5"></div><div class="mcc c7"></div></div><div class="off-d"></div></div>
+<div class="uc" onclick="go('S6')"><div class="uav U1">P</div><div class="ui"><div class="un">Pedro Alves</div><div class="us">9 livros · 6 resenhas</div></div><div class="mcs"><div class="mcc c2"></div><div class="mcc c4"></div><div class="mcc c8"></div></div><div class="off-d"></div></div>
+</div>
+<div class="bnav"><div class="ni" onclick="go('S2')"><span class="nic">📚</span><span class="nla">Biblioteca</span></div><div class="ni on"><span class="nic">👥</span><span class="nla">Comunidade</span></div><div class="ni" onclick="go('S7')"><span class="nic">🔍</span><span class="nla">Buscar</span></div><div class="ni" onclick="go('S8')"><span class="nic">👤</span><span class="nla">Perfil</span></div></div>
+</div></div>
+
+<!-- S6 PERFIL USUÁRIO -->
+<div class="screen" id="S6"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="ph"><div class="bk" onclick="back()">←</div><div class="ph-t">Perfil</div></div>
+<div class="gl"></div>
+<div class="sc">
+<div class="phero"><div class="pav U3">R</div><div class="pn">Rafael Torres</div><div class="ph2">@rafael · Leitor ávido</div><div class="bio">Filosofia, literatura e cinema são as três formas que encontrei de entender o mundo. 📚🎬✨</div><div class="slinks"><div class="sl2"><span>📸</span><span style="font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@rafaeltorres</span></div><div class="sl2"><span>🔗</span><span style="font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">rafael.com.br</span></div></div><div class="psts"><div class="pst"><span class="pstn">24</span><span class="pstl">Livros</span></div><div class="pst"><span class="pstn">11</span><span class="pstl">Filmes</span></div><div class="pst"><span class="pstn">19</span><span class="pstl">Resenhas</span></div></div></div>
+<div class="slb">Lidos recentemente</div>
+<div class="mnr"><div class="mnc" onclick="go('S3')"><div class="mncov c2"></div><div class="mnt">Duna</div><div class="mna">Frank Herbert</div></div><div class="mnc" onclick="go('S3')"><div class="mncov c5"></div><div class="mnt">Grande Sertão</div><div class="mna">Guimarães Rosa</div></div><div class="mnc" onclick="go('S3')"><div class="mncov c9"></div><div class="mnt">A Metamorfose</div><div class="mna">Franz Kafka</div></div><div class="mnc" onclick="go('S3')"><div class="mncov c1"></div><div class="mnt">Crime e Castigo</div><div class="mna">Dostoiévski</div></div><div class="mnc" onclick="go('S3')"><div class="mncov c7"></div><div class="mnt">O Alquimista</div><div class="mna">Paulo Coelho</div></div></div>
+<div class="slb">Resenhas públicas</div>
+<div class="prc"><div class="prcc c2"></div><div class="prcb"><div class="prcbk">Duna · Frank Herbert</div><div class="prct">Uma obra que redefine o que a ficção científica pode ser. A construção de Arrakis é impecável...</div><div class="prcd">há 3 dias · 🌐 Pública</div></div></div>
+<div class="prc"><div class="prcc c5"></div><div class="prcb"><div class="prcbk">Grande Sertão · Guimarães Rosa</div><div class="prct">Uma experiência linguística única. Rosa inventou um português que só existe nesse livro...</div><div class="prcd">há 1 semana · 🌐 Pública</div></div></div>
+<div class="slb">Resenhas privadas</div>
+<div class="lkc"><div class="lki">🔒</div><div><div style="font-size:13px;font-weight:700;color:var(--text2)">Crime e Castigo</div><div style="font-size:10px;color:var(--muted);margin-top:3px">Resenha privada</div></div></div>
+<div class="lkc"><div class="lki">🔒</div><div><div style="font-size:13px;font-weight:700;color:var(--text2)">O Alquimista</div><div style="font-size:10px;color:var(--muted);margin-top:3px">Resenha privada</div></div></div>
+</div>
+</div></div>
+
+<!-- S7 BUSCA -->
+<div class="screen" id="S7"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="topbar"><div class="logo">marca<em>·página</em></div><div class="av" onclick="go('S8')">J</div></div>
+<div class="gl"></div>
+<div class="mtabs"><div class="mt on" id="sml" onclick="swSrch('L')">📚 Livros</div><div class="mt" id="smf" onclick="swSrch('F')">🎬 Filmes</div></div>
+<div class="sc">
+<div class="srch"><span style="font-size:14px;color:var(--muted)">🔍</span><input placeholder="Buscar livro ou filme..." value="Crime e Castigo"></div>
+<div class="slb">Resultados · Open Library</div>
+<div class="srr" onclick="go('S3')"><div class="srcov c1"></div><div class="srm"><div class="srt">Crime e Castigo</div><div class="sra">Fiódor Dostoiévski</div><div class="sry">1866</div></div><div style="width:30px;height:30px;border-radius:50%;background:rgba(196,184,232,.2);border:1px solid rgba(196,184,232,.35);color:var(--accent);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer">+</div></div>
+<div class="srr" onclick="go('S3')"><div class="srcov c4"></div><div class="srm"><div class="srt">Crime e Castigo</div><div class="sra">Ed. Cosac Naify</div><div class="sry">2001</div></div><div style="width:30px;height:30px;border-radius:50%;background:rgba(196,184,232,.2);border:1px solid rgba(196,184,232,.35);color:var(--accent);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer">+</div></div>
+<div class="srr" onclick="go('S3')"><div class="srcov c8"></div><div class="srm"><div class="srt">Crime and Punishment</div><div class="sra">Fyodor Dostoyevsky</div><div class="sry">1866 · EN</div></div><div style="width:30px;height:30px;border-radius:50%;background:rgba(196,184,232,.2);border:1px solid rgba(196,184,232,.35);color:var(--accent);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer">+</div></div>
+<div style="text-align:center;padding:20px 0 8px"><div style="font-size:11px;color:var(--muted);margin-bottom:12px">Não encontrou? Adicione manualmente</div><button style="padding:10px 24px;border-radius:12px;border:1.5px dashed var(--add-bor);background:var(--add-bg);color:var(--accent);font-family:'Figtree',sans-serif;font-size:12px;font-weight:700;cursor:pointer" onclick="go('S9')">📷 Adicionar com foto</button></div>
+</div>
+<div class="bnav"><div class="ni" onclick="go('S2')"><span class="nic">📚</span><span class="nla">Biblioteca</span></div><div class="ni" onclick="go('S5')"><span class="nic">👥</span><span class="nla">Comunidade</span></div><div class="ni on"><span class="nic">🔍</span><span class="nla">Buscar</span></div><div class="ni" onclick="go('S8')"><span class="nic">👤</span><span class="nla">Perfil</span></div></div>
+</div></div>
+
+<!-- S8 PERFIL PRÓPRIO -->
+<div class="screen" id="S8"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="topbar"><div class="logo">marca<em>·página</em></div><div style="font-size:20px;cursor:pointer;color:var(--muted)">⚙️</div></div>
+<div class="gl"></div>
+<div class="sc">
+<div class="phero"><div class="pav" style="background:var(--accent-g)">J</div><div class="pn">Jetro</div><div class="ph2">@jetro · membro desde 2025</div><div class="bio">Leitor, criador de conteúdo e apaixonado por filosofia. Sempre entre um livro e outro — e um filme no meio do caminho. 📚🎬</div><div class="slinks"><div class="sl2"><span>📸</span><span style="font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@jetrodesigner</span></div><div class="sl2"><span>🔗</span><span style="font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">jetro.com.br</span></div></div><div class="psts"><div class="pst"><span class="pstn">24</span><span class="pstl">Livros</span></div><div class="pst"><span class="pstn">18</span><span class="pstl">Filmes</span></div><div class="pst"><span class="pstn">31</span><span class="pstl">Resenhas</span></div></div></div>
+<div class="slb">Minha conta</div>
+<div class="acc"><div class="aci">✏️</div><div class="acb"><div class="act">Editar perfil</div><div class="acs">Nome, bio e links sociais</div></div><span class="aca">›</span></div>
+<div class="acc"><div class="aci">🎨</div><div class="acb"><div class="act">Aparência</div><div class="acs">Tema claro ou escuro</div></div><span class="aca">›</span></div>
+<div class="acc"><div class="aci">❓</div><div class="acb"><div class="act">Ajuda e suporte</div><div class="acs">Tire suas dúvidas</div></div><span class="aca">›</span></div>
+<button class="logout" onclick="go('S1')">Sair da conta</button>
+</div>
+<div class="bnav"><div class="ni" onclick="go('S2')"><span class="nic">📚</span><span class="nla">Biblioteca</span></div><div class="ni" onclick="go('S5')"><span class="nic">👥</span><span class="nla">Comunidade</span></div><div class="ni" onclick="go('S7')"><span class="nic">🔍</span><span class="nla">Buscar</span></div><div class="ni on"><span class="nic">👤</span><span class="nla">Perfil</span></div></div>
+</div></div>
+
+<!-- S9 ADICIONAR LIVRO -->
+<div class="screen" id="S9"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="ph"><div class="bk" onclick="back()">←</div><div class="ph-t">Adicionar Livro</div></div>
+<div class="gl"></div>
+<div class="sc">
+<div class="type-badge tb-l">📚 Cadastro manual</div>
+<div class="photo-up" onclick="prvL()"><div class="pico">📷</div><div class="plab">Adicionar capa</div><div class="psub">Tire uma foto ou escolha da galeria</div><div id="pvL" style="display:none;position:absolute;inset:0;border-radius:18px;" class="c1"></div></div>
+<div class="sec-t">Informações do livro</div>
+<span class="flab">Título *</span><input class="finp" placeholder="Ex: Crime e Castigo">
+<span class="flab">Autor *</span><input class="finp" placeholder="Ex: Fiódor Dostoiévski">
+<span class="flab">Ano de publicação</span><input class="finp" type="number" placeholder="Ex: 1866">
+<span class="flab">Editora</span><input class="finp" placeholder="Ex: Companhia das Letras">
+<span class="flab">Categoria *</span><div class="sel-w"><select class="finp"><option disabled selected>Selecione</option><option>Literatura Brasileira</option><option>Literatura Internacional</option><option>Ficção Científica</option><option>Fantasia</option><option>Romance</option><option>Filosofia</option><option>História</option><option>Biografia</option><option>Autoajuda</option><option>Negócios</option><option>Psicologia</option><option>Religião e Espiritualidade</option><option>Policial e Suspense</option><option>Outros</option></select></div>
+<span class="flab" style="margin-top:4px">Sinopse</span><textarea class="finp" style="resize:none;min-height:80px;line-height:1.55" placeholder="Breve resumo..."></textarea>
+<div class="sec-t">Status de leitura</div>
+<div class="sts-row"><button class="sts-btn on">📖 Lendo</button><button class="sts-btn">✅ Lido</button><button class="sts-btn">🔖 Quero Ler</button></div>
+<button class="savebtn" style="margin-top:16px" onclick="go('S2')">Adicionar à Biblioteca</button>
+</div>
+</div></div>
+
+<!-- S10 ADICIONAR FILME -->
+<div class="screen" id="S10"><div class="z">
+<div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+<div class="ph"><div class="bk" onclick="back()">←</div><div class="ph-t">Adicionar Filme</div></div>
+<div class="gl"></div>
+<div class="sc">
+<div class="type-badge tb-f">🎬 Cadastro manual</div>
+<div class="photo-up" onclick="prvF()"><div class="pico">📷</div><div class="plab">Adicionar capa</div><div class="psub">Tire uma foto ou escolha da galeria</div><div id="pvF" style="display:none;position:absolute;inset:0;border-radius:18px;" class="f1"></div></div>
+<div class="sec-t">Informações do filme</div>
+<span class="flab">Título *</span><input class="finp" placeholder="Ex: Oppenheimer">
+<span class="flab">Diretor</span><input class="finp" placeholder="Ex: Christopher Nolan">
+<span class="flab">Ano de lançamento</span><input class="finp" type="number" placeholder="Ex: 2023">
+<span class="flab">Duração (minutos)</span><input class="finp" type="number" placeholder="Ex: 180">
+<span class="flab">Categoria *</span><div class="sel-w"><select class="finp"><option disabled selected>Selecione</option><option>Drama</option><option>Comédia</option><option>Ficção Científica</option><option>Ação e Aventura</option><option>Terror</option><option>Suspense e Thriller</option><option>Romance</option><option>Animação</option><option>Documentário</option><option>Histórico e Biográfico</option><option>Crime</option><option>Outros</option></select></div>
+<span class="flab" style="margin-top:4px">Sinopse</span><textarea class="finp" style="resize:none;min-height:80px;line-height:1.55" placeholder="Breve resumo..."></textarea>
+<div class="sec-t">Status</div>
+<div class="sts-row"><button class="sts-btn on">✅ Assistido</button><button class="sts-btn">🔖 Quero Ver</button></div>
+<button class="savebtn" style="margin-top:16px" onclick="go('S2')">Adicionar à Biblioteca</button>
+</div>
+</div></div>
+
+</div>
+<script>
+let hist=['S1'];
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');const s=document.getElementById(id).querySelector('.sc,.lwrap');if(s)s.scrollTop=0;if(hist[hist.length-1]!==id)hist.push(id);}
+function back(){if(hist.length>1){hist.pop();go(hist[hist.length-1]);}}
+function setT(t){document.body.className=t;document.getElementById('tL').className='tb'+(t==='L'?' on':'');document.getElementById('tD').className='tb'+(t==='D'?' on':'');}
+function swLib(t){document.getElementById('libL').style.display=t==='L'?'block':'none';document.getElementById('libF').style.display=t==='F'?'block':'none';document.getElementById('ml').className='mt'+(t==='L'?' on':'');document.getElementById('mf').className='mt'+(t==='F'?' on':'');}
+function swI(s,t,el){const m={'S3':['R','T','C'],'S4':['R','C']}[s];m.forEach(x=>{const e=document.getElementById(s+x);if(e)e.classList.toggle('on',x===t);});el.closest('.itabs').querySelectorAll('.it').forEach(i=>i.classList.remove('on'));el.classList.add('on');const cm=document.getElementById(s+'cm');if(cm)cm.style.display=t==='C'?'block':'none';}
+document.querySelectorAll('.priv').forEach(r=>{r.querySelectorAll('.pb').forEach(b=>{b.addEventListener('click',()=>{r.querySelectorAll('.pb').forEach(x=>x.classList.remove('on'));b.classList.add('on');});});});
+document.querySelectorAll('.sts-row').forEach(r=>{r.querySelectorAll('.sts-btn').forEach(b=>{b.addEventListener('click',()=>{r.querySelectorAll('.sts-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');});});});
+const descs=['Horrível','Ruim','Regular','Muito bom','Incrível!'];
+function sN(t,v){document.getElementById('st-'+t).querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<v));document.getElementById('nv-'+t).textContent=v+'.0';document.getElementById('nd-'+t).textContent=descs[v-1];}
+const extL=[{c:'c3',t:'Sapiens extra',a:'Yuval Harari',d:'DPR'},{c:'c6',t:'O Processo 2',a:'Franz Kafka',d:'DPR'},{c:'c8',t:'Fahrenheit 451',a:'Ray Bradbury',d:'DPR'},{c:'c2',t:'Admirável Mundo',a:'Aldous Huxley',d:'DPR'},{c:'c4',t:'Anna Karenina',a:'Tolstói',d:'DPR'},{c:'c5',t:'Ulisses',a:'James Joyce',d:'DPR'}];
+const extF=[{c:'f4',t:'Arrival',a:'Denis Villeneuve',d:'DP'},{c:'f5',t:'Drive',a:'Nicolas Winding Refn',d:'DPR'},{c:'f2',t:'Dunkirk',a:'Christopher Nolan',d:'DP'},{c:'f3',t:'No Country',a:'Coen Brothers',d:'DPR'},{c:'f6',t:'Her',a:'Spike Jonze',d:'DP'},{c:'f1',t:'Tenet',a:'Christopher Nolan',d:'DPR'}];
+const pg={L:0,F:0};
+function verM(t){const ext=t==='L'?extL:extF;const grid=document.getElementById('g'+t);const vm=document.getElementById('vm'+t);const batch=ext.slice(pg[t]*3,(pg[t]+1)*3);batch.forEach(i=>{const c=document.createElement('div');c.className='gc';c.onclick=()=>go(t==='L'?'S3':'S4');c.innerHTML='<div class="gcov '+i.c+'"></div><div class="gtit">'+i.t+'</div><div class="gaut">'+i.a+'</div><div class="pd '+i.d+'"></div>';grid.appendChild(c);});pg[t]++;if(pg[t]*3>=ext.length)vm.style.display='none';}
+const catDL={T:null,FC:[{c:'c2',t:'Duna',a:'Frank Herbert',d:'DP'},{c:'c8',t:'1984',a:'George Orwell',d:'DPR'}],LB:[{c:'c4',t:'Dom Casmurro',a:'Machado de Assis',d:'DP'},{c:'c5',t:'Grande Sertão',a:'Guimarães Rosa',d:'DPR'},{c:'c1',t:'Macunaíma',a:'Mário de Andrade',d:'DPR'}],LI:[{c:'c1',t:'Crime e Castigo',a:'Dostoiévski',d:'DP'},{c:'c9',t:'A Metamorfose',a:'Franz Kafka',d:'DP'},{c:'c6',t:'O Processo',a:'Franz Kafka',d:'DPR'}],FL:[{c:'c1',t:'Crime e Castigo',a:'Dostoiévski',d:'DP'},{c:'c6',t:'O Processo',a:'Franz Kafka',d:'DPR'}],FN:[{c:'c5',t:'Grande Sertão',a:'Guimarães Rosa',d:'DPR'}],RM:[{c:'c7',t:'O Alquimista',a:'Paulo Coelho',d:'DP'},{c:'c4',t:'Dom Casmurro',a:'Machado de Assis',d:'DP'}],HT:[{c:'c3',t:'Sapiens',a:'Yuval Harari',d:'DPR'}],BG:[],PS:[],NG:[],AU:[],PL:[],OT:[]};
+const catDF={T:null,DR:[{c:'f1',t:'Oppenheimer',a:'Christopher Nolan',d:'DP'},{c:'f5',t:'Whiplash',a:'Damien Chazelle',d:'DPR'},{c:'f4',t:'Parasite',a:'Bong Joon-ho',d:'DP'}],CM:[],FC:[{c:'f2',t:'Interestelar',a:'Christopher Nolan',d:'DP'},{c:'f6',t:'Matrix',a:'Wachowski',d:'DP'},{c:'f1',t:'2001: Uma Odisseia',a:'Stanley Kubrick',d:'DPR'}],AC:[{c:'f6',t:'Matrix',a:'Wachowski',d:'DP'},{c:'f6',t:'Blade Runner',a:'Ridley Scott',d:'DPR'}],TR:[],SP:[{c:'f3',t:'Clube da Luta',a:'David Fincher',d:'DPR'},{c:'f3',t:'Seven',a:'David Fincher',d:'DPR'}],RO:[],AN:[],DC:[],HT:[{c:'f1',t:'Oppenheimer',a:'Christopher Nolan',d:'DP'}],CR:[{c:'f3',t:'Seven',a:'David Fincher',d:'DPR'},{c:'f3',t:'Clube da Luta',a:'David Fincher',d:'DPR'}],OT:[]};
+const allL=[{c:'c2',t:'Duna',a:'Frank Herbert',d:'DP'},{c:'c1',t:'Crime e Castigo',a:'Dostoiévski',d:'DP'},{c:'c5',t:'Grande Sertão',a:'Guimarães Rosa',d:'DPR'},{c:'c8',t:'1984',a:'George Orwell',d:'DPR'},{c:'c4',t:'Dom Casmurro',a:'Machado de Assis',d:'DPR'},{c:'c6',t:'O Processo',a:'Franz Kafka',d:'DPR'},{c:'c7',t:'O Alquimista',a:'Paulo Coelho',d:'DP'},{c:'c9',t:'A Metamorfose',a:'Franz Kafka',d:'DP'},{c:'c3',t:'Sapiens',a:'Yuval Harari',d:'DPR'}];
+const allF=[{c:'f1',t:'Oppenheimer',a:'Christopher Nolan',d:'DP'},{c:'f3',t:'Clube da Luta',a:'David Fincher',d:'DPR'},{c:'f5',t:'Whiplash',a:'Damien Chazelle',d:'DPR'},{c:'f2',t:'Interestelar',a:'Christopher Nolan',d:'DP'},{c:'f4',t:'Parasite',a:'Bong Joon-ho',d:'DP'},{c:'f6',t:'Matrix',a:'Wachowski',d:'DP'},{c:'f3',t:'Seven',a:'David Fincher',d:'DPR'},{c:'f1',t:'2001: Uma Odisseia',a:'Stanley Kubrick',d:'DPR'},{c:'f6',t:'Blade Runner',a:'Ridley Scott',d:'DPR'}];
+function fcat(btn,tipo,cat){btn.closest('.cats').querySelectorAll('.cat').forEach(b=>b.classList.remove('on'));btn.classList.add('on');const grid=document.getElementById('g'+tipo);const vm=document.getElementById('vm'+tipo);const catD=tipo==='L'?catDL:catDF;const data=catD[cat];grid.innerHTML='';const items=data||( tipo==='L'?allL:allF);items.forEach(i=>{const c=document.createElement('div');c.className='gc';c.onclick=()=>go(tipo==='L'?'S3':'S4');c.innerHTML='<div class="gcov '+i.c+'"></div><div class="gtit">'+i.t+'</div><div class="gaut">'+i.a+'</div><div class="pd '+i.d+'"></div>';grid.appendChild(c);});pg[tipo]=0;if(vm)vm.style.display=data&&data.length>=9?'block':(data===null?'block':'none');}
+function srchG(inp,gid){const q=inp.value.toLowerCase();document.getElementById(gid).querySelectorAll('.gc').forEach(c=>{const t=c.querySelector('.gtit').textContent.toLowerCase();const a=c.querySelector('.gaut').textContent.toLowerCase();c.style.display=(t.includes(q)||a.includes(q))?'flex':'none';});}
+function swSrch(t){document.getElementById('sml').className='mt'+(t==='L'?' on':'');document.getElementById('smf').className='mt'+(t==='F'?' on':'');}
+function prvL(){document.getElementById('pvL').style.display='block';}
+function prvF(){document.getElementById('pvF').style.display='block';}
+const fr=[{t:"Os livros são espelhos: só vemos neles o que já temos dentro de nós.",a:"Carlos Ruiz Zafón"},{t:"Um leitor vive mil vidas antes de morrer. Aquele que nunca lê vive apenas uma.",a:"George R.R. Martin"},{t:"Não existe amigo tão leal quanto um livro.",a:"Ernest Hemingway"},{t:"Ler é sonhar pela mão de outrem.",a:"Fernando Pessoa"},{t:"Os livros são a prova de que a humanidade é capaz de fazer magia.",a:"Carl Sagan"},{t:"O cinema pode preencher nos seres humanos o vazio deixado pela vida.",a:"François Truffaut"},{t:"A imaginação é mais importante que o conhecimento.",a:"Albert Einstein"},{t:"O cinema é a arte de mostrar nada acontecendo de maneiras interessantes.",a:"Orson Welles"},{t:"Sublinha o que te move. É aí que você mora.",a:"Clarice Lispector"},{t:"Toda grande história começa com alguém que não desistiu.",a:"Fiódor Dostoiévski"}];
+const d=new Date();const idx=Math.floor((d-new Date(d.getFullYear(),0,0))/86400000)%fr.length;document.getElementById('qt').textContent=fr[idx].t;document.getElementById('qa').textContent='— '+fr[idx].a;
+</script>
+</body>
+</html>

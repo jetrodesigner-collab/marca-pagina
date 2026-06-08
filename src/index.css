@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS custom properties (light mode default) ── */
+:root {
+  --accent-g: linear-gradient(135deg, #C4B8E8, #9A88C8);
+  --rose-g: linear-gradient(180deg, #E8B4C8, #C884A8);
+  --green: #7AAA8A;
+  --red: #C05050;
+}
+
+/* Light mode */
+.light {
+  --bg: linear-gradient(160deg, #F5F2F8, #EEF0F8, #F2EEF5);
+  --text: #2A2435;
+  --text2: #7A6E8A;
+  --muted: #B0A8C0;
+  --accent: #8B6FAE;
+  --sur: rgba(255, 255, 255, 0.62);
+  --sur2: rgba(255, 255, 255, 0.4);
+  --bor: rgba(255, 255, 255, 0.95);
+  --bor2: rgba(200, 190, 220, 0.3);
+  --nav: rgba(255, 255, 255, 0.7);
+  --shad: rgba(120, 100, 160, 0.12);
+  --btn-shad: rgba(139, 111, 174, 0.3);
+  --bl1: rgba(196, 184, 232, 0.35);
+  --bl2: rgba(232, 180, 200, 0.3);
+  --bl3: rgba(184, 216, 200, 0.25);
+  --bl4: rgba(240, 200, 168, 0.2);
+  --gl: rgba(180, 160, 210, 0.4);
+  --tbor: rgba(180, 160, 210, 0.15);
+  --qbg: rgba(255, 255, 255, 0.55);
+  --inp: rgba(255, 255, 255, 0.7);
+  --fade: #F2EEF5;
+  --lendo-bg: rgba(184, 208, 232, 0.5);
+  --lendo-b: rgba(184, 208, 232, 0.8);
+  --lendo-c: #5A8AAE;
+  --lido-bg: rgba(184, 216, 200, 0.5);
+  --lido-b: rgba(184, 216, 200, 0.8);
+  --lido-c: #4A8A6A;
+  --quero-bg: rgba(196, 184, 232, 0.5);
+  --quero-b: rgba(196, 184, 232, 0.8);
+  --quero-c: #8B6FAE;
+  --sl: #7AAACE;
+  --sd: #7AAA8A;
+  --sq: #8B6FAE;
+  --dp: #7AAA8A;
+  --dpr: rgba(180, 160, 210, 0.35);
+  --add-bor: rgba(139, 111, 174, 0.3);
+  --add-bg: rgba(255, 255, 255, 0.3);
+  --add-c: rgba(139, 111, 174, 0.45);
+  --cat-on: linear-gradient(135deg, #C4B8E8, #9A88C8);
+  --cat-off: rgba(255, 255, 255, 0.5);
+  --cat-off-c: #B0A8C0;
+  --cat-off-b: rgba(200, 190, 220, 0.35);
+}
+
+/* Dark mode */
+.dark {
+  --bg: linear-gradient(160deg, #1A1720, #161420, #1C1828);
+  --text: #F0ECF8;
+  --text2: #C0B4D0;
+  --muted: #8A7EA0;
+  --accent: #C4A8F0;
+  --sur: rgba(255, 255, 255, 0.07);
+  --sur2: rgba(255, 255, 255, 0.04);
+  --bor: rgba(255, 255, 255, 0.11);
+  --bor2: rgba(180, 160, 220, 0.15);
+  --nav: rgba(18, 16, 26, 0.88);
+  --shad: rgba(0, 0, 0, 0.28);
+  --btn-shad: rgba(100, 70, 160, 0.4);
+  --bl1: rgba(120, 90, 180, 0.18);
+  --bl2: rgba(180, 90, 130, 0.14);
+  --bl3: rgba(70, 130, 100, 0.12);
+  --bl4: rgba(160, 100, 60, 0.1);
+  --gl: rgba(160, 130, 210, 0.2);
+  --tbor: rgba(160, 130, 210, 0.12);
+  --qbg: rgba(255, 255, 255, 0.05);
+  --inp: rgba(255, 255, 255, 0.07);
+  --fade: #161420;
+  --lendo-bg: rgba(80, 120, 160, 0.22);
+  --lendo-b: rgba(80, 120, 160, 0.4);
+  --lendo-c: #9ACAEF;
+  --lido-bg: rgba(70, 140, 100, 0.22);
+  --lido-b: rgba(70, 140, 100, 0.4);
+  --lido-c: #9ADAAA;
+  --quero-bg: rgba(120, 90, 180, 0.22);
+  --quero-b: rgba(120, 90, 180, 0.4);
+  --quero-c: #C4A8F0;
+  --sl: #7AAACE;
+  --sd: #7AAA8A;
+  --sq: #C4A8F0;
+  --dp: #7AAA8A;
+  --dpr: rgba(160, 140, 200, 0.3);
+  --add-bor: rgba(180, 150, 230, 0.25);
+  --add-bg: rgba(255, 255, 255, 0.04);
+  --add-c: rgba(180, 150, 230, 0.45);
+  --cat-on: linear-gradient(135deg, #C4B8E8, #9A88C8);
+  --cat-off: rgba(255, 255, 255, 0.06);
+  --cat-off-c: #5A5268;
+  --cat-off-b: rgba(160, 130, 210, 0.2);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Figtree', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide scrollbar */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
