@@ -7,7 +7,7 @@ const BLOBS = [
   { width: 200, height: 200, background: 'var(--bl4)', bottom: 40, right: -50 },
 ]
 
-export default function AuthShell({ children }) {
+export default function AuthShell({ children, subtitle = 'sua biblioteca pessoal' }) {
   return (
     <div className="dark" style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', background: 'var(--bg)' }}>
       <div style={{ width: '100%', maxWidth: 430, position: 'relative', display: 'flex', flexDirection: 'column' }}>
@@ -19,7 +19,7 @@ export default function AuthShell({ children }) {
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flex: 1, padding: '40px 22px 30px' }}>
           <CoverCarousel />
           <div className="llogo"><div className="lan">marca<em>·página</em></div></div>
-          <div className="ltag">sua biblioteca pessoal</div>
+          <div className="ltag">{subtitle}</div>
           {children}
         </div>
       </div>
