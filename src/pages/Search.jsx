@@ -9,55 +9,92 @@ const BLOBS = [
 ]
 
 const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
+const FILM_COLORS  = ['f1','f2','f3','f4','f5','f6']
 
 function BookCover({ coverId, title }) {
-  const [imgError, setImgError] = useState(false)
-
-  if (coverId && !imgError) {
+  const [err, setErr] = useState(false)
+  if (coverId && !err) {
     return (
       <img
         className="srcov"
         src={`https://covers.openlibrary.org/b/id/${coverId}-M.jpg`}
         alt=""
-        onError={() => setImgError(true)}
+        onError={() => setErr(true)}
       />
     )
   }
-
-  const initials = title
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
-
-  const colorClass = COVER_COLORS[title.charCodeAt(0) % COVER_COLORS.length]
-
+  const initials = title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  const cls = COVER_COLORS[title.charCodeAt(0) % COVER_COLORS.length]
   return (
-    <div
-      className={`srcov ${colorClass}`}
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-    >
-      <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>
-        {initials}
-      </span>
+    <div className={`srcov ${cls}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
     </div>
   )
 }
 
-function PlusButton() {
+function MovieCover({ posterPath, title }) {
+  const [err, setErr] = useState(false)
+  if (posterPath && !err) {
+    return (
+      <img
+        className="srcov"
+        src={`https://image.tmdb.org/t/p/w500${posterPath}`}
+        alt=""
+        onError={() => setErr(true)}
+      />
+    )
+  }
+  const initials = title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  const cls = FILM_COLORS[title.charCodeAt(0) % FILM_COLORS.length]
   return (
-    <div style={{
-      width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-      background: 'rgba(196,184,232,.2)',
-      border: '1px solid rgba(196,184,232,.35)',
-      color: 'var(--accent)', fontSize: 18,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      cursor: 'pointer',
-    }}>
-      +
+    <div className={`srcov ${cls}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
     </div>
+  )
+}
+
+function AddButton({ status, onClick }) {
+  if (status === 'loading') {
+    return (
+      <div style={{
+        width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+        background: 'rgba(196,184,232,.2)', border: '1px solid rgba(196,184,232,.35)',
+        color: 'var(--muted)', fontSize: 12,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>…</div>
+    )
+  }
+  if (status === 'added') {
+    return (
+      <div style={{
+        width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+        background: 'rgba(122,170,138,.2)', border: '1px solid rgba(122,170,138,.5)',
+        color: '#7AAA8A', fontSize: 16,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>✓</div>
+    )
+  }
+  if (status === 'exists') {
+    return (
+      <div style={{
+        width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+        background: 'rgba(196,184,232,.08)', border: '1px solid rgba(196,184,232,.18)',
+        color: 'var(--muted)', fontSize: 16,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>✓</div>
+    )
+  }
+  return (
+    <div
+      onClick={e => { e.stopPropagation(); onClick() }}
+      style={{
+        width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+        background: 'rgba(196,184,232,.2)', border: '1px solid rgba(196,184,232,.35)',
+        color: 'var(--accent)', fontSize: 18,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer',
+      }}
+    >+</div>
   )
 }
 
@@ -70,7 +107,7 @@ function SkeletonList() {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
             <div style={{ height: 13, borderRadius: 6, background: 'var(--sur2)', width: '68%' }} />
             <div style={{ height: 10, borderRadius: 6, background: 'var(--sur2)', width: '48%' }} />
-            <div style={{ height: 9, borderRadius: 6, background: 'var(--sur2)', width: '28%' }} />
+            <div style={{ height: 9,  borderRadius: 6, background: 'var(--sur2)', width: '28%' }} />
           </div>
         </div>
       ))}
@@ -78,15 +115,30 @@ function SkeletonList() {
   )
 }
 
+const TMDB_KEY = import.meta.env.VITE_TMDB_API_KEY
+
 export default function Search({ session, onNavigate }) {
-  const [profile, setProfile] = useState(null)
-  const [activeTab, setActiveTab] = useState('L')
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [searched, setSearched] = useState(false)
-  const [theme] = useState(() => localStorage.getItem('tema') || 'D')
-  const debounceRef = useRef(null)
+  const [profile, setProfile]           = useState(null)
+  const [activeTab, setActiveTab]       = useState('L')
+  const [theme]                         = useState(() => localStorage.getItem('tema') || 'D')
+
+  // Livros
+  const [bookQuery,    setBookQuery]    = useState('')
+  const [bookResults,  setBookResults]  = useState([])
+  const [bookLoading,  setBookLoading]  = useState(false)
+  const [bookSearched, setBookSearched] = useState(false)
+
+  // Filmes
+  const [movieQuery,    setMovieQuery]    = useState('')
+  const [movieResults,  setMovieResults]  = useState([])
+  const [movieLoading,  setMovieLoading]  = useState(false)
+  const [movieSearched, setMovieSearched] = useState(false)
+
+  // Status do botão + por chave "book_<key>" | "movie_<id>"
+  const [itemStatus, setItemStatus] = useState({})
+
+  const bookDebounce  = useRef(null)
+  const movieDebounce = useRef(null)
 
   useEffect(() => {
     supabase
@@ -98,100 +150,215 @@ export default function Search({ session, onNavigate }) {
   }, [session.user.id])
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
-  const initial = (
-    profile?.full_name || profile?.username || session.user.email || '?'
-  )[0].toUpperCase()
+  const initial = (profile?.full_name || profile?.username || session.user.email || '?')[0].toUpperCase()
 
-  function handleInput(e) {
+  // ── Busca livros (Open Library) ──────────────────────────────
+  function handleBookInput(e) {
     const val = e.target.value
-    setQuery(val)
-    clearTimeout(debounceRef.current)
+    setBookQuery(val)
+    clearTimeout(bookDebounce.current)
     if (!val.trim()) {
-      setResults([])
-      setSearched(false)
-      setLoading(false)
+      setBookResults([])
+      setBookSearched(false)
+      setBookLoading(false)
       return
     }
-    setLoading(true)
-    debounceRef.current = setTimeout(async () => {
-      setSearched(true)
+    setBookLoading(true)
+    bookDebounce.current = setTimeout(async () => {
+      setBookSearched(true)
       try {
-        const res = await fetch(
-          `https://openlibrary.org/search.json?q=${encodeURIComponent(val.trim())}&limit=10`
-        )
+        const res  = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(val.trim())}&limit=10`)
         const data = await res.json()
-        setResults(data.docs || [])
+        setBookResults(data.docs || [])
       } catch {
-        setResults([])
+        setBookResults([])
       } finally {
-        setLoading(false)
+        setBookLoading(false)
       }
     }, 500)
   }
 
+  // ── Busca filmes (TMDB) ───────────────────────────────────────
+  function handleMovieInput(e) {
+    const val = e.target.value
+    setMovieQuery(val)
+    clearTimeout(movieDebounce.current)
+    if (!val.trim()) {
+      setMovieResults([])
+      setMovieSearched(false)
+      setMovieLoading(false)
+      return
+    }
+    setMovieLoading(true)
+    movieDebounce.current = setTimeout(async () => {
+      setMovieSearched(true)
+      try {
+        const res  = await fetch(
+          `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(val.trim())}&language=pt-BR&api_key=${TMDB_KEY}`
+        )
+        const data = await res.json()
+        setMovieResults((data.results || []).slice(0, 10))
+      } catch {
+        setMovieResults([])
+      } finally {
+        setMovieLoading(false)
+      }
+    }, 500)
+  }
+
+  // ── Adicionar livro ao Supabase ───────────────────────────────
+  async function addBook(book) {
+    const apiId = book.key
+    const key   = `book_${apiId}`
+    setItemStatus(s => ({ ...s, [key]: 'loading' }))
+    try {
+      // 1. Buscar ou criar o item no catálogo
+      let { data: existing } = await supabase
+        .from('items')
+        .select('id')
+        .eq('type', 'book')
+        .eq('api_id', apiId)
+        .maybeSingle()
+
+      let itemId
+      if (!existing) {
+        const { data: inserted, error } = await supabase
+          .from('items')
+          .insert({
+            type:       'book',
+            api_id:     apiId,
+            title:      book.title,
+            author:     book.author_name?.join(', ') || null,
+            year:       book.first_publish_year || null,
+            cover_url:  book.cover_i
+              ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`
+              : null,
+            api_source: 'openlibrary',
+          })
+          .select('id')
+          .single()
+        if (error) throw error
+        itemId = inserted.id
+      } else {
+        itemId = existing.id
+      }
+
+      // 2. Verificar se usuário já tem o item
+      const { data: userItem } = await supabase
+        .from('user_items')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('item_id', itemId)
+        .maybeSingle()
+
+      if (userItem) {
+        setItemStatus(s => ({ ...s, [key]: 'exists' }))
+        return
+      }
+
+      // 3. Adicionar à biblioteca
+      const { error: uiErr } = await supabase
+        .from('user_items')
+        .insert({ user_id: session.user.id, item_id: itemId, status: 'want_to_read' })
+      if (uiErr) throw uiErr
+
+      setItemStatus(s => ({ ...s, [key]: 'added' }))
+    } catch (err) {
+      console.error('addBook:', err)
+      setItemStatus(s => ({ ...s, [key]: null }))
+    }
+  }
+
+  // ── Adicionar filme ao Supabase ───────────────────────────────
+  async function addMovie(movie) {
+    const apiId = String(movie.id)
+    const key   = `movie_${apiId}`
+    setItemStatus(s => ({ ...s, [key]: 'loading' }))
+    try {
+      let { data: existing } = await supabase
+        .from('items')
+        .select('id')
+        .eq('type', 'movie')
+        .eq('api_id', apiId)
+        .maybeSingle()
+
+      let itemId
+      if (!existing) {
+        const year = movie.release_date ? parseInt(movie.release_date.split('-')[0]) : null
+        const { data: inserted, error } = await supabase
+          .from('items')
+          .insert({
+            type:       'movie',
+            api_id:     apiId,
+            title:      movie.title,
+            year,
+            cover_url:  movie.poster_path
+              ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+              : null,
+            api_source: 'tmdb',
+          })
+          .select('id')
+          .single()
+        if (error) throw error
+        itemId = inserted.id
+      } else {
+        itemId = existing.id
+      }
+
+      const { data: userItem } = await supabase
+        .from('user_items')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('item_id', itemId)
+        .maybeSingle()
+
+      if (userItem) {
+        setItemStatus(s => ({ ...s, [key]: 'exists' }))
+        return
+      }
+
+      const { error: uiErr } = await supabase
+        .from('user_items')
+        .insert({ user_id: session.user.id, item_id: itemId, status: 'want_to_watch' })
+      if (uiErr) throw uiErr
+
+      setItemStatus(s => ({ ...s, [key]: 'added' }))
+    } catch (err) {
+      console.error('addMovie:', err)
+      setItemStatus(s => ({ ...s, [key]: null }))
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────
   return (
     <div
       className={themeClass}
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg)',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
+      style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
     >
       {BLOBS.map((b, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'fixed', borderRadius: '50%',
-            filter: 'blur(55px)', pointerEvents: 'none', zIndex: 0,
-            ...b,
-          }}
-        />
+        <div key={i} style={{ position: 'fixed', borderRadius: '50%', filter: 'blur(55px)', pointerEvents: 'none', zIndex: 0, ...b }} />
       ))}
 
-      <div style={{
-        position: 'relative', zIndex: 1,
-        display: 'flex', flexDirection: 'column',
-        height: '100vh', overflow: 'hidden',
-      }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
 
         {/* Topbar */}
         <div className="topbar">
           <div className="logo">marca<em>·página</em></div>
-          <div
-            className="av"
-            style={profile?.avatar_url ? { padding: 0, overflow: 'hidden' } : {}}
-          >
+          <div className="av" style={profile?.avatar_url ? { padding: 0, overflow: 'hidden' } : {}}>
             {profile?.avatar_url
               ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : initial
-            }
+              : initial}
           </div>
         </div>
 
-        {/* Divisor */}
         <div className="gl" />
 
         {/* Abas */}
         <div className="mtabs">
-          <div
-            className={`mt${activeTab === 'L' ? ' on' : ''}`}
-            onClick={() => setActiveTab('L')}
-          >
-            📚 Livros
-          </div>
-          <div
-            className={`mt${activeTab === 'F' ? ' on' : ''}`}
-            onClick={() => setActiveTab('F')}
-          >
-            🎬 Filmes
-          </div>
+          <div className={`mt${activeTab === 'L' ? ' on' : ''}`} onClick={() => setActiveTab('L')}>📚 Livros</div>
+          <div className={`mt${activeTab === 'F' ? ' on' : ''}`} onClick={() => setActiveTab('F')}>🎬 Filmes</div>
         </div>
 
-        {/* Área de scroll */}
         <div className="sc">
 
           {/* ── Aba Livros ── */}
@@ -201,71 +368,60 @@ export default function Search({ session, onNavigate }) {
                 <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
                 <input
                   placeholder="Buscar por título ou autor..."
-                  value={query}
-                  onChange={handleInput}
+                  value={bookQuery}
+                  onChange={handleBookInput}
                   autoFocus
                 />
               </div>
 
-              {loading && <SkeletonList />}
+              {bookLoading && <SkeletonList />}
 
-              {!loading && !searched && (
+              {!bookLoading && !bookSearched && (
                 <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
                   <div style={{ fontSize: 40, marginBottom: 14 }}>🔍</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>
-                    Busque por título ou autor
-                  </div>
-                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>
-                    Resultados em tempo real da Open Library
-                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Busque por título ou autor</div>
+                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>Resultados em tempo real da Open Library</div>
                 </div>
               )}
 
-              {!loading && searched && results.length === 0 && (
+              {!bookLoading && bookSearched && bookResults.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
                   <div style={{ fontSize: 32, marginBottom: 12 }}>😶</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>
-                    Nenhum resultado
-                  </div>
-                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>
-                    Tente outro título ou autor
-                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Nenhum resultado</div>
+                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>Tente outro título ou autor</div>
                 </div>
               )}
 
-              {!loading && results.length > 0 && (
+              {!bookLoading && bookResults.length > 0 && (
                 <>
                   <div className="slb">Resultados · Open Library</div>
 
-                  {results.map((book, i) => (
-                    <div key={book.key || i} className="srr">
-                      <BookCover coverId={book.cover_i} title={book.title} />
-                      <div className="srm">
-                        <div className="srt">{book.title}</div>
-                        <div className="sra">
-                          {book.author_name?.join(', ') || 'Autor desconhecido'}
+                  {bookResults.map((book, i) => {
+                    const k  = `book_${book.key}`
+                    const st = itemStatus[k]
+                    return (
+                      <div key={book.key || i} className="srr">
+                        <BookCover coverId={book.cover_i} title={book.title} />
+                        <div className="srm">
+                          <div className="srt">{book.title}</div>
+                          <div className="sra">{book.author_name?.join(', ') || 'Autor desconhecido'}</div>
+                          {book.first_publish_year && <div className="sry">{book.first_publish_year}</div>}
+                          {st === 'added'  && <div style={{ fontSize: 10, color: '#7AAA8A', fontWeight: 700, marginTop: 2 }}>Adicionado!</div>}
+                          {st === 'exists' && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Já está na sua biblioteca</div>}
                         </div>
-                        {book.first_publish_year && (
-                          <div className="sry">{book.first_publish_year}</div>
-                        )}
+                        <AddButton status={st} onClick={() => addBook(book)} />
                       </div>
-                      <PlusButton />
-                    </div>
-                  ))}
+                    )
+                  })}
 
                   <div style={{ textAlign: 'center', padding: '20px 0 8px' }}>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
-                      Não encontrou? Adicione manualmente
-                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Não encontrou? Adicione manualmente</div>
                     <button style={{
                       padding: '10px 24px', borderRadius: 12,
-                      border: '1.5px dashed var(--add-bor)',
-                      background: 'var(--add-bg)', color: 'var(--accent)',
-                      fontFamily: "'Figtree', sans-serif",
+                      border: '1.5px dashed var(--add-bor)', background: 'var(--add-bg)',
+                      color: 'var(--accent)', fontFamily: "'Figtree', sans-serif",
                       fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    }}>
-                      📷 Adicionar com foto
-                    </button>
+                    }}>📷 Adicionar com foto</button>
                   </div>
                 </>
               )}
@@ -274,15 +430,61 @@ export default function Search({ session, onNavigate }) {
 
           {/* ── Aba Filmes ── */}
           {activeTab === 'F' && (
-            <div style={{ textAlign: 'center', padding: '60px 0 24px', color: 'var(--muted)' }}>
-              <div style={{ fontSize: 40, marginBottom: 14 }}>🎬</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>
-                Em breve
+            <>
+              <div className="srch">
+                <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
+                <input
+                  placeholder="Buscar por título do filme..."
+                  value={movieQuery}
+                  onChange={handleMovieInput}
+                  autoFocus
+                />
               </div>
-              <div style={{ fontSize: 11, lineHeight: 1.65 }}>
-                Busca por filmes será integrada na próxima fase
-              </div>
-            </div>
+
+              {movieLoading && <SkeletonList />}
+
+              {!movieLoading && !movieSearched && (
+                <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 40, marginBottom: 14 }}>🎬</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Busque por título de filme</div>
+                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>Resultados em tempo real do TMDB</div>
+                </div>
+              )}
+
+              {!movieLoading && movieSearched && movieResults.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>😶</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Nenhum resultado</div>
+                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>Tente outro título</div>
+                </div>
+              )}
+
+              {!movieLoading && movieResults.length > 0 && (
+                <>
+                  <div className="slb">Resultados · TMDB</div>
+
+                  {movieResults.map((movie, i) => {
+                    const k    = `movie_${movie.id}`
+                    const st   = itemStatus[k]
+                    const year = movie.release_date ? movie.release_date.split('-')[0] : null
+                    const showOriginal = movie.original_title && movie.original_title !== movie.title
+                    return (
+                      <div key={movie.id || i} className="srr">
+                        <MovieCover posterPath={movie.poster_path} title={movie.title} />
+                        <div className="srm">
+                          <div className="srt">{movie.title}</div>
+                          {showOriginal && <div className="sra">{movie.original_title}</div>}
+                          {year && <div className="sry">{year}</div>}
+                          {st === 'added'  && <div style={{ fontSize: 10, color: '#7AAA8A', fontWeight: 700, marginTop: 2 }}>Adicionado!</div>}
+                          {st === 'exists' && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Já está na sua biblioteca</div>}
+                        </div>
+                        <AddButton status={st} onClick={() => addMovie(movie)} />
+                      </div>
+                    )
+                  })}
+                </>
+              )}
+            </>
           )}
 
         </div>
