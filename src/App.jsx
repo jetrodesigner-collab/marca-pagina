@@ -4,12 +4,14 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import CompleteProfile from './pages/CompleteProfile'
 import Library from './pages/Library'
+import Search from './pages/Search'
 
 export default function App() {
   const [session, setSession] = useState(null)
   const [profileExists, setProfileExists] = useState(false)
   const [loading, setLoading] = useState(true)
   const [authView, setAuthView] = useState('login')
+  const [screen, setScreen] = useState('library')
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -44,5 +46,9 @@ export default function App() {
     return <CompleteProfile session={session} onDone={() => setProfileExists(true)} />
   }
 
-  return <Library session={session} />
+  if (screen === 'search') {
+    return <Search session={session} onNavigate={setScreen} />
+  }
+
+  return <Library session={session} onNavigate={setScreen} />
 }

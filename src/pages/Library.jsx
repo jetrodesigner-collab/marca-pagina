@@ -90,7 +90,7 @@ function LibrarySection({ tipo }) {
   )
 }
 
-export default function Library({ session }) {
+export default function Library({ session, onNavigate }) {
   const [profile, setProfile] = useState(null)
   const [activeTab, setActiveTab] = useState('L')
   const [theme] = useState(() => localStorage.getItem('tema') || 'D')
@@ -216,7 +216,7 @@ export default function Library({ session }) {
             <span className="nic">👥</span>
             <span className="nla">Comunidade</span>
           </div>
-          <div className="ni">
+          <div className="ni" onClick={() => onNavigate('search')}>
             <span className="nic">🔍</span>
             <span className="nla">Buscar</span>
           </div>
