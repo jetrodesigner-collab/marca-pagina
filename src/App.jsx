@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import CompleteProfile from './pages/CompleteProfile'
+import Library from './pages/Library'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -43,22 +44,5 @@ export default function App() {
     return <CompleteProfile session={session} onDone={() => setProfileExists(true)} />
   }
 
-  // S2 placeholder — biblioteca (fase seguinte)
-  return (
-    <div className="dark" style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 16, background: 'var(--bg)'
-    }}>
-      <p style={{ color: 'var(--text)', fontFamily: 'Figtree, sans-serif', fontSize: 14 }}>
-        Logado como {session.user.email}
-      </p>
-      <button
-        onClick={() => supabase.auth.signOut()}
-        className="savebtn"
-        style={{ width: 'auto', padding: '10px 24px' }}
-      >
-        Sair
-      </button>
-    </div>
-  )
+  return <Library session={session} />
 }
