@@ -32,21 +32,19 @@ const BLOBS = [
   { width: 200, height: 200, background: 'var(--bl4)', bottom: 40, right: -50 },
 ]
 
-// Queries rotativas para Fase 2
-const GEN_QUERIES_BOOKS = [
-  { q: 'subject:fiction',         cat: 'Lit. Internacional' },
-  { q: 'subject:romance',         cat: 'Romance' },
-  { q: 'subject:historia',        cat: 'História' },
-  { q: 'subject:filosofia',       cat: 'Filosofia' },
-  { q: 'subject:policial',        cat: 'Policial' },
-  { q: 'subject:fantasia',        cat: 'Fantasia' },
-  { q: 'subject:biografia',       cat: 'Biografia' },
-  { q: 'subject:psicologia',      cat: 'Psicologia' },
-  { q: 'autoajuda',               cat: 'Autoajuda' },
-  { q: 'literatura+brasileira',   cat: 'Lit. Brasileira' },
-  { q: 'subject:negócios',        cat: 'Negócios' },
-  { q: 'subject:crime',           cat: 'Policial' },
+// Fase 2 — Google Books subjects rotativos (startIndex até 1000, depois próximo subject)
+const GB_SUBJECTS = [
+  { q: 'subject:fiction',    cat: 'Lit. Internacional' },
+  { q: 'subject:history',    cat: 'História' },
+  { q: 'subject:biography',  cat: 'Biografia' },
+  { q: 'subject:science',    cat: 'Ficção Científica' },
+  { q: 'subject:romance',    cat: 'Romance' },
+  { q: 'subject:philosophy', cat: 'Filosofia' },
+  { q: 'subject:literature', cat: 'Lit. Internacional' },
 ]
+
+// Fase 2 — TMDB endpoints rotativos
+const TMDB_ENDPOINTS = ['popular', 'top_rated', 'now_playing']
 
 const TMDB_GENRE_CAT = {
   28: 'Ação', 12: 'Outros', 16: 'Animação', 35: 'Comédia', 80: 'Crime',
@@ -74,6 +72,21 @@ function isInSet(item, set) {
 
 function addToSet(item, set) {
   itemKeys(item).forEach(k => set.add(k))
+}
+
+function olDocCategory(doc) {
+  const s = (Array.isArray(doc.subject) ? doc.subject : []).join(' ').toLowerCase()
+  if (s.includes('brasil') || s.includes('brazil'))                     return 'Lit. Brasileira'
+  if (s.includes('science fiction') || s.includes('ficção científica')) return 'Ficção Científica'
+  if (s.includes('fantasy') || s.includes('fantasia'))                  return 'Fantasia'
+  if (s.includes('mystery') || s.includes('crime') || s.includes('policial')) return 'Policial'
+  if (s.includes('history') || s.includes('história'))                  return 'História'
+  if (s.includes('philosophy') || s.includes('filosofia'))              return 'Filosofia'
+  if (s.includes('biography') || s.includes('biografia'))               return 'Biografia'
+  if (s.includes('psychology') || s.includes('psicologia'))             return 'Psicologia'
+  if (s.includes('romance'))                                             return 'Romance'
+  if (s.includes('business') || s.includes('negócios'))                 return 'Negócios'
+  return 'Lit. Internacional'
 }
 
 function mapBooks(works) {
@@ -256,11 +269,11 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
 
   // Phase 2 refs
   const phase2ActiveRef  = useRef(false)
-  const olQueryIdxRef    = useRef(0)
-  const olPageRef        = useRef(1)
-  const gbQueryIdxRef    = useRef(0)
-  const gbStartIdxRef    = useRef(0)
-  const tmdbPageRef      = useRef(1)
+  const olPageRef        = useRef(1)         // OL q=* página global
+  const gbQueryIdxRef    = useRef(0)         // índice do subject GB (% GB_SUBJECTS.length)
+  const gbStartIdxRef    = useRef(0)         // startIndex GB (0–1000 por subject)
+  const tmdbEndpointRef  = useRef(0)         // índice do endpoint TMDB (% 3)
+  const tmdbPagesRef     = useRef([1, 1, 1]) // página por endpoint [popular, top_rated, now_playing]
   const manualFetchedRef = useRef(false)
   const seenKeysRef      = useRef(new Set())
 
@@ -324,18 +337,14 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     return (await Promise.all(fetches)).filter(Boolean)
   }
 
-  // Phase 2: generic paginated books (OL + GB rotating queries)
+  // Phase 2: livros — OL q=* paginado globalmente + GB subjects rotativos
   async function fetchGenericBooksPage() {
-    const qi = olQueryIdxRef.current % GEN_QUERIES_BOOKS.length
-    const { q: olQ, cat: olCat } = GEN_QUERIES_BOOKS[qi]
     const olPage = olPageRef.current
-
     const olPromise = fetch(
-      `https://openlibrary.org/search.json?q=${encodeURIComponent(olQ)}&page=${olPage}&limit=12`
+      `https://openlibrary.org/search.json?q=*&page=${olPage}&limit=12`
     ).then(r => r.json()).then(data => {
       const docs = data.docs || []
-      if (docs.length === 0) { olQueryIdxRef.current += 1; olPageRef.current = 1 }
-      else olPageRef.current += 1
+      olPageRef.current = docs.length === 0 ? 1 : olPage + 1
       return docs.map(doc => ({
         type: 'book', api_id: doc.key, api_source: 'openlibrary',
         title: doc.title,
@@ -343,21 +352,25 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         year: doc.first_publish_year || null,
         cover_url: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
         subjects: Array.isArray(doc.subject) ? doc.subject : [],
-        _curatedCategory: olCat,
+        _curatedCategory: olDocCategory(doc),
       }))
-    }).catch(() => { olQueryIdxRef.current += 1; olPageRef.current = 1; return [] })
+    }).catch(() => { olPageRef.current = olPage + 1; return [] })
 
     let gbPromise = Promise.resolve([])
     if (GB_KEY) {
-      const gqi = gbQueryIdxRef.current % GEN_QUERIES_BOOKS.length
-      const { q: gbQ, cat: gbCat } = GEN_QUERIES_BOOKS[gqi]
-      const gbStart = gbStartIdxRef.current
+      const gqi              = gbQueryIdxRef.current % GB_SUBJECTS.length
+      const { q: gbQ, cat: gbCat } = GB_SUBJECTS[gqi]
+      const gbStart          = gbStartIdxRef.current
       gbPromise = fetch(
         `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(gbQ)}&langRestrict=pt&startIndex=${gbStart}&maxResults=12&key=${GB_KEY}`
       ).then(r => r.json()).then(data => {
         const vols = data.items || []
-        if (vols.length === 0) { gbQueryIdxRef.current += 1; gbStartIdxRef.current = 0 }
-        else gbStartIdxRef.current += 12
+        if (vols.length === 0 || gbStart >= 1000) {
+          gbQueryIdxRef.current += 1
+          gbStartIdxRef.current  = 0
+        } else {
+          gbStartIdxRef.current += 12
+        }
         return vols.map(vol => ({
           type: 'book',
           api_id: vol.id,
@@ -377,18 +390,20 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     return [...olItems, ...gbItems]
   }
 
-  // Phase 2: generic paginated movies (TMDB popular)
+  // Phase 2: filmes — popular / top_rated / now_playing rotativos, até 500 páginas cada
   async function fetchGenericMoviesPage() {
-    const page = tmdbPageRef.current
+    const epIdx    = tmdbEndpointRef.current % TMDB_ENDPOINTS.length
+    const endpoint = TMDB_ENDPOINTS[epIdx]
+    const page     = tmdbPagesRef.current[epIdx]
+    tmdbEndpointRef.current = epIdx + 1   // avança para o próximo endpoint na próxima chamada
+
     return fetch(
-      `https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=${page}&api_key=${TMDB_KEY}`
+      `https://api.themoviedb.org/3/movie/${endpoint}?language=pt-BR&page=${page}&api_key=${TMDB_KEY}`
     ).then(r => r.json()).then(data => {
-      const results = data.results || []
-      if (results.length === 0) {
-        tmdbPageRef.current = 1  // cicla de volta ao início quando esgota as páginas
-      } else {
-        tmdbPageRef.current += 1
-      }
+      const results  = data.results || []
+      const newPages = [...tmdbPagesRef.current]
+      newPages[epIdx] = (results.length === 0 || page >= 500) ? 1 : page + 1
+      tmdbPagesRef.current = newPages
       return results.map(m => {
         const cat = (m.genre_ids || []).map(g => TMDB_GENRE_CAT[g]).find(Boolean) || 'Outros'
         return {
@@ -401,7 +416,12 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
           _curatedCategory: cat,
         }
       })
-    }).catch(() => { tmdbPageRef.current = 1; return [] })
+    }).catch(() => {
+      const newPages = [...tmdbPagesRef.current]
+      newPages[epIdx] = 1
+      tmdbPagesRef.current = newPages
+      return []
+    })
   }
 
   async function doLoadMore() {
@@ -465,7 +485,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     } finally {
       isLoadingRef.current = false
       setLoadingMore(false)
-      if (needsRetry) setTimeout(() => loadMoreFnRef.current?.(), 500)
+      if (needsRetry) setTimeout(() => loadMoreFnRef.current?.(), 1000)
     }
   }
 
@@ -481,11 +501,11 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
 
     // Reset Phase 2 state
     phase2ActiveRef.current  = false
-    olQueryIdxRef.current    = 0
     olPageRef.current        = 1
     gbQueryIdxRef.current    = 0
     gbStartIdxRef.current    = 0
-    tmdbPageRef.current      = 1
+    tmdbEndpointRef.current  = 0
+    tmdbPagesRef.current     = [1, 1, 1]
     manualFetchedRef.current = false
     seenKeysRef.current      = new Set()
 
@@ -540,17 +560,16 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     return () => observer.disconnect()
   }, [])
 
-  // Category filter: auto-load more (Phase 1 only — sentinel drives Phase 2)
+  // Category filter: continua carregando até ter pelo menos 9 itens visíveis na categoria
   useEffect(() => {
-    if (activeCat === 'Todos' || !canLoadMoreRef.current || isLoadingRef.current) return
-    if (phase2ActiveRef.current) return
+    if (activeCat === 'Todos' || isLoadingRef.current) return
     const ids = new Set(
       userLibrary.filter(ui => ui.items?.type === itemType).map(ui => `${ui.items?.type}_${ui.items?.api_id}`)
     )
     const catCount = curatedItems.filter(
       i => i._curatedCategory === activeCat && !ids.has(`${i.type}_${i.api_id}`)
     ).length
-    if (catCount === 0) loadMoreFnRef.current()
+    if (catCount < 9) loadMoreFnRef.current()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCat, curatedItems.length, userLibrary.length])
 
