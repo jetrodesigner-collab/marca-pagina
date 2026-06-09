@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { CURATED_BOOKS, CURATED_MOVIES } from '../data/curatedList'
 
-const TMDB_KEY  = import.meta.env.VITE_TMDB_API_KEY
+const TMDB_KEY = import.meta.env.VITE_TMDB_API_KEY
+const GB_KEY   = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY
 const PAGE_SIZE = 9
 
 const FRASES = [
@@ -30,6 +31,50 @@ const BLOBS = [
   { width: 240, height: 240, background: 'var(--bl3)', bottom: 120, left: -60 },
   { width: 200, height: 200, background: 'var(--bl4)', bottom: 40, right: -50 },
 ]
+
+// Queries rotativas para Fase 2
+const GEN_QUERIES_BOOKS = [
+  { q: 'subject:fiction',         cat: 'Lit. Internacional' },
+  { q: 'subject:romance',         cat: 'Romance' },
+  { q: 'subject:historia',        cat: 'História' },
+  { q: 'subject:filosofia',       cat: 'Filosofia' },
+  { q: 'subject:policial',        cat: 'Policial' },
+  { q: 'subject:fantasia',        cat: 'Fantasia' },
+  { q: 'subject:biografia',       cat: 'Biografia' },
+  { q: 'subject:psicologia',      cat: 'Psicologia' },
+  { q: 'autoajuda',               cat: 'Autoajuda' },
+  { q: 'literatura+brasileira',   cat: 'Lit. Brasileira' },
+  { q: 'subject:negócios',        cat: 'Negócios' },
+  { q: 'subject:crime',           cat: 'Policial' },
+]
+
+const TMDB_GENRE_CAT = {
+  28: 'Ação', 12: 'Outros', 16: 'Animação', 35: 'Comédia', 80: 'Crime',
+  99: 'Documentário', 18: 'Drama', 10751: 'Outros', 14: 'Outros', 36: 'Histórico',
+  27: 'Terror', 10402: 'Outros', 9648: 'Suspense', 10749: 'Romance',
+  878: 'Ficção Científica', 53: 'Suspense', 10770: 'Outros', 37: 'Outros',
+}
+
+function normalizeStr(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function itemKeys(item) {
+  const keys = []
+  if (item.api_id) keys.push(`${item.type}_${item.api_id}`)
+  const nt = normalizeStr(item.title)
+  const na = normalizeStr(item.author || item.director || '')
+  if (nt) keys.push(`${item.type}_t${nt}_a${na}`)
+  return keys
+}
+
+function isInSet(item, set) {
+  return itemKeys(item).some(k => set.has(k))
+}
+
+function addToSet(item, set) {
+  itemKeys(item).forEach(k => set.add(k))
+}
 
 function mapBooks(works) {
   return works.map(w => ({
@@ -203,14 +248,23 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
   const gridDrag       = useRef({ active: false, startY: 0, startX: 0, scrollTop: 0 })
   const searchDebounce = useRef(null)
 
-  // Refs to avoid stale closures in async callbacks / IntersectionObserver
+  // Phase 1 refs
   const srcCursorRef   = useRef(0)
   const canLoadMoreRef = useRef(true)
   const isLoadingRef   = useRef(false)
   const loadMoreFnRef  = useRef(null)
 
+  // Phase 2 refs
+  const phase2ActiveRef  = useRef(false)
+  const olQueryIdxRef    = useRef(0)
+  const olPageRef        = useRef(1)
+  const gbQueryIdxRef    = useRef(0)
+  const gbStartIdxRef    = useRef(0)
+  const tmdbPageRef      = useRef(1)
+  const manualFetchedRef = useRef(false)
+  const seenKeysRef      = useRef(new Set())
+
   const cats       = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
-  // v2 suffix invalidates caches built before _curatedCategory was added
   const cacheKey   = tipo === 'L' ? 'curated_cache_books_v2' : 'curated_cache_movies_v2'
   const itemType   = tipo === 'L' ? 'book' : 'movie'
   const curatedSrc = tipo === 'L' ? CURATED_BOOKS : CURATED_MOVIES
@@ -219,7 +273,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
   const hasUserItems     = userItemsForTipo.length > 0
   const userApiIds       = new Set(userItemsForTipo.map(ui => `${ui.items?.type}_${ui.items?.api_id}`))
 
-  // Fetch a batch of PAGE_SIZE items from curatedSrc starting at startIdx
+  // Phase 1: fetch PAGE_SIZE curated titles
   async function fetchBatch(startIdx) {
     const slice = curatedSrc.slice(startIdx, startIdx + PAGE_SIZE)
     if (slice.length === 0) return []
@@ -270,55 +324,169 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     return (await Promise.all(fetches)).filter(Boolean)
   }
 
+  // Phase 2: generic paginated books (OL + GB rotating queries)
+  async function fetchGenericBooksPage() {
+    const qi = olQueryIdxRef.current % GEN_QUERIES_BOOKS.length
+    const { q: olQ, cat: olCat } = GEN_QUERIES_BOOKS[qi]
+    const olPage = olPageRef.current
+
+    const olPromise = fetch(
+      `https://openlibrary.org/search.json?q=${encodeURIComponent(olQ)}&page=${olPage}&limit=12`
+    ).then(r => r.json()).then(data => {
+      const docs = data.docs || []
+      if (docs.length === 0) { olQueryIdxRef.current += 1; olPageRef.current = 1 }
+      else olPageRef.current += 1
+      return docs.map(doc => ({
+        type: 'book', api_id: doc.key, api_source: 'openlibrary',
+        title: doc.title,
+        author: Array.isArray(doc.author_name) ? doc.author_name[0] : 'Autor desconhecido',
+        year: doc.first_publish_year || null,
+        cover_url: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+        subjects: Array.isArray(doc.subject) ? doc.subject : [],
+        _curatedCategory: olCat,
+      }))
+    }).catch(() => { olQueryIdxRef.current += 1; olPageRef.current = 1; return [] })
+
+    let gbPromise = Promise.resolve([])
+    if (GB_KEY) {
+      const gqi = gbQueryIdxRef.current % GEN_QUERIES_BOOKS.length
+      const { q: gbQ, cat: gbCat } = GEN_QUERIES_BOOKS[gqi]
+      const gbStart = gbStartIdxRef.current
+      gbPromise = fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(gbQ)}&langRestrict=pt&startIndex=${gbStart}&maxResults=12&key=${GB_KEY}`
+      ).then(r => r.json()).then(data => {
+        const vols = data.items || []
+        if (vols.length === 0) { gbQueryIdxRef.current += 1; gbStartIdxRef.current = 0 }
+        else gbStartIdxRef.current += 12
+        return vols.map(vol => ({
+          type: 'book',
+          api_id: vol.id,
+          api_source: 'google_books',
+          title: vol.volumeInfo?.title || '',
+          author: vol.volumeInfo?.authors?.[0] || 'Autor desconhecido',
+          year: vol.volumeInfo?.publishedDate
+            ? Number(String(vol.volumeInfo.publishedDate).split('-')[0]) : null,
+          cover_url: vol.volumeInfo?.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
+          subjects: [],
+          _curatedCategory: gbCat,
+        }))
+      }).catch(() => { gbQueryIdxRef.current += 1; gbStartIdxRef.current = 0; return [] })
+    }
+
+    const [olItems, gbItems] = await Promise.all([olPromise, gbPromise])
+    return [...olItems, ...gbItems]
+  }
+
+  // Phase 2: generic paginated movies (TMDB popular)
+  async function fetchGenericMoviesPage() {
+    const page = tmdbPageRef.current
+    return fetch(
+      `https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=${page}&api_key=${TMDB_KEY}`
+    ).then(r => r.json()).then(data => {
+      tmdbPageRef.current += 1
+      return (data.results || []).map(m => {
+        const cat = (m.genre_ids || []).map(g => TMDB_GENRE_CAT[g]).find(Boolean) || 'Outros'
+        return {
+          type: 'movie', api_id: String(m.id), api_source: 'tmdb',
+          title: m.title, director: null,
+          year: m.release_date ? Number(m.release_date.split('-')[0]) : null,
+          cover_url: m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : null,
+          genre_ids: m.genre_ids || [],
+          overview: m.overview || null,
+          _curatedCategory: cat,
+        }
+      })
+    }).catch(() => { tmdbPageRef.current += 1; return [] })
+  }
+
   async function doLoadMore() {
     if (!canLoadMoreRef.current || isLoadingRef.current) return
     isLoadingRef.current = true
     setLoadingMore(true)
+
     try {
-      const cursor     = srcCursorRef.current
-      const newItems   = await fetchBatch(cursor)
-      const nextCursor = cursor + PAGE_SIZE
-      const done       = nextCursor >= curatedSrc.length
+      if (!phase2ActiveRef.current) {
+        // Phase 1: curated list
+        const cursor     = srcCursorRef.current
+        const newItems   = await fetchBatch(cursor)
+        const nextCursor = cursor + PAGE_SIZE
+        const done       = nextCursor >= curatedSrc.length
 
-      setCuratedItems(prev => {
-        const seen  = new Set(prev.map(i => `${i.type}_${i.api_id}`))
-        const fresh = newItems.filter(i => !seen.has(`${i.type}_${i.api_id}`))
-        const next  = [...prev, ...fresh]
-        if (done) {
-          try { sessionStorage.setItem(cacheKey, JSON.stringify(next)) } catch {}
+        newItems.forEach(i => addToSet(i, seenKeysRef.current))
+
+        setCuratedItems(prev => {
+          const seen  = new Set(prev.map(i => `${i.type}_${i.api_id}`))
+          const fresh = newItems.filter(i => !seen.has(`${i.type}_${i.api_id}`))
+          const next  = [...prev, ...fresh]
+          if (done) {
+            try { sessionStorage.setItem(cacheKey, JSON.stringify(next)) } catch {}
+          }
+          return next
+        })
+
+        srcCursorRef.current = nextCursor
+        if (done) phase2ActiveRef.current = true
+      } else {
+        // Phase 2: generic pagination + Supabase manual items
+        const candidates = []
+
+        if (!manualFetchedRef.current) {
+          manualFetchedRef.current = true
+          const { data } = await supabase
+            .from('items').select('*').eq('is_manual', true).eq('type', itemType)
+          ;(data || []).forEach(r => candidates.push({
+            type: r.type, api_id: r.api_id, api_source: r.api_source,
+            title: r.title, author: r.author || null, director: r.director || null,
+            year: r.year || null, cover_url: r.cover_url || null,
+            subjects: [], genre_ids: [], is_manual: true, _curatedCategory: 'Outros',
+          }))
         }
-        return next
-      })
 
-      srcCursorRef.current = nextCursor
-      if (done) canLoadMoreRef.current = false
+        const generic = tipo === 'L'
+          ? await fetchGenericBooksPage()
+          : await fetchGenericMoviesPage()
+        candidates.push(...generic)
+
+        const fresh = candidates.filter(i => !isInSet(i, seenKeysRef.current))
+        fresh.forEach(i => addToSet(i, seenKeysRef.current))
+        setCuratedItems(prev => [...prev, ...fresh])
+      }
     } finally {
       isLoadingRef.current = false
       setLoadingMore(false)
     }
   }
 
-  // Keep ref current so IntersectionObserver callback never has stale closure
   loadMoreFnRef.current = doLoadMore
 
-  // On mount: load from cache or fetch first batch
+  // Mount: load from cache or fetch first batch
   useEffect(() => {
     setCuratedItems([])
     srcCursorRef.current   = 0
-    canLoadMoreRef.current = true
-    isLoadingRef.current   = true  // block sentinel while initial load runs
+    canLoadMoreRef.current = true  // always true — Phase 2 keeps going
+    isLoadingRef.current   = true
     setInitialLoading(true)
+
+    // Reset Phase 2 state
+    phase2ActiveRef.current  = false
+    olQueryIdxRef.current    = 0
+    olPageRef.current        = 1
+    gbQueryIdxRef.current    = 0
+    gbStartIdxRef.current    = 0
+    tmdbPageRef.current      = 1
+    manualFetchedRef.current = false
+    seenKeysRef.current      = new Set()
 
     const cached = sessionStorage.getItem(cacheKey)
     if (cached) {
       try {
         const data = JSON.parse(cached)
-        // Reject caches without _curatedCategory (built before category feature)
         if (Array.isArray(data) && data.length > 0 && data[0]?._curatedCategory) {
           setCuratedItems(data)
-          srcCursorRef.current   = curatedSrc.length
-          canLoadMoreRef.current = false
-          isLoadingRef.current   = false
+          data.forEach(i => addToSet(i, seenKeysRef.current))
+          srcCursorRef.current    = curatedSrc.length
+          phase2ActiveRef.current = true
+          isLoadingRef.current    = false
           setInitialLoading(false)
           return
         }
@@ -334,10 +502,11 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         seen.add(k)
         return true
       })
+      deduped.forEach(i => addToSet(i, seenKeysRef.current))
       setCuratedItems(deduped)
       srcCursorRef.current = PAGE_SIZE
       if (PAGE_SIZE >= curatedSrc.length) {
-        canLoadMoreRef.current = false
+        phase2ActiveRef.current = true
         try { sessionStorage.setItem(cacheKey, JSON.stringify(deduped)) } catch {}
       }
     }).finally(() => {
@@ -347,7 +516,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tipo])
 
-  // IntersectionObserver: sentinel at bottom of list triggers next batch
+  // IntersectionObserver: sentinel triggers next batch indefinitely
   useEffect(() => {
     const el = sentinelRef.current
     if (!el) return
@@ -359,9 +528,10 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     return () => observer.disconnect()
   }, [])
 
-  // Category filter: if selected category has 0 loaded items, keep loading until found
+  // Category filter: auto-load more (Phase 1 only — sentinel drives Phase 2)
   useEffect(() => {
     if (activeCat === 'Todos' || !canLoadMoreRef.current || isLoadingRef.current) return
+    if (phase2ActiveRef.current) return
     const ids = new Set(
       userLibrary.filter(ui => ui.items?.type === itemType).map(ui => `${ui.items?.type}_${ui.items?.api_id}`)
     )
@@ -372,7 +542,6 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCat, curatedItems.length, userLibrary.length])
 
-  // Category pill handler
   function handleCatChange(cat) {
     setActiveCat(cat)
     clearTimeout(searchDebounce.current)
@@ -433,7 +602,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     }, 500)
   }
 
-  // Grid drag (scrolls the parent .sc vertically on desktop)
+  // Grid drag (scrolls parent .sc vertically on desktop)
   function onGridMouseDown(e) {
     const sc = gridWrapRef.current?.closest('.sc')
     if (!sc) return
@@ -576,10 +745,9 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         </>
       )}
 
-      {/* Sentinel: always rendered so IntersectionObserver can attach on mount */}
+      {/* Sentinel: always rendered so IntersectionObserver fires indefinitely */}
       <div ref={sentinelRef} style={{ height: 8 }} />
 
-      {/* Loading-more spinner (curated grid only) */}
       {loadingMore && !isSearchMode && (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0 8px' }}>
           <div className="spin" />
