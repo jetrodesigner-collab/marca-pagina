@@ -359,134 +359,121 @@ export default function Search({ session, onNavigate }) {
           <div className={`mt${activeTab === 'F' ? ' on' : ''}`} onClick={() => setActiveTab('F')}>🎬 Filmes</div>
         </div>
 
-        <div className="sc">
+        {/* ── Aba Livros (Open Library) ── */}
+        <div className="sc" style={{ display: activeTab === 'L' ? undefined : 'none' }}>
+          <div className="srch">
+            <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
+            <input
+              placeholder="Buscar por título ou autor..."
+              value={bookQuery}
+              onChange={handleBookInput}
+            />
+          </div>
 
-          {/* ── Aba Livros ── */}
-          {activeTab === 'L' && (
+          {bookLoading && <SkeletonList />}
+
+          {!bookLoading && !bookSearched && (
+            <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 40, marginBottom: 14 }}>🔍</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Busque por título ou autor</div>
+              <div style={{ fontSize: 11, lineHeight: 1.65 }}>Resultados em tempo real da Open Library</div>
+            </div>
+          )}
+
+          {!bookLoading && bookSearched && bookResults.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>😶</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Nenhum resultado</div>
+              <div style={{ fontSize: 11, lineHeight: 1.65 }}>Tente outro título ou autor</div>
+            </div>
+          )}
+
+          {!bookLoading && bookResults.length > 0 && (
             <>
-              <div className="srch">
-                <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
-                <input
-                  placeholder="Buscar por título ou autor..."
-                  value={bookQuery}
-                  onChange={handleBookInput}
-                  autoFocus
-                />
-              </div>
-
-              {bookLoading && <SkeletonList />}
-
-              {!bookLoading && !bookSearched && (
-                <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
-                  <div style={{ fontSize: 40, marginBottom: 14 }}>🔍</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Busque por título ou autor</div>
-                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>Resultados em tempo real da Open Library</div>
-                </div>
-              )}
-
-              {!bookLoading && bookSearched && bookResults.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
-                  <div style={{ fontSize: 32, marginBottom: 12 }}>😶</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Nenhum resultado</div>
-                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>Tente outro título ou autor</div>
-                </div>
-              )}
-
-              {!bookLoading && bookResults.length > 0 && (
-                <>
-                  <div className="slb">Resultados · Open Library</div>
-
-                  {bookResults.map((book, i) => {
-                    const k  = `book_${book.key}`
-                    const st = itemStatus[k]
-                    return (
-                      <div key={book.key || i} className="srr">
-                        <BookCover coverId={book.cover_i} title={book.title} />
-                        <div className="srm">
-                          <div className="srt">{book.title}</div>
-                          <div className="sra">{book.author_name?.join(', ') || 'Autor desconhecido'}</div>
-                          {book.first_publish_year && <div className="sry">{book.first_publish_year}</div>}
-                          {st === 'added'  && <div style={{ fontSize: 10, color: '#7AAA8A', fontWeight: 700, marginTop: 2 }}>Adicionado!</div>}
-                          {st === 'exists' && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Já está na sua biblioteca</div>}
-                        </div>
-                        <AddButton status={st} onClick={() => addBook(book)} />
-                      </div>
-                    )
-                  })}
-
-                  <div style={{ textAlign: 'center', padding: '20px 0 8px' }}>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Não encontrou? Adicione manualmente</div>
-                    <button style={{
-                      padding: '10px 24px', borderRadius: 12,
-                      border: '1.5px dashed var(--add-bor)', background: 'var(--add-bg)',
-                      color: 'var(--accent)', fontFamily: "'Figtree', sans-serif",
-                      fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    }}>📷 Adicionar com foto</button>
+              <div className="slb">Resultados · Open Library</div>
+              {bookResults.map((book, i) => {
+                const k  = `book_${book.key}`
+                const st = itemStatus[k]
+                return (
+                  <div key={book.key || i} className="srr">
+                    <BookCover coverId={book.cover_i} title={book.title} />
+                    <div className="srm">
+                      <div className="srt">{book.title}</div>
+                      <div className="sra">{book.author_name?.join(', ') || 'Autor desconhecido'}</div>
+                      {book.first_publish_year && <div className="sry">{book.first_publish_year}</div>}
+                      {st === 'added'  && <div style={{ fontSize: 10, color: '#7AAA8A', fontWeight: 700, marginTop: 2 }}>Adicionado!</div>}
+                      {st === 'exists' && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Já está na sua biblioteca</div>}
+                    </div>
+                    <AddButton status={st} onClick={() => addBook(book)} />
                   </div>
-                </>
-              )}
-            </>
-          )}
-
-          {/* ── Aba Filmes ── */}
-          {activeTab === 'F' && (
-            <>
-              <div className="srch">
-                <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
-                <input
-                  placeholder="Buscar por título do filme..."
-                  value={movieQuery}
-                  onChange={handleMovieInput}
-                  autoFocus
-                />
+                )
+              })}
+              <div style={{ textAlign: 'center', padding: '20px 0 8px' }}>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Não encontrou? Adicione manualmente</div>
+                <button style={{
+                  padding: '10px 24px', borderRadius: 12,
+                  border: '1.5px dashed var(--add-bor)', background: 'var(--add-bg)',
+                  color: 'var(--accent)', fontFamily: "'Figtree', sans-serif",
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                }}>📷 Adicionar com foto</button>
               </div>
-
-              {movieLoading && <SkeletonList />}
-
-              {!movieLoading && !movieSearched && (
-                <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
-                  <div style={{ fontSize: 40, marginBottom: 14 }}>🎬</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Busque por título de filme</div>
-                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>Resultados em tempo real do TMDB</div>
-                </div>
-              )}
-
-              {!movieLoading && movieSearched && movieResults.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
-                  <div style={{ fontSize: 32, marginBottom: 12 }}>😶</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Nenhum resultado</div>
-                  <div style={{ fontSize: 11, lineHeight: 1.65 }}>Tente outro título</div>
-                </div>
-              )}
-
-              {!movieLoading && movieResults.length > 0 && (
-                <>
-                  <div className="slb">Resultados · TMDB</div>
-
-                  {movieResults.map((movie, i) => {
-                    const k    = `movie_${movie.id}`
-                    const st   = itemStatus[k]
-                    const year = movie.release_date ? movie.release_date.split('-')[0] : null
-                    const showOriginal = movie.original_title && movie.original_title !== movie.title
-                    return (
-                      <div key={movie.id || i} className="srr">
-                        <MovieCover posterPath={movie.poster_path} title={movie.title} />
-                        <div className="srm">
-                          <div className="srt">{movie.title}</div>
-                          {showOriginal && <div className="sra">{movie.original_title}</div>}
-                          {year && <div className="sry">{year}</div>}
-                          {st === 'added'  && <div style={{ fontSize: 10, color: '#7AAA8A', fontWeight: 700, marginTop: 2 }}>Adicionado!</div>}
-                          {st === 'exists' && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Já está na sua biblioteca</div>}
-                        </div>
-                        <AddButton status={st} onClick={() => addMovie(movie)} />
-                      </div>
-                    )
-                  })}
-                </>
-              )}
             </>
           )}
+        </div>
 
+        {/* ── Aba Filmes (TMDB) ── */}
+        <div className="sc" style={{ display: activeTab === 'F' ? undefined : 'none' }}>
+          <div className="srch">
+            <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
+            <input
+              placeholder="Buscar por título do filme..."
+              value={movieQuery}
+              onChange={handleMovieInput}
+            />
+          </div>
+
+          {movieLoading && <SkeletonList />}
+
+          {!movieLoading && !movieSearched && (
+            <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 40, marginBottom: 14 }}>🎬</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Busque por título de filme</div>
+              <div style={{ fontSize: 11, lineHeight: 1.65 }}>Resultados em tempo real do TMDB</div>
+            </div>
+          )}
+
+          {!movieLoading && movieSearched && movieResults.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>😶</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Nenhum resultado</div>
+              <div style={{ fontSize: 11, lineHeight: 1.65 }}>Tente outro título</div>
+            </div>
+          )}
+
+          {!movieLoading && movieResults.length > 0 && (
+            <>
+              <div className="slb">Resultados · TMDB</div>
+              {movieResults.map((movie, i) => {
+                const k    = `movie_${movie.id}`
+                const st   = itemStatus[k]
+                const year = movie.release_date ? movie.release_date.split('-')[0] : null
+                const showOriginal = movie.original_title && movie.original_title !== movie.title
+                return (
+                  <div key={movie.id || i} className="srr">
+                    <MovieCover posterPath={movie.poster_path} title={movie.title} />
+                    <div className="srm">
+                      <div className="srt">{movie.title}</div>
+                      {showOriginal && <div className="sra">{movie.original_title}</div>}
+                      {year && <div className="sry">{year}</div>}
+                      {st === 'added'  && <div style={{ fontSize: 10, color: '#7AAA8A', fontWeight: 700, marginTop: 2 }}>Adicionado!</div>}
+                      {st === 'exists' && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Já está na sua biblioteca</div>}
+                    </div>
+                    <AddButton status={st} onClick={() => addMovie(movie)} />
+                  </div>
+                )
+              })}
+            </>
+          )}
         </div>
 
         {/* Bottom navigation */}

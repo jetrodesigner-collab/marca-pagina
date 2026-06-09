@@ -114,16 +114,15 @@ function StatusSection({ label, badgeClass, dotClass, userItems, onItemClick, on
   )
 }
 
-function LibrarySection({ tipo, userItems, onItemClick }) {
+function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
   const [activeCat, setActiveCat] = useState('Todos')
   const [query, setQuery] = useState('')
   const cats = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
   const noun = tipo === 'L' ? 'livro' : 'filme'
 
-  const filtered = userItems.filter(ui => {
+  const filtered = catalogItems.filter(item => {
     if (!query) return true
     const q = query.toLowerCase()
-    const item = ui.items
     return (
       item.title.toLowerCase().includes(q) ||
       (item.author || '').toLowerCase().includes(q) ||
@@ -131,12 +130,17 @@ function LibrarySection({ tipo, userItems, onItemClick }) {
     )
   })
 
+  function handleItemClick(item) {
+    const userEntry = userLibrary.find(ui => ui.item_id === item.id)
+    if (userEntry) onItemClick(item, userEntry)
+  }
+
   return (
     <div style={{ marginTop: 8 }}>
       <span className="bib-t">Biblioteca</span>
       <input
         className="bib-srch"
-        placeholder="Buscar na biblioteca..."
+        placeholder="Buscar no catálogo..."
         value={query}
         onChange={e => setQuery(e.target.value)}
       />
@@ -156,20 +160,20 @@ function LibrarySection({ tipo, userItems, onItemClick }) {
         <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>
-            {query ? 'Nenhum resultado' : 'Sua biblioteca está vazia'}
+            {query ? 'Nenhum resultado' : 'Catálogo vazio'}
           </div>
           <div style={{ fontSize: 11, lineHeight: 1.55 }}>
-            {query ? 'Tente outro termo' : `Adicione seu primeiro ${noun} por aqui`}
+            {query ? 'Tente outro termo' : `Seja o primeiro a adicionar um ${noun}`}
           </div>
         </div>
       ) : (
         <div className="grid-sw">
           <div className="grid-h">
-            {filtered.map(ui => (
+            {filtered.map(item => (
               <GridCard
-                key={ui.id}
-                item={ui.items}
-                onClick={() => onItemClick(ui.items, ui)}
+                key={item.id}
+                item={item}
+                onClick={() => handleItemClick(item)}
               />
             ))}
           </div>
@@ -180,10 +184,11 @@ function LibrarySection({ tipo, userItems, onItemClick }) {
 }
 
 export default function Library({ session, onNavigate }) {
-  const [profile, setProfile]     = useState(null)
-  const [activeTab, setActiveTab] = useState('L')
-  const [theme]                   = useState(() => localStorage.getItem('tema') || 'D')
-  const [allItems, setAllItems]   = useState([])
+  const [profile, setProfile]         = useState(null)
+  const [activeTab, setActiveTab]     = useState('L')
+  const [theme]                       = useState(() => localStorage.getItem('tema') || 'D')
+  const [allItems, setAllItems]       = useState([])
+  const [catalogItems, setCatalogItems] = useState([])
 
   const frase = getDailyFrase()
 
@@ -205,11 +210,21 @@ export default function Library({ session, onNavigate }) {
       .then(({ data }) => setAllItems(data || []))
   }, [session.user.id])
 
+  useEffect(() => {
+    supabase
+      .from('items')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setCatalogItems(data || []))
+  }, [])
+
   const themeClass = theme === 'L' ? 'light' : 'dark'
   const initial = (profile?.full_name || profile?.username || session.user.email || '?')[0].toUpperCase()
 
-  const bookItems  = allItems.filter(ui => ui.items?.type === 'book')
-  const movieItems = allItems.filter(ui => ui.items?.type === 'movie')
+  const bookItems     = allItems.filter(ui => ui.items?.type === 'book')
+  const movieItems    = allItems.filter(ui => ui.items?.type === 'movie')
+  const catalogBooks  = catalogItems.filter(i => i.type === 'book')
+  const catalogMovies = catalogItems.filter(i => i.type === 'movie')
 
   const reading     = bookItems.filter(ui => ui.status === 'reading')
   const wantToRead  = bookItems.filter(ui => ui.status === 'want_to_read')
@@ -267,7 +282,7 @@ export default function Library({ session, onNavigate }) {
           <StatusSection label="Lendo"     badgeClass="BL" dotClass="DL" userItems={reading}    onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Quero Ler" badgeClass="BQ" dotClass="DQ" userItems={wantToRead} onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Lidos"     badgeClass="BD" dotClass="DD" userItems={read}        onItemClick={goToItem} onAddClick={goToSearch} />
-          <LibrarySection tipo="L" userItems={bookItems} onItemClick={goToItem} />
+          <LibrarySection tipo="L" catalogItems={catalogBooks} userLibrary={allItems} onItemClick={goToItem} />
         </div>
 
         {/* Filmes */}
@@ -275,7 +290,7 @@ export default function Library({ session, onNavigate }) {
           <StatusSection label="Assistindo" badgeClass="BL" dotClass="DL" userItems={watching}    onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Quero Ver"  badgeClass="BQ" dotClass="DQ" userItems={wantToWatch} onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Assistidos" badgeClass="BD" dotClass="DD" userItems={watched}     onItemClick={goToItem} onAddClick={goToSearch} />
-          <LibrarySection tipo="F" userItems={movieItems} onItemClick={goToItem} />
+          <LibrarySection tipo="F" catalogItems={catalogMovies} userLibrary={allItems} onItemClick={goToItem} />
         </div>
 
         {/* Bottom navigation */}
