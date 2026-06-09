@@ -173,9 +173,17 @@ export default function Search({ session, onNavigate }) {
       const term = val.trim()
       try {
         const [olDocs, manualRows] = await Promise.all([
-          fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(term)}&limit=10`)
+          fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(term)}&lang=por&limit=10`)
             .then(r => r.json())
-            .then(d => d.docs || [])
+            .then(d => {
+              const docs = d.docs || []
+              docs.sort((a, b) => {
+                const aPor = a.language?.includes('por') ? 0 : 1
+                const bPor = b.language?.includes('por') ? 0 : 1
+                return aPor - bPor
+              })
+              return docs
+            })
             .catch(() => []),
           supabase
             .from('items')
@@ -232,7 +240,15 @@ export default function Search({ session, onNavigate }) {
         const [tmdbResults, manualRows] = await Promise.all([
           fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(term)}&language=pt-BR&api_key=${TMDB_KEY}`)
             .then(r => r.json())
-            .then(d => (d.results || []).slice(0, 10))
+            .then(d => {
+              const results = (d.results || []).slice(0, 10)
+              results.sort((a, b) => {
+                const aPt = a.original_language === 'pt' ? 0 : 1
+                const bPt = b.original_language === 'pt' ? 0 : 1
+                return aPt - bPt
+              })
+              return results
+            })
             .catch(() => []),
           supabase
             .from('items')

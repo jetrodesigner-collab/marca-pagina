@@ -241,6 +241,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                       fontSize: 10,
                       color: 'var(--text2)',
                       lineHeight: 1.55,
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
                       ...(synExpanded ? {} : {
                         display: '-webkit-box',
                         WebkitLineClamp: 4,
