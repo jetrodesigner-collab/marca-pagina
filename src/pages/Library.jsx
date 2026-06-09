@@ -17,6 +17,9 @@ const FRASES = [
 const CATS_LIVROS = ['Todos', 'Ficção Científica', 'Lit. Brasileira', 'Lit. Internacional', 'Filosofia', 'Fantasia', 'Romance', 'História', 'Biografia', 'Psicologia', 'Negócios', 'Autoajuda', 'Policial', 'Outros']
 const CATS_FILMES = ['Todos', 'Drama', 'Comédia', 'Ficção Científica', 'Ação', 'Terror', 'Suspense', 'Romance', 'Animação', 'Documentário', 'Histórico', 'Crime', 'Outros']
 
+const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
+const FILM_COLORS  = ['f1','f2','f3','f4','f5','f6']
+
 const BLOBS = [
   { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
   { width: 220, height: 220, background: 'var(--bl2)', top: 100, right: -70 },
@@ -30,7 +33,65 @@ function getDailyFrase() {
   return FRASES[Math.floor((d - start) / 86400000) % FRASES.length]
 }
 
-function EmptySection({ label, badgeClass, dotClass }) {
+function ItemCard({ item, onClick }) {
+  const [imgErr, setImgErr] = useState(false)
+  const initials = item.title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  const colors = item.type === 'movie' ? FILM_COLORS : COVER_COLORS
+  const cls = colors[item.title.charCodeAt(0) % colors.length]
+
+  return (
+    <div className="bc" onClick={onClick}>
+      {item.cover_url && !imgErr ? (
+        <img
+          className="cov"
+          src={item.cover_url}
+          alt=""
+          style={{ objectFit: 'cover' }}
+          onError={() => setImgErr(true)}
+        />
+      ) : (
+        <div className={`cov ${cls}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
+        </div>
+      )}
+      <div className="btit">{item.title}</div>
+      {(item.author || item.director) && (
+        <div className="baut">{item.author || item.director}</div>
+      )}
+    </div>
+  )
+}
+
+function GridCard({ item, onClick }) {
+  const [imgErr, setImgErr] = useState(false)
+  const initials = item.title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  const colors = item.type === 'movie' ? FILM_COLORS : COVER_COLORS
+  const cls = colors[item.title.charCodeAt(0) % colors.length]
+
+  return (
+    <div className="gc" onClick={onClick}>
+      {item.cover_url && !imgErr ? (
+        <img
+          className="gcov"
+          src={item.cover_url}
+          alt=""
+          style={{ objectFit: 'cover' }}
+          onError={() => setImgErr(true)}
+        />
+      ) : (
+        <div className={`gcov ${cls}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
+        </div>
+      )}
+      <div className="gtit">{item.title}</div>
+      {(item.author || item.director) && (
+        <div className="gaut">{item.author || item.director}</div>
+      )}
+    </div>
+  )
+}
+
+function StatusSection({ label, badgeClass, dotClass, userItems, onItemClick, onAddClick }) {
   return (
     <div className="ss">
       <div className="sh">
@@ -38,9 +99,13 @@ function EmptySection({ label, badgeClass, dotClass }) {
           <div className={`dot ${dotClass}`} />
           {label}
         </div>
+        {userItems.length > 0 && <span className="sc-n">{userItems.length}</span>}
       </div>
       <div className="brow">
-        <div className="addc">
+        {userItems.map(ui => (
+          <ItemCard key={ui.id} item={ui.items} onClick={() => onItemClick(ui.items, ui)} />
+        ))}
+        <div className="addc" onClick={onAddClick}>
           ＋
           <span>Adicionar</span>
         </div>
@@ -49,10 +114,22 @@ function EmptySection({ label, badgeClass, dotClass }) {
   )
 }
 
-function LibrarySection({ tipo }) {
+function LibrarySection({ tipo, userItems, onItemClick }) {
   const [activeCat, setActiveCat] = useState('Todos')
+  const [query, setQuery] = useState('')
   const cats = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
   const noun = tipo === 'L' ? 'livro' : 'filme'
+
+  const filtered = userItems.filter(ui => {
+    if (!query) return true
+    const q = query.toLowerCase()
+    const item = ui.items
+    return (
+      item.title.toLowerCase().includes(q) ||
+      (item.author || '').toLowerCase().includes(q) ||
+      (item.director || '').toLowerCase().includes(q)
+    )
+  })
 
   return (
     <div style={{ marginTop: 8 }}>
@@ -60,7 +137,8 @@ function LibrarySection({ tipo }) {
       <input
         className="bib-srch"
         placeholder="Buscar na biblioteca..."
-        readOnly
+        value={query}
+        onChange={e => setQuery(e.target.value)}
       />
       <div className="cats">
         {cats.map(cat => (
@@ -73,27 +151,39 @@ function LibrarySection({ tipo }) {
           </button>
         ))}
       </div>
-      <div style={{
-        textAlign: 'center',
-        padding: '28px 0 24px',
-        color: 'var(--muted)',
-      }}>
-        <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>
-          Sua biblioteca está vazia
+
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
+          <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>
+            {query ? 'Nenhum resultado' : 'Sua biblioteca está vazia'}
+          </div>
+          <div style={{ fontSize: 11, lineHeight: 1.55 }}>
+            {query ? 'Tente outro termo' : `Adicione seu primeiro ${noun} por aqui`}
+          </div>
         </div>
-        <div style={{ fontSize: 11, lineHeight: 1.55 }}>
-          Adicione seu primeiro {noun} por aqui
+      ) : (
+        <div className="grid-sw">
+          <div className="grid-h">
+            {filtered.map(ui => (
+              <GridCard
+                key={ui.id}
+                item={ui.items}
+                onClick={() => onItemClick(ui.items, ui)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
 
 export default function Library({ session, onNavigate }) {
-  const [profile, setProfile] = useState(null)
+  const [profile, setProfile]     = useState(null)
   const [activeTab, setActiveTab] = useState('L')
-  const [theme] = useState(() => localStorage.getItem('tema') || 'D')
+  const [theme]                   = useState(() => localStorage.getItem('tema') || 'D')
+  const [allItems, setAllItems]   = useState([])
 
   const frase = getDailyFrase()
 
@@ -106,62 +196,54 @@ export default function Library({ session, onNavigate }) {
       .then(({ data }) => setProfile(data))
   }, [session.user.id])
 
+  useEffect(() => {
+    supabase
+      .from('user_items')
+      .select('*, items(*)')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setAllItems(data || []))
+  }, [session.user.id])
+
   const themeClass = theme === 'L' ? 'light' : 'dark'
-  const initial = (
-    profile?.full_name ||
-    profile?.username ||
-    session.user.email ||
-    '?'
-  )[0].toUpperCase()
+  const initial = (profile?.full_name || profile?.username || session.user.email || '?')[0].toUpperCase()
+
+  const bookItems  = allItems.filter(ui => ui.items?.type === 'book')
+  const movieItems = allItems.filter(ui => ui.items?.type === 'movie')
+
+  const reading     = bookItems.filter(ui => ui.status === 'reading')
+  const wantToRead  = bookItems.filter(ui => ui.status === 'want_to_read')
+  const read        = bookItems.filter(ui => ui.status === 'read')
+  const watching    = movieItems.filter(ui => ui.status === 'watching')
+  const wantToWatch = movieItems.filter(ui => ui.status === 'want_to_watch')
+  const watched     = movieItems.filter(ui => ui.status === 'watched')
+
+  function goToItem(item, userItem) {
+    onNavigate('item', { item, userItem })
+  }
+
+  function goToSearch() {
+    onNavigate('search')
+  }
 
   return (
     <div
       className={themeClass}
-      style={{
-        minHeight: '100vh',
-        background: 'var(--bg)',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
+      style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
     >
-      {/* Background blobs */}
       {BLOBS.map((b, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'fixed',
-            borderRadius: '50%',
-            filter: 'blur(55px)',
-            pointerEvents: 'none',
-            zIndex: 0,
-            ...b,
-          }}
-        />
+        <div key={i} style={{ position: 'fixed', borderRadius: '50%', filter: 'blur(55px)', pointerEvents: 'none', zIndex: 0, ...b }} />
       ))}
 
-      {/* Shell */}
-      <div style={{
-        position: 'relative',
-        zIndex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        overflow: 'hidden',
-      }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
 
         {/* Topbar */}
         <div className="topbar">
           <div className="logo">marca<em>·página</em></div>
-          <div
-            className="av"
-            style={profile?.avatar_url ? { padding: 0, overflow: 'hidden' } : {}}
-          >
+          <div className="av" style={profile?.avatar_url ? { padding: 0, overflow: 'hidden' } : {}}>
             {profile?.avatar_url
               ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : initial
-            }
+              : initial}
           </div>
         </div>
 
@@ -172,38 +254,28 @@ export default function Library({ session, onNavigate }) {
           <div className="qa">— {frase.a}</div>
         </div>
 
-        {/* Divisor */}
         <div className="gl" />
 
         {/* Abas */}
         <div className="mtabs">
-          <div
-            className={`mt${activeTab === 'L' ? ' on' : ''}`}
-            onClick={() => setActiveTab('L')}
-          >
-            📚 Livros
-          </div>
-          <div
-            className={`mt${activeTab === 'F' ? ' on' : ''}`}
-            onClick={() => setActiveTab('F')}
-          >
-            🎬 Filmes
-          </div>
+          <div className={`mt${activeTab === 'L' ? ' on' : ''}`} onClick={() => setActiveTab('L')}>📚 Livros</div>
+          <div className={`mt${activeTab === 'F' ? ' on' : ''}`} onClick={() => setActiveTab('F')}>🎬 Filmes</div>
         </div>
 
-        {/* Conteúdo — Livros */}
+        {/* Livros */}
         <div className="sc" style={{ display: activeTab === 'L' ? undefined : 'none' }}>
-          <EmptySection label="Lendo" badgeClass="BL" dotClass="DL" />
-          <EmptySection label="Quero Ler" badgeClass="BQ" dotClass="DQ" />
-          <EmptySection label="Lidos" badgeClass="BD" dotClass="DD" />
-          <LibrarySection tipo="L" />
+          <StatusSection label="Lendo"     badgeClass="BL" dotClass="DL" userItems={reading}    onItemClick={goToItem} onAddClick={goToSearch} />
+          <StatusSection label="Quero Ler" badgeClass="BQ" dotClass="DQ" userItems={wantToRead} onItemClick={goToItem} onAddClick={goToSearch} />
+          <StatusSection label="Lidos"     badgeClass="BD" dotClass="DD" userItems={read}        onItemClick={goToItem} onAddClick={goToSearch} />
+          <LibrarySection tipo="L" userItems={bookItems} onItemClick={goToItem} />
         </div>
 
-        {/* Conteúdo — Filmes */}
+        {/* Filmes */}
         <div className="sc" style={{ display: activeTab === 'F' ? undefined : 'none' }}>
-          <EmptySection label="Assistidos" badgeClass="BD" dotClass="DD" />
-          <EmptySection label="Quero Ver" badgeClass="BQ" dotClass="DQ" />
-          <LibrarySection tipo="F" />
+          <StatusSection label="Assistindo" badgeClass="BL" dotClass="DL" userItems={watching}    onItemClick={goToItem} onAddClick={goToSearch} />
+          <StatusSection label="Quero Ver"  badgeClass="BQ" dotClass="DQ" userItems={wantToWatch} onItemClick={goToItem} onAddClick={goToSearch} />
+          <StatusSection label="Assistidos" badgeClass="BD" dotClass="DD" userItems={watched}     onItemClick={goToItem} onAddClick={goToSearch} />
+          <LibrarySection tipo="F" userItems={movieItems} onItemClick={goToItem} />
         </div>
 
         {/* Bottom navigation */}
@@ -216,7 +288,7 @@ export default function Library({ session, onNavigate }) {
             <span className="nic">👥</span>
             <span className="nla">Comunidade</span>
           </div>
-          <div className="ni" onClick={() => onNavigate('search')}>
+          <div className="ni" onClick={goToSearch}>
             <span className="nic">🔍</span>
             <span className="nla">Buscar</span>
           </div>
@@ -225,6 +297,7 @@ export default function Library({ session, onNavigate }) {
             <span className="nla">Perfil</span>
           </div>
         </div>
+
       </div>
     </div>
   )

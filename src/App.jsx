@@ -5,6 +5,7 @@ import Signup from './pages/Signup'
 import CompleteProfile from './pages/CompleteProfile'
 import Library from './pages/Library'
 import Search from './pages/Search'
+import ItemDetail from './pages/ItemDetail'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -12,6 +13,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [authView, setAuthView] = useState('login')
   const [screen, setScreen] = useState('library')
+  const [itemContext, setItemContext] = useState(null) // { item, userItem }
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -46,9 +48,26 @@ export default function App() {
     return <CompleteProfile session={session} onDone={() => setProfileExists(true)} />
   }
 
-  if (screen === 'search') {
-    return <Search session={session} onNavigate={setScreen} />
+  function navigate(target, payload = null) {
+    setScreen(target)
+    if (target === 'item' && payload) setItemContext(payload)
   }
 
-  return <Library session={session} onNavigate={setScreen} />
+  if (screen === 'item' && itemContext) {
+    return (
+      <ItemDetail
+        session={session}
+        item={itemContext.item}
+        userItem={itemContext.userItem}
+        onBack={() => setScreen('library')}
+        onUserItemUpdate={updated => setItemContext(c => ({ ...c, userItem: updated }))}
+      />
+    )
+  }
+
+  if (screen === 'search') {
+    return <Search session={session} onNavigate={navigate} />
+  }
+
+  return <Library session={session} onNavigate={navigate} />
 }

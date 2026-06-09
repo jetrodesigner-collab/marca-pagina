@@ -294,6 +294,58 @@ body {
 .sra { font-size: 11px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sry { font-size: 10px; color: var(--muted); }
 
+/* ── Page header (voltar + título) ── */
+.ph { display: flex; align-items: center; padding: 6px 22px 12px; gap: 12px; flex-shrink: 0; }
+.bk { width: 34px; height: 34px; border-radius: 50%; background: var(--sur); border: 1px solid var(--bor); display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.ph-t { font-size: 16px; font-weight: 700; color: var(--text); }
+
+/* ── Hero detalhe (capa + meta) ── */
+.hero { background: var(--sur); border: 1px solid var(--bor); border-radius: 22px; padding: 16px; display: flex; gap: 14px; margin-bottom: 16px; backdrop-filter: blur(20px); box-shadow: 0 6px 24px var(--shad); }
+.hcov { border-radius: 12px; flex-shrink: 0; width: 88px; height: 126px; box-shadow: 4px 8px 20px rgba(0,0,0,.25); }
+.hm { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
+.ht { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1.15; letter-spacing: -.01em; }
+.hs { font-size: 12px; color: var(--text2); }
+.hy { font-size: 11px; color: var(--muted); }
+.tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
+.tag  { padding: 3px 9px; border-radius: 20px; font-size: 9px; font-weight: 600; background: rgba(196,184,232,.2); border: 1px solid rgba(196,184,232,.35); color: var(--accent); }
+
+/* ── Rating com estrelas ── */
+.nota-card { background: var(--sur); border: 1px solid var(--bor); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; backdrop-filter: blur(16px); box-shadow: 0 4px 16px var(--shad); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.nota-lbl  { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+.nota-val  { font-size: 22px; font-weight: 800; color: var(--accent); line-height: 1; }
+.nota-desc { font-size: 10px; color: var(--muted); font-style: italic; margin-top: 3px; }
+.stars { display: flex; gap: 5px; }
+.star  { font-size: 26px; cursor: pointer; transition: transform .15s; color: rgba(196,184,232,.25); }
+.star.on { color: #C4A8F0; }
+.light .star { color: rgba(180,160,210,.2); }
+.light .star.on { color: #8B6FAE; }
+.star:hover { transform: scale(1.2); }
+
+/* ── Abas internas (segmented control) ── */
+.itabs { display: flex; background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 4px; margin-bottom: 16px; backdrop-filter: blur(12px); }
+.it    { flex: 1; padding: 8px 4px; text-align: center; font-size: 11px; color: var(--muted); cursor: pointer; border-radius: 10px; transition: all .2s; }
+.light .it.on { background: rgba(255,255,255,.85); color: var(--accent); font-weight: 700; }
+.dark  .it.on { background: rgba(255,255,255,.14); color: var(--accent); font-weight: 700; }
+
+/* ── Resenha ── */
+.bl   { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+.rbox { background: var(--sur); border: 1px solid var(--bor); border-radius: 16px; padding: 14px; margin-bottom: 12px; backdrop-filter: blur(16px); }
+.rtxt { font-size: 13px; color: var(--text); line-height: 1.65; }
+.priv { display: flex; gap: 8px; margin-bottom: 12px; }
+.pb   { flex: 1; padding: 10px 0; border-radius: 12px; border: 1px solid var(--bor2); background: var(--sur); color: var(--muted); font-family: 'Figtree', sans-serif; font-size: 11px; cursor: pointer; text-align: center; transition: all .2s; }
+.pb.on { border-color: rgba(139,111,174,.45); color: var(--accent); background: rgba(196,184,232,.15); }
+
+/* ── Trechos ── */
+.addt { width: 100%; padding: 11px; border: 1.5px dashed var(--add-bor); border-radius: 12px; background: var(--add-bg); color: var(--accent); font-family: 'Figtree', sans-serif; font-size: 12px; text-align: center; cursor: pointer; margin-bottom: 14px; }
+.tcrd { background: var(--sur); border: 1px solid var(--bor); border-radius: 16px; padding: 13px 14px; margin-bottom: 10px; backdrop-filter: blur(16px); }
+.ttxt { font-size: 13px; font-style: italic; color: var(--text2); line-height: 1.65; margin-bottom: 8px; }
+.tpg  { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
+
+/* ── Botões de status ── */
+.sts-row { display: flex; gap: 8px; }
+.sts-btn { flex: 1; padding: 11px 0; border-radius: 12px; border: 1px solid var(--bor2); background: var(--sur); color: var(--muted); font-family: 'Figtree', sans-serif; font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; transition: all .2s; }
+.sts-btn.on { border-color: rgba(139,111,174,.45); color: var(--accent); background: rgba(196,184,232,.15); }
+
 /* ── Bottom navigation ── */
 .bnav { display: flex; padding: 10px 0 30px; flex-shrink: 0; background: var(--nav); backdrop-filter: blur(20px); border-top: 1px solid var(--bor); }
 .ni { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 5px 0; transition: all .15s; }
