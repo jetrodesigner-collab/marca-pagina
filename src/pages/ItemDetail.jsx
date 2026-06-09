@@ -56,6 +56,19 @@ function TrashIcon() {
   )
 }
 
+function TrashIconSmall() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ stroke: 'var(--muted)' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  )
+}
+
+function formatExcerptDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
 export default function ItemDetail({ session, item: itemProp, userItem: userItemProp, isOwner = true, onBack, onUserItemUpdate }) {
   const [theme]        = useState(() => localStorage.getItem('tema') || 'D')
   const [activeTab,    setActiveTab]    = useState('R')
@@ -74,6 +87,13 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [synNeedsBtn,  setSynNeedsBtn]  = useState(false)
   const [showRemoveModal, setShowRemoveModal] = useState(false)
   const [removing,     setRemoving]     = useState(false)
+  const [excerpts,        setExcerpts]        = useState([])
+  const [communityExcerpts, setCommunityExcerpts] = useState([])
+  const [showExcerptForm, setShowExcerptForm] = useState(false)
+  const [excerptText,  setExcerptText]  = useState('')
+  const [excerptPage,  setExcerptPage]  = useState('')
+  const [excerptPublic, setExcerptPublic] = useState(false)
+  const [savingExcerpt, setSavingExcerpt] = useState(false)
   const synRef = useRef(null)
 
   const isBook       = localItem.type === 'book'
@@ -99,6 +119,13 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
         }
       })
   }, [localItem.id, localUserItem?.id, session.user.id])
+
+  // Carrega trechos (próprios + comunidade) quando o item está na biblioteca
+  useEffect(() => {
+    if (!localItem.id || !localUserItem || !isBook) return
+    loadExcerpts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localItem.id, localUserItem?.id, isBook])
 
   // Busca sinopse da API quando não veio no item
   useEffect(() => {
@@ -209,6 +236,71 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     setSaving(false)
     setSaveFeedback(error ? 'err' : 'ok')
     setTimeout(() => setSaveFeedback(null), 2500)
+  }
+
+  async function loadExcerpts() {
+    const [{ data: mine }, { data: community }] = await Promise.all([
+      supabase
+        .from('excerpts')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('item_id', localItem.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('excerpts')
+        .select('*')
+        .eq('item_id', localItem.id)
+        .eq('is_public', true)
+        .neq('user_id', session.user.id)
+        .order('created_at', { ascending: false }),
+    ])
+    setExcerpts(mine || [])
+    setCommunityExcerpts(community || [])
+  }
+
+  function cancelExcerptForm() {
+    setShowExcerptForm(false)
+    setExcerptText('')
+    setExcerptPage('')
+    setExcerptPublic(false)
+  }
+
+  async function saveExcerpt() {
+    if (savingExcerpt || !excerptText.trim() || !localItem.id) return
+    setSavingExcerpt(true)
+    const { error } = await supabase.from('excerpts').insert({
+      user_id:     session.user.id,
+      item_id:     localItem.id,
+      content:     excerptText.trim(),
+      page_number: excerptPage ? Number(excerptPage) : null,
+      is_public:   excerptPublic,
+    })
+    setSavingExcerpt(false)
+    if (!error) {
+      cancelExcerptForm()
+      loadExcerpts()
+    }
+  }
+
+  async function toggleExcerptPrivacy(excerpt) {
+    const { error } = await supabase
+      .from('excerpts')
+      .update({ is_public: !excerpt.is_public })
+      .eq('id', excerpt.id)
+      .eq('user_id', session.user.id)
+    if (!error) {
+      setExcerpts(prev => prev.map(e => e.id === excerpt.id ? { ...e, is_public: !e.is_public } : e))
+    }
+  }
+
+  async function deleteExcerpt(id) {
+    if (!window.confirm('Excluir este trecho?')) return
+    const { error } = await supabase.from('excerpts').delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+    if (!error) {
+      setExcerpts(prev => prev.filter(e => e.id !== id))
+    }
   }
 
   async function removeFromLibrary() {
@@ -426,12 +518,94 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
               {/* Trechos (livros) */}
               {activeTab === 'T' && (
                 <div>
-                  <button className="addt">＋ Adicionar trecho</button>
-                  <div style={{ textAlign: 'center', padding: '28px 0', color: 'var(--muted)' }}>
-                    <div style={{ fontSize: 32, marginBottom: 10 }}>💬</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>Nenhum trecho ainda</div>
-                    <div style={{ fontSize: 11, lineHeight: 1.55 }}>Salve suas passagens favoritas</div>
-                  </div>
+                  {!showExcerptForm && (
+                    <button className="addt" onClick={() => setShowExcerptForm(true)}>＋ Adicionar trecho</button>
+                  )}
+
+                  {showExcerptForm && (
+                    <div className="rbox">
+                      <textarea
+                        className="rtxt"
+                        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 90, fontFamily: "'Figtree', sans-serif", lineHeight: 1.65, fontStyle: 'italic', marginBottom: 12 }}
+                        placeholder="Digite o trecho..."
+                        value={excerptText}
+                        onChange={e => setExcerptText(e.target.value)}
+                      />
+                      <div className="bl">Página</div>
+                      <input
+                        type="number"
+                        className="finp"
+                        style={{ width: 100 }}
+                        placeholder="Nº"
+                        value={excerptPage}
+                        onChange={e => setExcerptPage(e.target.value)}
+                      />
+                      <div className="bl">Privacidade</div>
+                      <div className="priv">
+                        <button className={`pb${!excerptPublic ? ' on' : ''}`} onClick={() => setExcerptPublic(false)}>🔒 Privado</button>
+                        <button className={`pb${excerptPublic ? ' on' : ''}`} onClick={() => setExcerptPublic(true)}>🌐 Público</button>
+                      </div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button
+                          onClick={cancelExcerptForm}
+                          style={{
+                            flex: 1, padding: '12px 0', borderRadius: 14,
+                            border: '1px solid var(--bor2)', background: 'var(--sur)',
+                            color: 'var(--text)', fontFamily: "'Figtree', sans-serif",
+                            fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                          }}
+                        >
+                          Cancelar
+                        </button>
+                        <button className="savebtn" style={{ flex: 1 }} onClick={saveExcerpt} disabled={savingExcerpt || !excerptText.trim()}>
+                          {savingExcerpt ? 'Salvando...' : 'Salvar trecho'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {excerpts.length === 0 && communityExcerpts.length === 0 && !showExcerptForm && (
+                    <div style={{ textAlign: 'center', padding: '28px 0', color: 'var(--muted)' }}>
+                      <div style={{ fontSize: 32, marginBottom: 10 }}>💬</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>Nenhum trecho ainda</div>
+                      <div style={{ fontSize: 11, lineHeight: 1.55 }}>Salve suas passagens favoritas</div>
+                    </div>
+                  )}
+
+                  {excerpts.map(ex => (
+                    <div className="tcrd" key={ex.id}>
+                      <div className="ttxt">"{ex.content}"</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div className="tpg">{ex.page_number ? `Página ${ex.page_number}` : ''}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <span
+                            onClick={() => toggleExcerptPrivacy(ex)}
+                            style={{ cursor: 'pointer', fontSize: 13, lineHeight: 1 }}
+                            title={ex.is_public ? 'Público — toque para tornar privado' : 'Privado — toque para tornar público'}
+                          >
+                            {ex.is_public ? '🌐' : '🔒'}
+                          </span>
+                          <span onClick={() => deleteExcerpt(ex.id)} style={{ cursor: 'pointer', display: 'flex' }}>
+                            <TrashIconSmall />
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{formatExcerptDate(ex.created_at)}</div>
+                    </div>
+                  ))}
+
+                  {communityExcerpts.length > 0 && (
+                    <>
+                      <div className="bl" style={{ marginTop: 18 }}>Trechos da comunidade</div>
+                      {communityExcerpts.map(ex => (
+                        <div className="tcrd" key={ex.id}>
+                          <div className="ttxt">"{ex.content}"</div>
+                          <div className="tpg">{ex.page_number ? `Página ${ex.page_number}` : ''}</div>
+                          <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{formatExcerptDate(ex.created_at)}</div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
 
