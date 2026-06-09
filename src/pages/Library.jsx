@@ -143,20 +143,30 @@ function ItemCard({ item, onClick }) {
   )
 }
 
-function GridCard({ item, onClick }) {
+function GridCard({ item, onClick, inLibrary }) {
   const [imgErr, setImgErr] = useState(false)
   const initials = item.title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
   const colors = item.type === 'movie' ? FILM_COLORS : COVER_COLORS
   const cls = colors[item.title.charCodeAt(0) % colors.length]
 
   return (
-    <div className="gc" onClick={onClick}>
+    <div className="gc" onClick={onClick} style={{ position: 'relative' }}>
       {item.cover_url && !imgErr ? (
         <img className="gcov" src={item.cover_url} alt="" style={{ objectFit: 'cover' }} onError={() => setImgErr(true)} />
       ) : (
         <div className={`gcov ${cls}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
         </div>
+      )}
+      {inLibrary && (
+        <div style={{
+          position: 'absolute', top: 3, right: 3,
+          width: 16, height: 16, borderRadius: '50%',
+          background: 'var(--accent)', color: '#1A1720',
+          fontSize: 9, fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2,
+        }}>✓</div>
       )}
       <div className="gtit">{item.title}</div>
       {(item.author || item.director) && <div className="gaut">{item.author || item.director}</div>}
@@ -238,11 +248,14 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [activeCat, setActiveCat]     = useState('Todos')
   const [query, setQuery]             = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
 
-  const gridWrapRef = useRef(null)
-  const sentinelRef = useRef(null)
-  const stateRef    = useRef({})
-  const gridDrag    = useRef({ active: false, startY: 0, startX: 0, scrollTop: 0 })
+  const gridWrapRef    = useRef(null)
+  const sentinelRef    = useRef(null)
+  const stateRef       = useRef({})
+  const gridDrag       = useRef({ active: false, startY: 0, startX: 0, scrollTop: 0 })
+  const searchDebounce = useRef(null)
   stateRef.current  = { loadingMore, hasMoreApi, tipo, olOffset, tmdbPage, activeCat }
 
   const cats = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
@@ -267,12 +280,15 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
 
   // Reset completo ao trocar tipo de mídia
   useEffect(() => {
+    clearTimeout(searchDebounce.current)
     setItems([])
     setLoading(true)
     setTmdbPage(1)
     setOlOffset(0)
     setHasMoreApi(true)
     setQuery('')
+    setSearchResults([])
+    setSearchLoading(false)
     setActiveCat('Todos')
 
     if (tipo === 'L') {
@@ -290,9 +306,45 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tipo])
 
-  // Troca de categoria em livros: rebusca no servidor
+  // Busca real em API externa com debounce de 500ms
+  function handleQueryChange(e) {
+    const val = e.target.value
+    setQuery(val)
+    clearTimeout(searchDebounce.current)
+    if (!val.trim()) {
+      setSearchResults([])
+      setSearchLoading(false)
+      return
+    }
+    setSearchLoading(true)
+    searchDebounce.current = setTimeout(async () => {
+      try {
+        if (tipo === 'L') {
+          const res  = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(val.trim())}&limit=20`)
+          const data = await res.json()
+          setSearchResults(mapBooks(data.docs || []))
+        } else {
+          const res  = await fetch(
+            `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(val.trim())}&language=pt-BR&api_key=${TMDB_KEY}`
+          )
+          const data = await res.json()
+          setSearchResults(mapMovies((data.results || []).slice(0, 20)))
+        }
+      } catch {
+        setSearchResults([])
+      } finally {
+        setSearchLoading(false)
+      }
+    }, 500)
+  }
+
+  // Troca de categoria em livros: rebusca no servidor e limpa busca
   function handleCatChange(cat) {
     setActiveCat(cat)
+    clearTimeout(searchDebounce.current)
+    setQuery('')
+    setSearchResults([])
+    setSearchLoading(false)
     if (tipo !== 'L') return
     setItems([])
     setLoading(true)
@@ -355,17 +407,10 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     if (gridWrapRef.current) gridWrapRef.current.style.cursor = 'grab'
   }
 
-  const filtered = items.filter(item => {
-    // Livros: server já filtra por categoria; filmes: filtro client-side
+  const isSearchMode = query.trim() !== ''
+
+  const filtered = isSearchMode ? [] : items.filter(item => {
     if (tipo === 'F' && activeCat !== 'Todos' && !matchesCategory(item, activeCat)) return false
-    if (query) {
-      const q = query.toLowerCase()
-      return (
-        item.title.toLowerCase().includes(q) ||
-        (item.author   || '').toLowerCase().includes(q) ||
-        (item.director || '').toLowerCase().includes(q)
-      )
-    }
     return true
   })
 
@@ -383,7 +428,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         className="bib-srch"
         placeholder="Buscar no catálogo..."
         value={query}
-        onChange={e => setQuery(e.target.value)}
+        onChange={handleQueryChange}
       />
       <div className="cats">
         {cats.map(cat => (
@@ -399,22 +444,49 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
 
       {loading ? (
         <GridSkeleton />
+      ) : isSearchMode ? (
+        searchLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
+            <div className="spin" />
+          </div>
+        ) : searchResults.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>Nenhum resultado</div>
+            <div style={{ fontSize: 11, lineHeight: 1.55 }}>Tente outro termo</div>
+          </div>
+        ) : (
+          <div
+            ref={gridWrapRef}
+            className="grid-sw"
+            onMouseDown={onGridMouseDown}
+            onMouseMove={onGridMouseMove}
+            onMouseUp={onGridMouseUp}
+            onMouseLeave={onGridMouseUp}
+          >
+            <div className="grid-h">
+              {searchResults.map(item => {
+                const inLib = userLibrary.some(ui => ui.items?.api_id === item.api_id && ui.items?.type === item.type)
+                return (
+                  <GridCard
+                    key={`${item.type}_${item.api_id}`}
+                    item={item}
+                    inLibrary={inLib}
+                    onClick={() => handleItemClick(item)}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>
-            {query
-              ? 'Nenhum resultado'
-              : activeCat !== 'Todos'
-                ? 'Nenhum item nessa categoria'
-                : 'Não foi possível carregar o catálogo'}
+            {activeCat !== 'Todos' ? 'Nenhum item nessa categoria' : 'Não foi possível carregar o catálogo'}
           </div>
           <div style={{ fontSize: 11, lineHeight: 1.55 }}>
-            {query
-              ? 'Tente outro termo'
-              : activeCat !== 'Todos'
-                ? 'Tente outra categoria ou "Todos"'
-                : 'Verifique sua conexão e recarregue'}
+            {activeCat !== 'Todos' ? 'Tente outra categoria ou "Todos"' : 'Verifique sua conexão e recarregue'}
           </div>
         </div>
       ) : (
@@ -427,13 +499,17 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
           onMouseLeave={onGridMouseUp}
         >
           <div className="grid-h">
-            {filtered.map(item => (
-              <GridCard
-                key={`${item.type}_${item.api_id}`}
-                item={item}
-                onClick={() => handleItemClick(item)}
-              />
-            ))}
+            {filtered.map(item => {
+              const inLib = userLibrary.some(ui => ui.items?.api_id === item.api_id && ui.items?.type === item.type)
+              return (
+                <GridCard
+                  key={`${item.type}_${item.api_id}`}
+                  item={item}
+                  inLibrary={inLib}
+                  onClick={() => handleItemClick(item)}
+                />
+              )
+            })}
             {loadingMore && (
               <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
                 <div className="spin" />

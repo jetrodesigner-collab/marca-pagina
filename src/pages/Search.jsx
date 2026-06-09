@@ -135,7 +135,8 @@ export default function Search({ session, onNavigate }) {
   const [movieSearched, setMovieSearched] = useState(false)
 
   // Status do botão + por chave "book_<key>" | "movie_<id>"
-  const [itemStatus, setItemStatus] = useState({})
+  const [itemStatus,      setItemStatus]      = useState({})
+  const [userLibraryKeys, setUserLibraryKeys] = useState(new Set())
 
   const bookDebounce  = useRef(null)
   const movieDebounce = useRef(null)
@@ -147,6 +148,21 @@ export default function Search({ session, onNavigate }) {
       .eq('id', session.user.id)
       .maybeSingle()
       .then(({ data }) => setProfile(data))
+  }, [session.user.id])
+
+  // Pré-carrega chaves da biblioteca do usuário para indicador visual nos resultados
+  useEffect(() => {
+    supabase
+      .from('user_items')
+      .select('items(type, api_id)')
+      .eq('user_id', session.user.id)
+      .then(({ data }) => {
+        if (!data) return
+        const keys = new Set(
+          data.flatMap(ui => ui.items ? [`${ui.items.type}_${ui.items.api_id}`] : [])
+        )
+        setUserLibraryKeys(keys)
+      })
   }, [session.user.id])
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
@@ -169,7 +185,13 @@ export default function Search({ session, onNavigate }) {
       try {
         const res  = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(val.trim())}&limit=10`)
         const data = await res.json()
-        setBookResults(data.docs || [])
+        const docs = data.docs || []
+        setBookResults(docs)
+        const initial = {}
+        docs.forEach(book => {
+          if (userLibraryKeys.has(`book_${book.key}`)) initial[`book_${book.key}`] = 'exists'
+        })
+        if (Object.keys(initial).length > 0) setItemStatus(s => ({ ...s, ...initial }))
       } catch {
         setBookResults([])
       } finally {
@@ -197,7 +219,13 @@ export default function Search({ session, onNavigate }) {
           `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(val.trim())}&language=pt-BR&api_key=${TMDB_KEY}`
         )
         const data = await res.json()
-        setMovieResults((data.results || []).slice(0, 10))
+        const results = (data.results || []).slice(0, 10)
+        setMovieResults(results)
+        const initial = {}
+        results.forEach(movie => {
+          if (userLibraryKeys.has(`movie_${String(movie.id)}`)) initial[`movie_${movie.id}`] = 'exists'
+        })
+        if (Object.keys(initial).length > 0) setItemStatus(s => ({ ...s, ...initial }))
       } catch {
         setMovieResults([])
       } finally {
