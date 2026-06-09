@@ -112,6 +112,7 @@ function mapMovies(results) {
     year: m.release_date ? Number(m.release_date.split('-')[0]) : null,
     cover_url: m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : null,
     genre_ids: m.genre_ids || [],
+    overview: m.overview || null,
   }))
 }
 

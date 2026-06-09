@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
@@ -60,6 +60,10 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [saveFeedback, setSaveFeedback] = useState(null)
   const [adding,       setAdding]       = useState(false)
   const [addError,     setAddError]     = useState(false)
+  const [synopsis,     setSynopsis]     = useState(() => localItem.overview || localItem.synopsis || null)
+  const [synExpanded,  setSynExpanded]  = useState(false)
+  const [synNeedsBtn,  setSynNeedsBtn]  = useState(false)
+  const synRef = useRef(null)
 
   const isBook       = localItem.type === 'book'
   const themeClass   = theme === 'L' ? 'light' : 'dark'
@@ -83,6 +87,35 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
         }
       })
   }, [localItem.id, localUserItem?.id, session.user.id])
+
+  // Busca sinopse da API quando não veio no item
+  useEffect(() => {
+    if (synopsis || !localItem.api_id) return
+    if (isBook) {
+      // api_id = '/works/OL123W'
+      fetch(`https://openlibrary.org${localItem.api_id}.json`)
+        .then(r => r.json())
+        .then(data => {
+          const raw = data.description
+          const text = typeof raw === 'string' ? raw : (raw?.value ?? null)
+          setSynopsis(text || null)
+        })
+        .catch(() => {})
+    } else {
+      const key = import.meta.env.VITE_TMDB_API_KEY
+      fetch(`https://api.themoviedb.org/3/movie/${localItem.api_id}?api_key=${key}&language=pt-BR`)
+        .then(r => r.json())
+        .then(data => setSynopsis(data.overview || null))
+        .catch(() => {})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Detecta se o texto está de fato sendo truncado (para mostrar/esconder o botão)
+  useEffect(() => {
+    if (!synopsis || !synRef.current || synExpanded) return
+    setSynNeedsBtn(synRef.current.scrollHeight > synRef.current.clientHeight + 1)
+  }, [synopsis, synExpanded])
 
   async function addToLibrary(chosenStatus) {
     if (adding) return
@@ -194,13 +227,48 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
           {/* Hero */}
           <div className="hero">
             <HeroCover item={localItem} />
-            <div className="hm">
+            <div className="hm" style={{ justifyContent: synopsis ? 'flex-start' : 'center' }}>
               <div className="ht">{localItem.title}</div>
               {localItem.author   && <div className="hs">{localItem.author}</div>}
               {localItem.director && <div className="hs">Dir. {localItem.director}</div>}
               {localItem.year     && <div className="hy">{localItem.year}</div>}
+
+              {synopsis && (
+                <div style={{ marginTop: 2 }}>
+                  <div
+                    ref={synRef}
+                    style={{
+                      fontSize: 10,
+                      color: 'var(--text2)',
+                      lineHeight: 1.55,
+                      ...(synExpanded ? {} : {
+                        display: '-webkit-box',
+                        WebkitLineClamp: 4,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }),
+                    }}
+                  >
+                    {synopsis}
+                  </div>
+                  {(synNeedsBtn || synExpanded) && (
+                    <button
+                      onClick={() => setSynExpanded(e => !e)}
+                      style={{
+                        fontSize: 9, fontWeight: 700, color: 'var(--accent)',
+                        background: 'none', border: 'none', padding: '3px 0 0',
+                        cursor: 'pointer', fontFamily: "'Figtree', sans-serif",
+                        display: 'block',
+                      }}
+                    >
+                      {synExpanded ? 'Ver menos ↑' : 'Ver mais ↓'}
+                    </button>
+                  )}
+                </div>
+              )}
+
               {isInLibrary && statusInfo && (
-                <div className="tags" style={{ marginTop: 8 }}>
+                <div className="tags" style={{ marginTop: 6 }}>
                   <span className={`sb ${statusInfo.badge}`}>
                     <div className={`dot ${statusInfo.dot}`} />
                     {statusInfo.label}
