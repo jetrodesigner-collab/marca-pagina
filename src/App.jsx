@@ -6,6 +6,7 @@ import CompleteProfile from './pages/CompleteProfile'
 import Library from './pages/Library'
 import Search from './pages/Search'
 import ItemDetail from './pages/ItemDetail'
+import Profile from './pages/Profile'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -29,7 +30,7 @@ export default function App() {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
-      if (!newSession) { setProfileExists(false); return }
+      if (!newSession) { setProfileExists(false); setScreen('library'); return }
       supabase.from('profiles').select('id').eq('id', newSession.user.id).maybeSingle()
         .then(({ data: profile }) => setProfileExists(!!profile))
     })
@@ -67,6 +68,10 @@ export default function App() {
 
   if (screen === 'search') {
     return <Search session={session} onNavigate={navigate} />
+  }
+
+  if (screen === 'profile') {
+    return <Profile session={session} onNavigate={navigate} />
   }
 
   return <Library session={session} onNavigate={navigate} />

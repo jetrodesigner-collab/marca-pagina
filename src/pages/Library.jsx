@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const TMDB_KEY  = import.meta.env.VITE_TMDB_API_KEY
-const PAGE_SIZE = 9
+const INIT_SIZE = 20
+const MORE_SIZE = 10
 
 const FRASES = [
   { t: 'Os livros são espelhos: só vemos neles o que já temos dentro de nós.', a: 'Carlos Ruiz Zafón' },
@@ -29,6 +30,74 @@ const BLOBS = [
   { width: 240, height: 240, background: 'var(--bl3)', bottom: 120, left: -60 },
   { width: 200, height: 200, background: 'var(--bl4)', bottom: 40, right: -50 },
 ]
+
+// TMDB genre_id → category name
+const TMDB_GENRE_MAP = {
+  'Drama':          [18],
+  'Comédia':        [35],
+  'Ficção Científica': [878],
+  'Ação':           [28],
+  'Terror':         [27],
+  'Suspense':       [53],
+  'Romance':        [10749],
+  'Animação':       [16],
+  'Documentário':   [99],
+  'Histórico':      [36],
+  'Crime':          [80],
+}
+
+// Category → Open Library subject keywords
+const OL_SUBJECT_MAP = {
+  'Ficção Científica': ['science fiction', 'sci-fi', 'ficção científica'],
+  'Lit. Brasileira':   ['brasil', 'brazil', 'brazilian', 'literatura brasileira'],
+  'Lit. Internacional': ['fiction', 'novel', 'literature'],
+  'Filosofia':         ['philosophy', 'filosofia'],
+  'Fantasia':          ['fantasy', 'fantasia'],
+  'Romance':           ['romance', 'love stories'],
+  'História':          ['history', 'historical', 'história'],
+  'Biografia':         ['biography', 'autobiography', 'memoirs'],
+  'Psicologia':        ['psychology', 'psicologia'],
+  'Negócios':          ['business', 'economics', 'management'],
+  'Autoajuda':         ['self-help', 'self help', 'personal development'],
+  'Policial':          ['mystery', 'detective', 'crime', 'thriller'],
+}
+
+function matchesCategory(item, cat) {
+  if (cat === 'Todos') return true
+  if (item.type === 'movie') {
+    const ids = TMDB_GENRE_MAP[cat] || []
+    return ids.some(id => (item.genre_ids || []).includes(id))
+  }
+  const keywords = OL_SUBJECT_MAP[cat] || []
+  const subjects = (item.subjects || []).map(s => s.toLowerCase())
+  return keywords.some(kw => subjects.some(s => s.includes(kw)))
+}
+
+function mapBooks(works) {
+  return works.map(w => ({
+    type: 'book',
+    api_id: w.key,
+    api_source: 'openlibrary',
+    title: w.title,
+    author: Array.isArray(w.author_name) ? w.author_name[0] : 'Autor desconhecido',
+    year: w.first_publish_year || null,
+    cover_url: w.cover_i ? `https://covers.openlibrary.org/b/id/${w.cover_i}-M.jpg` : null,
+    subjects: Array.isArray(w.subject) ? w.subject : [],
+  }))
+}
+
+function mapMovies(results) {
+  return results.map(m => ({
+    type: 'movie',
+    api_id: String(m.id),
+    api_source: 'tmdb',
+    title: m.title,
+    director: null,
+    year: m.release_date ? Number(m.release_date.split('-')[0]) : null,
+    cover_url: m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : null,
+    genre_ids: m.genre_ids || [],
+  }))
+}
 
 function getDailyFrase() {
   const d = new Date()
@@ -105,7 +174,7 @@ function GridSkeleton() {
   return (
     <div className="grid-sw">
       <div className="grid-h">
-        {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+        {Array.from({ length: INIT_SIZE }).map((_, i) => (
           <div key={i} className="gc" style={{ opacity: 0.35, pointerEvents: 'none' }}>
             <div className="gcov" style={{ background: 'var(--bor)' }} />
             <div style={{ height: 10, borderRadius: 4, background: 'var(--bor)', margin: '2px 0' }} />
@@ -118,40 +187,39 @@ function GridSkeleton() {
 }
 
 function LibrarySection({ tipo, userLibrary, onItemClick }) {
-  const [items, setItems]             = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [tmdbPage, setTmdbPage]       = useState(1)
-  const [hasMoreApi, setHasMoreApi]   = useState(true)
+  const [items, setItems]           = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [tmdbPage, setTmdbPage]     = useState(1)
+  const [olOffset, setOlOffset]     = useState(INIT_SIZE)
+  const [hasMoreApi, setHasMoreApi] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [activeCat, setActiveCat]     = useState('Todos')
-  const [query, setQuery]             = useState('')
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [activeCat, setActiveCat]   = useState('Todos')
+  const [query, setQuery]           = useState('')
+
+  const scrollRef   = useRef(null)
+  const sentinelRef = useRef(null)
+  const stateRef    = useRef({})
+  stateRef.current  = { loadingMore, hasMoreApi, tipo, olOffset, tmdbPage }
 
   const cats = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
-  const noun = tipo === 'L' ? 'livro' : 'filme'
 
   useEffect(() => {
     setItems([])
     setLoading(true)
     setTmdbPage(1)
-    setHasMoreApi(tipo === 'F')
-    setVisibleCount(PAGE_SIZE)
+    setOlOffset(INIT_SIZE)
+    setHasMoreApi(true)
     setQuery('')
+    setActiveCat('Todos')
 
     if (tipo === 'L') {
-      fetch('https://openlibrary.org/trending/weekly.json?limit=27')
+      fetch(`https://openlibrary.org/trending/weekly.json?limit=${INIT_SIZE}`)
         .then(r => r.json())
         .then(data => {
-          setItems((data.works || []).map(w => ({
-            type: 'book',
-            api_id: w.key,
-            api_source: 'openlibrary',
-            title: w.title,
-            author: Array.isArray(w.author_name) ? w.author_name[0] : 'Autor desconhecido',
-            year: w.first_publish_year || null,
-            cover_url: w.cover_i ? `https://covers.openlibrary.org/b/id/${w.cover_i}-M.jpg` : null,
-          })))
-          setHasMoreApi(false)
+          const works = data.works || []
+          setItems(mapBooks(works))
+          setOlOffset(works.length)
+          setHasMoreApi(works.length >= INIT_SIZE)
         })
         .catch(() => setItems([]))
         .finally(() => setLoading(false))
@@ -167,30 +235,30 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     }
   }, [tipo])
 
-  function mapMovies(results) {
-    return results.map(m => ({
-      type: 'movie',
-      api_id: String(m.id),
-      api_source: 'tmdb',
-      title: m.title,
-      director: null,
-      year: m.release_date ? Number(m.release_date.split('-')[0]) : null,
-      cover_url: m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : null,
-    }))
-  }
-
-  async function fetchNextMoviePage() {
+  async function fetchMore() {
+    const { loadingMore, hasMoreApi, tipo, olOffset, tmdbPage } = stateRef.current
     if (loadingMore || !hasMoreApi) return
     setLoadingMore(true)
-    const next = tmdbPage + 1
     try {
-      const res = await fetch(
-        `https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=${next}&api_key=${TMDB_KEY}`
-      )
-      const data = await res.json()
-      setItems(prev => [...prev, ...mapMovies(data.results || [])])
-      setTmdbPage(next)
-      setHasMoreApi(next < (data.total_pages || 1))
+      if (tipo === 'L') {
+        const res = await fetch(
+          `https://openlibrary.org/trending/weekly.json?limit=${MORE_SIZE}&offset=${olOffset}`
+        )
+        const data = await res.json()
+        const works = data.works || []
+        setItems(prev => [...prev, ...mapBooks(works)])
+        setOlOffset(prev => prev + works.length)
+        setHasMoreApi(works.length >= MORE_SIZE)
+      } else {
+        const next = tmdbPage + 1
+        const res = await fetch(
+          `https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=${next}&api_key=${TMDB_KEY}`
+        )
+        const data = await res.json()
+        setItems(prev => [...prev, ...mapMovies(data.results || [])])
+        setTmdbPage(next)
+        setHasMoreApi(next < (data.total_pages || 1))
+      }
     } catch {
       // silently ignore
     } finally {
@@ -198,31 +266,35 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     }
   }
 
-  function handleQueryChange(val) {
-    setQuery(val)
-    setVisibleCount(PAGE_SIZE)
-  }
-
-  function handleVerMais() {
-    const next = visibleCount + PAGE_SIZE
-    setVisibleCount(next)
-    if (tipo === 'F' && hasMoreApi && !loadingMore && next + PAGE_SIZE >= items.length) {
-      fetchNextMoviePage()
-    }
-  }
+  // Reconecta o observer quando loading/filtro muda (sentinel pode ter remontado)
+  useEffect(() => {
+    if (loading || !sentinelRef.current) return
+    const sentinel  = sentinelRef.current
+    const container = scrollRef.current
+    const observer  = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) fetchMore()
+      },
+      { root: container, threshold: 0, rootMargin: '0px 300px 0px 0px' }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+    // fetchMore lê de stateRef, então não precisa ser dep
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, activeCat, query])
 
   const filtered = items.filter(item => {
-    if (!query) return true
-    const q = query.toLowerCase()
-    return (
-      item.title.toLowerCase().includes(q) ||
-      (item.author || '').toLowerCase().includes(q) ||
-      (item.director || '').toLowerCase().includes(q)
-    )
+    if (activeCat !== 'Todos' && !matchesCategory(item, activeCat)) return false
+    if (query) {
+      const q = query.toLowerCase()
+      return (
+        item.title.toLowerCase().includes(q) ||
+        (item.author   || '').toLowerCase().includes(q) ||
+        (item.director || '').toLowerCase().includes(q)
+      )
+    }
+    return true
   })
-
-  const visible  = filtered.slice(0, visibleCount)
-  const hasMore  = filtered.length > visibleCount || (hasMoreApi && tipo === 'F' && !query)
 
   function handleItemClick(apiItem) {
     const userEntry = userLibrary.find(
@@ -238,7 +310,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         className="bib-srch"
         placeholder="Buscar no catálogo..."
         value={query}
-        onChange={e => handleQueryChange(e.target.value)}
+        onChange={e => setQuery(e.target.value)}
       />
       <div className="cats">
         {cats.map(cat => (
@@ -258,31 +330,39 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>
-            {query ? 'Nenhum resultado' : 'Não foi possível carregar o catálogo'}
+            {query
+              ? 'Nenhum resultado'
+              : activeCat !== 'Todos'
+                ? 'Nenhum item nessa categoria'
+                : 'Não foi possível carregar o catálogo'}
           </div>
           <div style={{ fontSize: 11, lineHeight: 1.55 }}>
-            {query ? 'Tente outro termo' : 'Verifique sua conexão e recarregue'}
+            {query
+              ? 'Tente outro termo'
+              : activeCat !== 'Todos'
+                ? 'Tente outra categoria ou "Todos"'
+                : 'Verifique sua conexão e recarregue'}
           </div>
         </div>
       ) : (
-        <>
-          <div className="grid-sw">
-            <div className="grid-h">
-              {visible.map(item => (
-                <GridCard
-                  key={`${item.type}_${item.api_id}`}
-                  item={item}
-                  onClick={() => handleItemClick(item)}
-                />
-              ))}
-            </div>
+        <div ref={scrollRef} className="grid-sw">
+          <div className="grid-h">
+            {filtered.map(item => (
+              <GridCard
+                key={`${item.type}_${item.api_id}`}
+                item={item}
+                onClick={() => handleItemClick(item)}
+              />
+            ))}
+            {/* Sentinel de scroll infinito */}
+            <div ref={sentinelRef} style={{ flexShrink: 0, width: 1, alignSelf: 'stretch' }} />
+            {loadingMore && (
+              <div className="carousel-spinner">
+                <div className="spin" />
+              </div>
+            )}
           </div>
-          {hasMore && (
-            <button className="ver-mais" onClick={handleVerMais} disabled={loadingMore}>
-              {loadingMore ? 'Carregando...' : `Ver mais${filtered.length > visibleCount ? ` (${filtered.length - visibleCount})` : ''}`}
-            </button>
-          )}
-        </>
+        </div>
       )}
     </div>
   )
@@ -349,7 +429,11 @@ export default function Library({ session, onNavigate }) {
         {/* Topbar */}
         <div className="topbar">
           <div className="logo">marca<em>·página</em></div>
-          <div className="av" style={profile?.avatar_url ? { padding: 0, overflow: 'hidden' } : {}}>
+          <div
+            className="av"
+            style={profile?.avatar_url ? { padding: 0, overflow: 'hidden' } : {}}
+            onClick={() => onNavigate('profile')}
+          >
             {profile?.avatar_url
               ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : initial}
@@ -401,7 +485,7 @@ export default function Library({ session, onNavigate }) {
             <span className="nic">🔍</span>
             <span className="nla">Buscar</span>
           </div>
-          <div className="ni">
+          <div className="ni" onClick={() => onNavigate('profile')}>
             <span className="nic">👤</span>
             <span className="nla">Perfil</span>
           </div>
