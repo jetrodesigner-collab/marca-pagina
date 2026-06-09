@@ -383,8 +383,13 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     return fetch(
       `https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=${page}&api_key=${TMDB_KEY}`
     ).then(r => r.json()).then(data => {
-      tmdbPageRef.current += 1
-      return (data.results || []).map(m => {
+      const results = data.results || []
+      if (results.length === 0) {
+        tmdbPageRef.current = 1  // cicla de volta ao início quando esgota as páginas
+      } else {
+        tmdbPageRef.current += 1
+      }
+      return results.map(m => {
         const cat = (m.genre_ids || []).map(g => TMDB_GENRE_CAT[g]).find(Boolean) || 'Outros'
         return {
           type: 'movie', api_id: String(m.id), api_source: 'tmdb',
@@ -396,13 +401,15 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
           _curatedCategory: cat,
         }
       })
-    }).catch(() => { tmdbPageRef.current += 1; return [] })
+    }).catch(() => { tmdbPageRef.current = 1; return [] })
   }
 
   async function doLoadMore() {
     if (!canLoadMoreRef.current || isLoadingRef.current) return
     isLoadingRef.current = true
     setLoadingMore(true)
+
+    let needsRetry = false
 
     try {
       if (!phase2ActiveRef.current) {
@@ -450,10 +457,15 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         const fresh = candidates.filter(i => !isInSet(i, seenKeysRef.current))
         fresh.forEach(i => addToSet(i, seenKeysRef.current))
         setCuratedItems(prev => [...prev, ...fresh])
+
+        // Se todos os itens retornados já foram vistos, o sentinela não sai da zona de
+        // interseção e o IntersectionObserver não re-dispara — forçamos a próxima carga.
+        if (fresh.length === 0) needsRetry = true
       }
     } finally {
       isLoadingRef.current = false
       setLoadingMore(false)
+      if (needsRetry) setTimeout(() => loadMoreFnRef.current?.(), 500)
     }
   }
 
@@ -522,7 +534,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     if (!el) return
     const observer = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMoreFnRef.current() },
-      { rootMargin: '300px' }
+      { rootMargin: '600px' }
     )
     observer.observe(el)
     return () => observer.disconnect()
