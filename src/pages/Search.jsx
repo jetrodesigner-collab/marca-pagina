@@ -104,6 +104,28 @@ function SkeletonList() {
 }
 
 const TMDB_KEY = import.meta.env.VITE_TMDB_API_KEY
+const GB_KEY   = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY
+
+function gbCanRequest() {
+  const today = new Date().toISOString().slice(0, 10)
+  if (localStorage.getItem('gb_req_date') !== today) {
+    localStorage.setItem('gb_req_date', today)
+    localStorage.setItem('gb_req_count', '0')
+    return true
+  }
+  return parseInt(localStorage.getItem('gb_req_count') || '0') < 990
+}
+
+function gbIncrementCount() {
+  localStorage.setItem(
+    'gb_req_count',
+    String(parseInt(localStorage.getItem('gb_req_count') || '0') + 1)
+  )
+}
+
+function normalizeStr(s) {
+  return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
 
 export default function Search({ session, onNavigate }) {
   const [profile, setProfile]           = useState(null)
@@ -115,6 +137,7 @@ export default function Search({ session, onNavigate }) {
   const [bookResults,  setBookResults]  = useState([])
   const [bookLoading,  setBookLoading]  = useState(false)
   const [bookSearched, setBookSearched] = useState(false)
+  const [gbUsed,       setGbUsed]       = useState(false)
 
   // Filmes
   const [movieQuery,    setMovieQuery]    = useState('')
@@ -156,7 +179,7 @@ export default function Search({ session, onNavigate }) {
   const themeClass = theme === 'L' ? 'light' : 'dark'
   const initial = (profile?.full_name || profile?.username || session.user.email || '?')[0].toUpperCase()
 
-  // ── Busca livros (Open Library) ──────────────────────────────
+  // ── Busca livros (Open Library + Google Books) ───────────────
   function handleBookInput(e) {
     const val = e.target.value
     setBookQuery(val)
@@ -171,20 +194,34 @@ export default function Search({ session, onNavigate }) {
     bookDebounce.current = setTimeout(async () => {
       setBookSearched(true)
       const term = val.trim()
+      const useGB = gbCanRequest()
+      if (useGB) gbIncrementCount()
+      setGbUsed(useGB)
       try {
-        const [olDocs, manualRows] = await Promise.all([
-          fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(term)}&lang=por&limit=10`)
+        const [olDocs, gbItems, manualRows] = await Promise.all([
+          fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(term)}&lang=por&limit=20`)
             .then(r => r.json())
-            .then(d => {
-              const docs = d.docs || []
-              docs.sort((a, b) => {
-                const aPor = a.language?.includes('por') ? 0 : 1
-                const bPor = b.language?.includes('por') ? 0 : 1
-                return aPor - bPor
-              })
-              return docs
-            })
+            .then(d => d.docs || [])
             .catch(() => []),
+          useGB
+            ? fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(term)}&langRestrict=pt&maxResults=20&key=${GB_KEY}`)
+                .then(r => r.json())
+                .then(d => (d.items || []).map(item => ({
+                  key:                `gb_${item.id}`,
+                  title:              item.volumeInfo.title || '',
+                  author_name:        item.volumeInfo.authors || null,
+                  first_publish_year: item.volumeInfo.publishedDate
+                    ? parseInt(item.volumeInfo.publishedDate)
+                    : null,
+                  cover_i:            null,
+                  language:           ['por'],
+                  _source:            'google',
+                  _gbId:              item.id,
+                  _cover_url:         item.volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
+                  _synopsis:          item.volumeInfo.description || null,
+                })))
+                .catch(() => [])
+            : Promise.resolve([]),
           supabase
             .from('items')
             .select('*')
@@ -203,14 +240,26 @@ export default function Search({ session, onNavigate }) {
             })))
             .catch(() => []),
         ])
-        // Mesclar sem duplicatas por key
-        const seen = new Set(olDocs.map(b => b.key))
-        const merged = [...olDocs, ...manualRows.filter(m => !seen.has(m.key))]
+
+        // Dedup por título+autor normalizado
+        const dedupKey = b => normalizeStr(b.title) + '_' + normalizeStr(b.author_name?.[0])
+        const olKeysSet = new Set(olDocs.map(dedupKey))
+        const filteredGB = gbItems.filter(b => !olKeysSet.has(dedupKey(b)))
+
+        // Ordenar: OL português → Google Books (já em pt) → OL outros idiomas
+        const ptOL    = olDocs.filter(b => b.language?.includes('por'))
+        const nonPtOL = olDocs.filter(b => !b.language?.includes('por'))
+        const combined = [...ptOL, ...filteredGB, ...nonPtOL]
+
+        const seenKeys = new Set(combined.map(b => b.key))
+        const merged = [...combined, ...manualRows.filter(m => !seenKeys.has(m.key))]
         setBookResults(merged)
+
         // Pré-popular status para itens já na biblioteca
         const initial = {}
         merged.forEach(book => {
-          if (userLibraryKeys.has(`book_${book.key}`)) initial[`book_${book.key}`] = 'exists'
+          const apiId = book._source === 'google' ? book._gbId : book.key
+          if (userLibraryKeys.has(`book_${apiId}`)) initial[`book_${apiId}`] = 'exists'
         })
         if (Object.keys(initial).length > 0) setItemStatus(s => ({ ...s, ...initial }))
       } catch {
@@ -287,11 +336,11 @@ export default function Search({ session, onNavigate }) {
 
   // ── Adicionar livro ao Supabase ───────────────────────────────
   async function addBook(book) {
-    const apiId = book.key
+    const isGB  = book._source === 'google'
+    const apiId = isGB ? book._gbId : book.key
     const key   = `book_${apiId}`
     setItemStatus(s => ({ ...s, [key]: 'loading' }))
     try {
-      // 1. Buscar ou criar o item no catálogo
       let { data: existing } = await supabase
         .from('items')
         .select('id')
@@ -309,10 +358,12 @@ export default function Search({ session, onNavigate }) {
             title:      book.title,
             author:     book.author_name?.join(', ') || null,
             year:       book.first_publish_year || null,
-            cover_url:  book.cover_i
-              ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`
-              : null,
-            api_source: 'openlibrary',
+            cover_url:  isGB
+              ? book._cover_url
+              : book.cover_i
+                ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`
+                : book._cover_url || null,
+            api_source: isGB ? 'google_books' : 'openlibrary',
           })
           .select('id')
           .single()
@@ -322,7 +373,6 @@ export default function Search({ session, onNavigate }) {
         itemId = existing.id
       }
 
-      // 2. Verificar se usuário já tem o item
       const { data: userItem } = await supabase
         .from('user_items')
         .select('id')
@@ -335,7 +385,6 @@ export default function Search({ session, onNavigate }) {
         return
       }
 
-      // 3. Adicionar à biblioteca
       const { error: uiErr } = await supabase
         .from('user_items')
         .insert({ user_id: session.user.id, item_id: itemId, status: 'want_to_read' })
@@ -455,7 +504,7 @@ export default function Search({ session, onNavigate }) {
             <div style={{ textAlign: 'center', padding: '52px 0 24px', color: 'var(--muted)' }}>
               <div style={{ fontSize: 40, marginBottom: 14 }}>🔍</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>Busque por título ou autor</div>
-              <div style={{ fontSize: 11, lineHeight: 1.65 }}>Resultados em tempo real da Open Library</div>
+              <div style={{ fontSize: 11, lineHeight: 1.65 }}>Resultados em tempo real da Open Library + Google Books</div>
             </div>
           )}
 
@@ -469,9 +518,10 @@ export default function Search({ session, onNavigate }) {
 
           {!bookLoading && bookResults.length > 0 && (
             <>
-              <div className="slb">Resultados · Open Library</div>
+              <div className="slb">Resultados · Open Library{gbUsed ? ' + Google Books' : ''}</div>
               {bookResults.map((book, i) => {
-                const k  = `book_${book.key}`
+                const apiId = book._source === 'google' ? book._gbId : book.key
+                const k  = `book_${apiId}`
                 const st = itemStatus[k]
                 return (
                   <div key={book.key || i} className="srr">
