@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { CURATED_BOOKS, CURATED_MOVIES } from '../data/curatedList'
 
 const TMDB_KEY  = import.meta.env.VITE_TMDB_API_KEY
-const INIT_SIZE = 30
+const PAGE_SIZE = 9
 
 const FRASES = [
   { t: 'Os livros são espelhos: só vemos neles o que já temos dentro de nós.', a: 'Carlos Ruiz Zafón' },
@@ -177,7 +177,7 @@ function GridSkeleton() {
   return (
     <div className="grid-sw">
       <div className="grid-h">
-        {Array.from({ length: INIT_SIZE }).map((_, i) => (
+        {Array.from({ length: PAGE_SIZE }).map((_, i) => (
           <div key={i} className="gc" style={{ opacity: 0.35, pointerEvents: 'none' }}>
             <div className="gcov" style={{ background: 'var(--bor)' }} />
             <div style={{ height: 10, borderRadius: 4, background: 'var(--bor)', margin: '2px 0' }} />
@@ -191,35 +191,39 @@ function GridSkeleton() {
 
 function LibrarySection({ tipo, userLibrary, onItemClick }) {
   const [curatedItems, setCuratedItems] = useState([])
-  const [loadingCurated, setLoadingCurated] = useState(true)
-  const [activeCat, setActiveCat]     = useState('Todos')
-  const [query, setQuery]             = useState('')
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [loadingMore, setLoadingMore]     = useState(false)
+  const [activeCat, setActiveCat]         = useState('Todos')
+  const [query, setQuery]                 = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
 
+  const sentinelRef    = useRef(null)
   const gridWrapRef    = useRef(null)
   const gridDrag       = useRef({ active: false, startY: 0, startX: 0, scrollTop: 0 })
   const searchDebounce = useRef(null)
 
-  const cats        = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
-  const cacheKey    = tipo === 'L' ? 'curated_cache_books' : 'curated_cache_movies'
-  const itemType    = tipo === 'L' ? 'book' : 'movie'
-  const curatedSrc  = tipo === 'L' ? CURATED_BOOKS : CURATED_MOVIES
+  // Refs to avoid stale closures in async callbacks / IntersectionObserver
+  const srcCursorRef   = useRef(0)
+  const canLoadMoreRef = useRef(true)
+  const isLoadingRef   = useRef(false)
+  const loadMoreFnRef  = useRef(null)
 
-  // User items for this tipo
+  const cats       = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
+  // v2 suffix invalidates caches built before _curatedCategory was added
+  const cacheKey   = tipo === 'L' ? 'curated_cache_books_v2' : 'curated_cache_movies_v2'
+  const itemType   = tipo === 'L' ? 'book' : 'movie'
+  const curatedSrc = tipo === 'L' ? CURATED_BOOKS : CURATED_MOVIES
+
   const userItemsForTipo = userLibrary.filter(ui => ui.items?.type === itemType)
   const hasUserItems     = userItemsForTipo.length > 0
+  const userApiIds       = new Set(userItemsForTipo.map(ui => `${ui.items?.type}_${ui.items?.api_id}`))
 
-  // Fetch curated list on mount (one-time per session via sessionStorage cache)
-  useEffect(() => {
-    const cached = sessionStorage.getItem(cacheKey)
-    if (cached) {
-      try { setCuratedItems(JSON.parse(cached)) } catch {}
-      setLoadingCurated(false)
-      return
-    }
-    setLoadingCurated(true)
-    const fetches = curatedSrc.map(ci => {
+  // Fetch a batch of PAGE_SIZE items from curatedSrc starting at startIdx
+  async function fetchBatch(startIdx) {
+    const slice = curatedSrc.slice(startIdx, startIdx + PAGE_SIZE)
+    if (slice.length === 0) return []
+    const fetches = slice.map(ci => {
       if (tipo === 'L') {
         return fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(ci.title)}&limit=3`)
           .then(r => r.json())
@@ -263,21 +267,112 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
           .catch(() => null)
       }
     })
-    Promise.all(fetches).then(results => {
+    return (await Promise.all(fetches)).filter(Boolean)
+  }
+
+  async function doLoadMore() {
+    if (!canLoadMoreRef.current || isLoadingRef.current) return
+    isLoadingRef.current = true
+    setLoadingMore(true)
+    try {
+      const cursor     = srcCursorRef.current
+      const newItems   = await fetchBatch(cursor)
+      const nextCursor = cursor + PAGE_SIZE
+      const done       = nextCursor >= curatedSrc.length
+
+      setCuratedItems(prev => {
+        const seen  = new Set(prev.map(i => `${i.type}_${i.api_id}`))
+        const fresh = newItems.filter(i => !seen.has(`${i.type}_${i.api_id}`))
+        const next  = [...prev, ...fresh]
+        if (done) {
+          try { sessionStorage.setItem(cacheKey, JSON.stringify(next)) } catch {}
+        }
+        return next
+      })
+
+      srcCursorRef.current = nextCursor
+      if (done) canLoadMoreRef.current = false
+    } finally {
+      isLoadingRef.current = false
+      setLoadingMore(false)
+    }
+  }
+
+  // Keep ref current so IntersectionObserver callback never has stale closure
+  loadMoreFnRef.current = doLoadMore
+
+  // On mount: load from cache or fetch first batch
+  useEffect(() => {
+    setCuratedItems([])
+    srcCursorRef.current   = 0
+    canLoadMoreRef.current = true
+    isLoadingRef.current   = true  // block sentinel while initial load runs
+    setInitialLoading(true)
+
+    const cached = sessionStorage.getItem(cacheKey)
+    if (cached) {
+      try {
+        const data = JSON.parse(cached)
+        // Reject caches without _curatedCategory (built before category feature)
+        if (Array.isArray(data) && data.length > 0 && data[0]?._curatedCategory) {
+          setCuratedItems(data)
+          srcCursorRef.current   = curatedSrc.length
+          canLoadMoreRef.current = false
+          isLoadingRef.current   = false
+          setInitialLoading(false)
+          return
+        }
+      } catch {}
+      sessionStorage.removeItem(cacheKey)
+    }
+
+    fetchBatch(0).then(items => {
       const seen    = new Set()
-      const deduped = results.filter(Boolean).filter(item => {
-        const key = `${item.type}_${item.api_id}`
-        if (seen.has(key)) return false
-        seen.add(key)
+      const deduped = items.filter(i => {
+        const k = `${i.type}_${i.api_id}`
+        if (seen.has(k)) return false
+        seen.add(k)
         return true
       })
-      try { sessionStorage.setItem(cacheKey, JSON.stringify(deduped)) } catch {}
       setCuratedItems(deduped)
-    }).finally(() => setLoadingCurated(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      srcCursorRef.current = PAGE_SIZE
+      if (PAGE_SIZE >= curatedSrc.length) {
+        canLoadMoreRef.current = false
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(deduped)) } catch {}
+      }
+    }).finally(() => {
+      isLoadingRef.current = false
+      setInitialLoading(false)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tipo])
 
-  // Category pill handler (client-side filter on curated items)
+  // IntersectionObserver: sentinel at bottom of list triggers next batch
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) loadMoreFnRef.current() },
+      { rootMargin: '300px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  // Category filter: if selected category has 0 loaded items, keep loading until found
+  useEffect(() => {
+    if (activeCat === 'Todos' || !canLoadMoreRef.current || isLoadingRef.current) return
+    const ids = new Set(
+      userLibrary.filter(ui => ui.items?.type === itemType).map(ui => `${ui.items?.type}_${ui.items?.api_id}`)
+    )
+    const catCount = curatedItems.filter(
+      i => i._curatedCategory === activeCat && !ids.has(`${i.type}_${i.api_id}`)
+    ).length
+    if (catCount === 0) loadMoreFnRef.current()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCat, curatedItems.length, userLibrary.length])
+
+  // Category pill handler
   function handleCatChange(cat) {
     setActiveCat(cat)
     clearTimeout(searchDebounce.current)
@@ -338,7 +433,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     }, 500)
   }
 
-  // Grid drag (scroll the parent .sc vertically)
+  // Grid drag (scrolls the parent .sc vertically on desktop)
   function onGridMouseDown(e) {
     const sc = gridWrapRef.current?.closest('.sc')
     if (!sc) return
@@ -356,10 +451,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     if (gridWrapRef.current) gridWrapRef.current.style.cursor = 'grab'
   }
 
-  // Compute display items from curated list
-  const userApiIds = new Set(userItemsForTipo.map(ui => `${ui.items?.type}_${ui.items?.api_id}`))
-
-  // Categories from user's items that match curated items
+  // Compute display items
   const userCategories = new Set()
   curatedItems.forEach(ci => {
     if (userApiIds.has(`${ci.type}_${ci.api_id}`)) userCategories.add(ci._curatedCategory)
@@ -371,7 +463,6 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     return true
   })
 
-  // Recommendations: sort by similarity to user's categories when showing all
   if (hasUserItems && activeCat === 'Todos' && userCategories.size > 0) {
     displayItems = [...displayItems].sort((a, b) => {
       const aM = userCategories.has(a._curatedCategory) ? 0 : 1
@@ -420,7 +511,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         ))}
       </div>
 
-      {loadingCurated ? (
+      {initialLoading ? (
         <GridSkeleton />
       ) : isSearchMode ? (
         searchLoading ? (
@@ -455,7 +546,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 10 }}>
             {sectionLabel}
           </div>
-          {displayItems.length === 0 ? (
+          {displayItems.length === 0 && !loadingMore ? (
             <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
               <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>
@@ -468,7 +559,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
           ) : (
             <div {...gridProps}>
               <div className="grid-h">
-                {displayItems.slice(0, 60).map(item => {
+                {displayItems.map(item => {
                   const inLib = userLibrary.some(ui => ui.items?.api_id === item.api_id && ui.items?.type === item.type)
                   return (
                     <GridCard
@@ -483,6 +574,16 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
             </div>
           )}
         </>
+      )}
+
+      {/* Sentinel: always rendered so IntersectionObserver can attach on mount */}
+      <div ref={sentinelRef} style={{ height: 8 }} />
+
+      {/* Loading-more spinner (curated grid only) */}
+      {loadingMore && !isSearchMode && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0 8px' }}>
+          <div className="spin" />
+        </div>
       )}
     </div>
   )
