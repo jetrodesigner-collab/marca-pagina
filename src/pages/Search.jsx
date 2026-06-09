@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { CURATED_BOOKS, CURATED_MOVIES } from '../data/curatedList'
 
 const BLOBS = [
   { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
@@ -127,6 +128,16 @@ function normalizeStr(s) {
   return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
+// Normaliza com remoção de acentos — usado para comparar com lista curada
+function normalizeTitleForCurated(s) {
+  return (s || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+const CURATED_BOOK_TITLES  = new Set(CURATED_BOOKS.map(b => normalizeTitleForCurated(b.title)))
+const CURATED_MOVIE_TITLES = new Set(CURATED_MOVIES.map(m => normalizeTitleForCurated(m.title)))
+
 export default function Search({ session, onNavigate }) {
   const [profile, setProfile]           = useState(null)
   const [activeTab, setActiveTab]       = useState('L')
@@ -253,7 +264,13 @@ export default function Search({ session, onNavigate }) {
 
         const seenKeys = new Set(combined.map(b => b.key))
         const merged = [...combined, ...manualRows.filter(m => !seenKeys.has(m.key))]
-        setBookResults(merged)
+        // Curated titles aparecem primeiro
+        const boosted = [...merged].sort((a, b) => {
+          const aInC = CURATED_BOOK_TITLES.has(normalizeTitleForCurated(a.title)) ? 0 : 1
+          const bInC = CURATED_BOOK_TITLES.has(normalizeTitleForCurated(b.title)) ? 0 : 1
+          return aInC - bInC
+        })
+        setBookResults(boosted)
 
         // Pré-popular status para itens já na biblioteca
         const initial = {}
@@ -320,7 +337,13 @@ export default function Search({ session, onNavigate }) {
         // Mesclar sem duplicatas por id (string)
         const seen = new Set(tmdbResults.map(m => String(m.id)))
         const merged = [...tmdbResults, ...manualRows.filter(m => !seen.has(String(m.id)))]
-        setMovieResults(merged)
+        // Curated titles aparecem primeiro
+        const boosted = [...merged].sort((a, b) => {
+          const aInC = CURATED_MOVIE_TITLES.has(normalizeTitleForCurated(a.title)) ? 0 : 1
+          const bInC = CURATED_MOVIE_TITLES.has(normalizeTitleForCurated(b.title)) ? 0 : 1
+          return aInC - bInC
+        })
+        setMovieResults(boosted)
         const initial = {}
         merged.forEach(movie => {
           if (userLibraryKeys.has(`movie_${String(movie.id)}`)) initial[`movie_${movie.id}`] = 'exists'

@@ -47,7 +47,16 @@ function HeroCover({ item }) {
   )
 }
 
-export default function ItemDetail({ session, item: itemProp, userItem: userItemProp, onBack, onUserItemUpdate }) {
+function TrashIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E57373" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  )
+}
+
+export default function ItemDetail({ session, item: itemProp, userItem: userItemProp, isOwner = true, onBack, onUserItemUpdate }) {
   const [theme]        = useState(() => localStorage.getItem('tema') || 'D')
   const [activeTab,    setActiveTab]    = useState('R')
   const [localItem,    setLocalItem]    = useState(itemProp)
@@ -63,6 +72,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [synopsis,     setSynopsis]     = useState(() => localItem.overview || localItem.synopsis || null)
   const [synExpanded,  setSynExpanded]  = useState(false)
   const [synNeedsBtn,  setSynNeedsBtn]  = useState(false)
+  const [showRemoveModal, setShowRemoveModal] = useState(false)
+  const [removing,     setRemoving]     = useState(false)
   const synRef = useRef(null)
 
   const isBook       = localItem.type === 'book'
@@ -70,6 +81,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const statuses     = isBook ? BOOK_STATUSES : MOVIE_STATUSES
   const isInLibrary  = !!localUserItem
   const statusInfo   = status ? STATUS_META[status] : null
+  const showTrash    = isOwner && isInLibrary
 
   // Load existing review only when item has a Supabase UUID and is in library
   useEffect(() => {
@@ -92,7 +104,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   useEffect(() => {
     if (synopsis || !localItem.api_id) return
     if (isBook) {
-      // api_id = '/works/OL123W'
       fetch(`https://openlibrary.org${localItem.api_id}.json`)
         .then(r => r.json())
         .then(data => {
@@ -122,7 +133,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     setAdding(true)
     setAddError(false)
     try {
-      // Ensure item row exists in items table
       const { data: itemRow, error: itemErr } = await supabase
         .from('items')
         .upsert({
@@ -140,7 +150,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
 
       if (itemErr || !itemRow) throw itemErr || new Error('no item row')
 
-      // Insert user_items row
       const { data: uiRow, error: uiErr } = await supabase
         .from('user_items')
         .insert({ user_id: session.user.id, item_id: itemRow.id, status: chosenStatus })
@@ -202,6 +211,30 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     setTimeout(() => setSaveFeedback(null), 2500)
   }
 
+  async function removeFromLibrary() {
+    if (!localItem.id || removing) return
+    setRemoving(true)
+    try {
+      await supabase.from('user_items').delete()
+        .eq('user_id', session.user.id)
+        .eq('item_id', localItem.id)
+      await supabase.from('reviews').delete()
+        .eq('user_id', session.user.id)
+        .eq('item_id', localItem.id)
+      if (isBook) {
+        // excerpts table may not exist yet — ignore errors
+        await supabase.from('excerpts').delete()
+          .eq('user_id', session.user.id)
+          .eq('item_id', localItem.id)
+          .then(() => {}).catch(() => {})
+      }
+      onBack()
+    } catch {
+      setRemoving(false)
+      setShowRemoveModal(false)
+    }
+  }
+
   return (
     <div
       className={themeClass}
@@ -216,7 +249,20 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
         {/* Page header */}
         <div className="ph">
           <div className="bk" onClick={onBack}>←</div>
-          <div className="ph-t">{isBook ? 'Detalhes do Livro' : 'Detalhes do Filme'}</div>
+          <div className="ph-t" style={{ flex: 1 }}>{isBook ? 'Detalhes do Livro' : 'Detalhes do Filme'}</div>
+          {showTrash && (
+            <div
+              onClick={() => setShowRemoveModal(true)}
+              style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: 'rgba(229,115,115,0.12)', border: '1px solid rgba(229,115,115,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', flexShrink: 0, transition: 'background .2s',
+              }}
+            >
+              <TrashIcon />
+            </div>
+          )}
         </div>
 
         <div className="gl" />
@@ -402,6 +448,70 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
 
         </div>
       </div>
+
+      {/* Modal de confirmação de remoção */}
+      {showRemoveModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)',
+            padding: '0 20px',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setShowRemoveModal(false) }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 360,
+            background: 'var(--bg)', backgroundImage: 'var(--bg)',
+            border: '1px solid var(--bor)',
+            borderRadius: 22, padding: '24px 20px',
+            backdropFilter: 'blur(24px)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: '50%',
+              background: 'rgba(229,115,115,0.15)', border: '1px solid rgba(229,115,115,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 14px',
+            }}>
+              <TrashIcon />
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', textAlign: 'center', marginBottom: 8 }}>
+              Remover da sua biblioteca?
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'center', lineHeight: 1.55, marginBottom: 22 }}>
+              Sua avaliação e resenha também serão removidas.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setShowRemoveModal(false)}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 14,
+                  border: '1px solid var(--bor2)', background: 'var(--sur)',
+                  color: 'var(--text)', fontFamily: "'Figtree', sans-serif",
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={removeFromLibrary}
+                disabled={removing}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 14,
+                  border: 'none', background: '#E57373',
+                  color: '#fff', fontFamily: "'Figtree', sans-serif",
+                  fontSize: 13, fontWeight: 700, cursor: removing ? 'default' : 'pointer',
+                  opacity: removing ? 0.7 : 1,
+                }}
+              >
+                {removing ? 'Removendo...' : 'Remover'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { CURATED_BOOKS, CURATED_MOVIES } from '../data/curatedList'
 
 const TMDB_KEY  = import.meta.env.VITE_TMDB_API_KEY
 const INIT_SIZE = 30
-const MORE_SIZE = 10
 
 const FRASES = [
   { t: 'Os livros são espelhos: só vemos neles o que já temos dentro de nós.', a: 'Carlos Ruiz Zafón' },
@@ -30,64 +30,6 @@ const BLOBS = [
   { width: 240, height: 240, background: 'var(--bl3)', bottom: 120, left: -60 },
   { width: 200, height: 200, background: 'var(--bl4)', bottom: 40, right: -50 },
 ]
-
-// TMDB genre_id → category name
-const TMDB_GENRE_MAP = {
-  'Drama':          [18],
-  'Comédia':        [35],
-  'Ficção Científica': [878],
-  'Ação':           [28],
-  'Terror':         [27],
-  'Suspense':       [53],
-  'Romance':        [10749],
-  'Animação':       [16],
-  'Documentário':   [99],
-  'Histórico':      [36],
-  'Crime':          [80],
-}
-
-// Category → Open Library subject query slug (for /search.json?subject=)
-const OL_SUBJECT_QUERY = {
-  'Ficção Científica': 'science_fiction',
-  'Lit. Brasileira':   'brazil',
-  'Lit. Internacional': 'fiction',
-  'Filosofia':         'philosophy',
-  'Fantasia':          'fantasy',
-  'Romance':           'romance_fiction',
-  'História':          'history',
-  'Biografia':         'biography',
-  'Psicologia':        'psychology',
-  'Negócios':          'business',
-  'Autoajuda':         'self_help',
-  'Policial':          'mystery_and_detective_stories',
-}
-
-// Category → Open Library subject keywords
-const OL_SUBJECT_MAP = {
-  'Ficção Científica': ['science fiction', 'sci-fi', 'ficção científica'],
-  'Lit. Brasileira':   ['brasil', 'brazil', 'brazilian', 'literatura brasileira'],
-  'Lit. Internacional': ['fiction', 'novel', 'literature'],
-  'Filosofia':         ['philosophy', 'filosofia'],
-  'Fantasia':          ['fantasy', 'fantasia'],
-  'Romance':           ['romance', 'love stories'],
-  'História':          ['history', 'historical', 'história'],
-  'Biografia':         ['biography', 'autobiography', 'memoirs'],
-  'Psicologia':        ['psychology', 'psicologia'],
-  'Negócios':          ['business', 'economics', 'management'],
-  'Autoajuda':         ['self-help', 'self help', 'personal development'],
-  'Policial':          ['mystery', 'detective', 'crime', 'thriller'],
-}
-
-function matchesCategory(item, cat) {
-  if (cat === 'Todos') return true
-  if (item.type === 'movie') {
-    const ids = TMDB_GENRE_MAP[cat] || []
-    return ids.some(id => (item.genre_ids || []).includes(id))
-  }
-  const keywords = OL_SUBJECT_MAP[cat] || []
-  const subjects = (item.subjects || []).map(s => s.toLowerCase())
-  return keywords.some(kw => subjects.some(s => s.includes(kw)))
-}
 
 function mapBooks(works) {
   return works.map(w => ({
@@ -248,73 +190,103 @@ function GridSkeleton() {
 }
 
 function LibrarySection({ tipo, userLibrary, onItemClick }) {
-  const [items, setItems]             = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [tmdbPage, setTmdbPage]       = useState(1)
-  const [olOffset, setOlOffset]       = useState(0)
-  const [hasMoreApi, setHasMoreApi]   = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
+  const [curatedItems, setCuratedItems] = useState([])
+  const [loadingCurated, setLoadingCurated] = useState(true)
   const [activeCat, setActiveCat]     = useState('Todos')
   const [query, setQuery]             = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
 
   const gridWrapRef    = useRef(null)
-  const sentinelRef    = useRef(null)
-  const stateRef       = useRef({})
   const gridDrag       = useRef({ active: false, startY: 0, startX: 0, scrollTop: 0 })
   const searchDebounce = useRef(null)
-  stateRef.current  = { loadingMore, hasMoreApi, tipo, olOffset, tmdbPage, activeCat }
 
-  const cats = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
+  const cats        = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
+  const cacheKey    = tipo === 'L' ? 'curated_cache_books' : 'curated_cache_movies'
+  const itemType    = tipo === 'L' ? 'book' : 'movie'
+  const curatedSrc  = tipo === 'L' ? CURATED_BOOKS : CURATED_MOVIES
 
-  // Busca livros com suporte a categoria via API do Open Library
-  function fetchBooks(cat, offset = 0, append = false) {
-    const url = cat === 'Todos'
-      ? `https://openlibrary.org/trending/weekly.json?limit=${append ? MORE_SIZE : INIT_SIZE}${offset ? `&offset=${offset}` : ''}`
-      : `https://openlibrary.org/search.json?subject=${OL_SUBJECT_QUERY[cat] || encodeURIComponent(cat)}&limit=${append ? MORE_SIZE : INIT_SIZE}&offset=${offset}`
-    fetch(url)
-      .then(r => r.json())
-      .then(data => {
-        const works = cat === 'Todos' ? (data.works || []) : (data.docs || [])
-        const mapped = mapBooks(works)
-        setItems(prev => append ? [...prev, ...mapped] : mapped)
-        setOlOffset(offset + works.length)
-        setHasMoreApi(works.length >= (append ? MORE_SIZE : INIT_SIZE))
-      })
-      .catch(() => { if (!append) setItems([]) })
-      .finally(() => { setLoading(false); setLoadingMore(false) })
-  }
+  // User items for this tipo
+  const userItemsForTipo = userLibrary.filter(ui => ui.items?.type === itemType)
+  const hasUserItems     = userItemsForTipo.length > 0
 
-  // Reset completo ao trocar tipo de mídia
+  // Fetch curated list on mount (one-time per session via sessionStorage cache)
   useEffect(() => {
-    clearTimeout(searchDebounce.current)
-    setItems([])
-    setLoading(true)
-    setTmdbPage(1)
-    setOlOffset(0)
-    setHasMoreApi(true)
-    setQuery('')
-    setSearchResults([])
-    setSearchLoading(false)
-    setActiveCat('Todos')
-
-    if (tipo === 'L') {
-      fetchBooks('Todos')
-    } else {
-      fetch(`https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=1&api_key=${TMDB_KEY}`)
-        .then(r => r.json())
-        .then(data => {
-          setItems(mapMovies(data.results || []))
-          setHasMoreApi((data.total_pages || 1) > 1)
-        })
-        .catch(() => { setItems([]); setHasMoreApi(false) })
-        .finally(() => setLoading(false))
+    const cached = sessionStorage.getItem(cacheKey)
+    if (cached) {
+      try { setCuratedItems(JSON.parse(cached)) } catch {}
+      setLoadingCurated(false)
+      return
     }
+    setLoadingCurated(true)
+    const fetches = curatedSrc.map(ci => {
+      if (tipo === 'L') {
+        return fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(ci.title)}&limit=3`)
+          .then(r => r.json())
+          .then(data => {
+            const docs = data.docs || []
+            const withCover = docs.find(d => d.cover_i)
+            const doc = withCover || docs[0]
+            if (!doc) return null
+            return {
+              type: 'book', api_id: doc.key, api_source: 'openlibrary',
+              title: doc.title,
+              author: Array.isArray(doc.author_name) ? doc.author_name[0] : ci.author_director,
+              year: doc.first_publish_year || ci.year,
+              cover_url: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+              subjects: Array.isArray(doc.subject) ? doc.subject : [],
+              _curatedCategory: ci.category,
+              _curatedTitle: ci.title,
+            }
+          })
+          .catch(() => null)
+      } else {
+        return fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(ci.title)}&language=pt-BR&api_key=${TMDB_KEY}&page=1`)
+          .then(r => r.json())
+          .then(data => {
+            const results = data.results || []
+            const byYear  = results.find(r => r.release_date?.startsWith(String(ci.year)))
+            const movie   = byYear || results[0]
+            if (!movie) return null
+            return {
+              type: 'movie', api_id: String(movie.id), api_source: 'tmdb',
+              title: movie.title,
+              director: ci.author_director,
+              year: movie.release_date ? Number(movie.release_date.split('-')[0]) : ci.year,
+              cover_url: movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : null,
+              genre_ids: movie.genre_ids || [],
+              overview: movie.overview || null,
+              _curatedCategory: ci.category,
+              _curatedTitle: ci.title,
+            }
+          })
+          .catch(() => null)
+      }
+    })
+    Promise.all(fetches).then(results => {
+      const seen    = new Set()
+      const deduped = results.filter(Boolean).filter(item => {
+        const key = `${item.type}_${item.api_id}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      try { sessionStorage.setItem(cacheKey, JSON.stringify(deduped)) } catch {}
+      setCuratedItems(deduped)
+    }).finally(() => setLoadingCurated(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tipo])
 
-  // Busca real em API externa + Supabase (manuais) com debounce de 500ms
+  // Category pill handler (client-side filter on curated items)
+  function handleCatChange(cat) {
+    setActiveCat(cat)
+    clearTimeout(searchDebounce.current)
+    setQuery('')
+    setSearchResults([])
+    setSearchLoading(false)
+  }
+
+  // Bib-srch live search
   function handleQueryChange(e) {
     const val = e.target.value
     setQuery(val)
@@ -326,11 +298,9 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     }
     setSearchLoading(true)
     searchDebounce.current = setTimeout(async () => {
-      const term     = val.trim()
-      const itemType = tipo === 'L' ? 'book' : 'movie'
+      const term = val.trim()
       try {
         const [apiResults, manualRows] = await Promise.all([
-          // API externa
           (async () => {
             if (tipo === 'L') {
               const res  = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(term)}&limit=20`)
@@ -343,7 +313,6 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
             const data = await res.json()
             return mapMovies((data.results || []).slice(0, 20))
           })(),
-          // Supabase — itens manuais
           supabase
             .from('items')
             .select('*')
@@ -352,21 +321,13 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
             .or(`title.ilike.%${term}%,author.ilike.%${term}%,director.ilike.%${term}%`)
             .limit(20)
             .then(({ data }) => (data || []).map(r => ({
-              type:      r.type,
-              api_id:    r.api_id,
-              api_source: r.api_source,
-              title:     r.title,
-              author:    r.author    || null,
-              director:  r.director  || null,
-              year:      r.year      || null,
-              cover_url: r.cover_url || null,
-              subjects:  [],
-              genre_ids: [],
-              is_manual: true,
+              type: r.type, api_id: r.api_id, api_source: r.api_source,
+              title: r.title, author: r.author || null, director: r.director || null,
+              year: r.year || null, cover_url: r.cover_url || null,
+              subjects: [], genre_ids: [], is_manual: true,
             })))
             .catch(() => []),
         ])
-        // Mesclar sem duplicatas por (type, api_id)
         const seen = new Set(apiResults.map(r => `${r.type}_${r.api_id}`))
         setSearchResults([...apiResults, ...manualRows.filter(m => !seen.has(`${m.type}_${m.api_id}`))])
       } catch {
@@ -377,58 +338,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     }, 500)
   }
 
-  // Troca de categoria em livros: rebusca no servidor e limpa busca
-  function handleCatChange(cat) {
-    setActiveCat(cat)
-    clearTimeout(searchDebounce.current)
-    setQuery('')
-    setSearchResults([])
-    setSearchLoading(false)
-    if (tipo !== 'L') return
-    setItems([])
-    setLoading(true)
-    setOlOffset(0)
-    setHasMoreApi(true)
-    fetchBooks(cat)
-  }
-
-  async function fetchMore() {
-    const { loadingMore, hasMoreApi, tipo, olOffset, tmdbPage, activeCat } = stateRef.current
-    if (loadingMore || !hasMoreApi) return
-    setLoadingMore(true)
-    try {
-      if (tipo === 'L') {
-        fetchBooks(activeCat, olOffset, true)
-      } else {
-        const next = tmdbPage + 1
-        const res  = await fetch(
-          `https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=${next}&api_key=${TMDB_KEY}`
-        )
-        const data = await res.json()
-        setItems(prev => [...prev, ...mapMovies(data.results || [])])
-        setTmdbPage(next)
-        setHasMoreApi(next < (data.total_pages || 1))
-        setLoadingMore(false)
-      }
-    } catch {
-      setLoadingMore(false)
-    }
-  }
-
-  // IntersectionObserver para scroll vertical infinito (root: null = viewport)
-  useEffect(() => {
-    if (loading || !sentinelRef.current) return
-    const observer = new IntersectionObserver(
-      entries => { if (entries[0].isIntersecting) fetchMore() },
-      { root: null, threshold: 0, rootMargin: '0px 0px 400px 0px' }
-    )
-    observer.observe(sentinelRef.current)
-    return () => observer.disconnect()
-    // fetchMore lê de stateRef — não precisa ser dep
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading])
-
-  // Mouse drag para scroll no PC (arrasta o grid-sw, rola o .sc pai verticalmente)
+  // Grid drag (scroll the parent .sc vertically)
   function onGridMouseDown(e) {
     const sc = gridWrapRef.current?.closest('.sc')
     if (!sc) return
@@ -446,18 +356,47 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     if (gridWrapRef.current) gridWrapRef.current.style.cursor = 'grab'
   }
 
-  const isSearchMode = query.trim() !== ''
+  // Compute display items from curated list
+  const userApiIds = new Set(userItemsForTipo.map(ui => `${ui.items?.type}_${ui.items?.api_id}`))
 
-  const filtered = isSearchMode ? [] : items.filter(item => {
-    if (tipo === 'F' && activeCat !== 'Todos' && !matchesCategory(item, activeCat)) return false
+  // Categories from user's items that match curated items
+  const userCategories = new Set()
+  curatedItems.forEach(ci => {
+    if (userApiIds.has(`${ci.type}_${ci.api_id}`)) userCategories.add(ci._curatedCategory)
+  })
+
+  let displayItems = curatedItems.filter(item => {
+    if (activeCat !== 'Todos' && item._curatedCategory !== activeCat) return false
+    if (hasUserItems && userApiIds.has(`${item.type}_${item.api_id}`)) return false
     return true
   })
+
+  // Recommendations: sort by similarity to user's categories when showing all
+  if (hasUserItems && activeCat === 'Todos' && userCategories.size > 0) {
+    displayItems = [...displayItems].sort((a, b) => {
+      const aM = userCategories.has(a._curatedCategory) ? 0 : 1
+      const bM = userCategories.has(b._curatedCategory) ? 0 : 1
+      return aM - bM
+    })
+  }
+
+  const isSearchMode = query.trim() !== ''
+  const sectionLabel = hasUserItems ? 'Recomendados para você' : 'Sugestões'
 
   function handleItemClick(apiItem) {
     const userEntry = userLibrary.find(
       ui => ui.items?.api_id === apiItem.api_id && ui.items?.type === apiItem.type
     )
     onItemClick(userEntry ? userEntry.items : apiItem, userEntry || null)
+  }
+
+  const gridProps = {
+    ref: gridWrapRef,
+    className: 'grid-sw',
+    onMouseDown: onGridMouseDown,
+    onMouseMove: onGridMouseMove,
+    onMouseUp: onGridMouseUp,
+    onMouseLeave: onGridMouseUp,
   }
 
   return (
@@ -481,7 +420,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         ))}
       </div>
 
-      {loading ? (
+      {loadingCurated ? (
         <GridSkeleton />
       ) : isSearchMode ? (
         searchLoading ? (
@@ -495,14 +434,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
             <div style={{ fontSize: 11, lineHeight: 1.55 }}>Tente outro termo</div>
           </div>
         ) : (
-          <div
-            ref={gridWrapRef}
-            className="grid-sw"
-            onMouseDown={onGridMouseDown}
-            onMouseMove={onGridMouseMove}
-            onMouseUp={onGridMouseUp}
-            onMouseLeave={onGridMouseUp}
-          >
+          <div {...gridProps}>
             <div className="grid-h">
               {searchResults.map(item => {
                 const inLib = userLibrary.some(ui => ui.items?.api_id === item.api_id && ui.items?.type === item.type)
@@ -518,46 +450,39 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
             </div>
           </div>
         )
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
-          <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>
-            {activeCat !== 'Todos' ? 'Nenhum item nessa categoria' : 'Não foi possível carregar o catálogo'}
-          </div>
-          <div style={{ fontSize: 11, lineHeight: 1.55 }}>
-            {activeCat !== 'Todos' ? 'Tente outra categoria ou "Todos"' : 'Verifique sua conexão e recarregue'}
-          </div>
-        </div>
       ) : (
-        <div
-          ref={gridWrapRef}
-          className="grid-sw"
-          onMouseDown={onGridMouseDown}
-          onMouseMove={onGridMouseMove}
-          onMouseUp={onGridMouseUp}
-          onMouseLeave={onGridMouseUp}
-        >
-          <div className="grid-h">
-            {filtered.map(item => {
-              const inLib = userLibrary.some(ui => ui.items?.api_id === item.api_id && ui.items?.type === item.type)
-              return (
-                <GridCard
-                  key={`${item.type}_${item.api_id}`}
-                  item={item}
-                  inLibrary={inLib}
-                  onClick={() => handleItemClick(item)}
-                />
-              )
-            })}
-            {loadingMore && (
-              <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
-                <div className="spin" />
-              </div>
-            )}
+        <>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 10 }}>
+            {sectionLabel}
           </div>
-          {/* Sentinel fora do grid para o IntersectionObserver vertical */}
-          <div ref={sentinelRef} style={{ height: 1 }} />
-        </div>
+          {displayItems.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>
+                {activeCat !== 'Todos' ? 'Nenhum item nessa categoria' : 'Não foi possível carregar as sugestões'}
+              </div>
+              <div style={{ fontSize: 11, lineHeight: 1.55 }}>
+                {activeCat !== 'Todos' ? 'Tente outra categoria ou "Todos"' : 'Verifique sua conexão e recarregue'}
+              </div>
+            </div>
+          ) : (
+            <div {...gridProps}>
+              <div className="grid-h">
+                {displayItems.slice(0, 60).map(item => {
+                  const inLib = userLibrary.some(ui => ui.items?.api_id === item.api_id && ui.items?.type === item.type)
+                  return (
+                    <GridCard
+                      key={`${item.type}_${item.api_id}`}
+                      item={item}
+                      inLibrary={inLib}
+                      onClick={() => handleItemClick(item)}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -603,7 +528,7 @@ export default function Library({ session, onNavigate }) {
   const watched     = movieItems.filter(ui => ui.status === 'watched')
 
   function goToItem(item, userItem) {
-    onNavigate('item', { item, userItem })
+    onNavigate('item', { item, userItem, isOwner: true })
   }
 
   function goToSearch() {

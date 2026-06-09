@@ -60,6 +60,7 @@ export default function App() {
         session={session}
         item={itemContext.item}
         userItem={itemContext.userItem}
+        isOwner={itemContext.isOwner ?? true}
         onBack={() => setScreen('library')}
         onUserItemUpdate={updated => setItemContext(c => ({ ...c, userItem: updated }))}
       />
