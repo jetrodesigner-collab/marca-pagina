@@ -158,6 +158,14 @@ function GridCard({ item, onClick, inLibrary }) {
           <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
         </div>
       )}
+      {item.is_manual && (
+        <div style={{
+          position: 'absolute', top: 3, left: 3,
+          background: 'rgba(196,168,240,0.92)', color: '#1A1720',
+          fontSize: 7, fontWeight: 800, padding: '2px 4px', borderRadius: 4,
+          letterSpacing: '0.05em', zIndex: 2, textTransform: 'uppercase',
+        }}>Manual</div>
+      )}
       {inLibrary && (
         <div style={{
           position: 'absolute', top: 3, right: 3,
@@ -306,7 +314,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tipo])
 
-  // Busca real em API externa com debounce de 500ms
+  // Busca real em API externa + Supabase (manuais) com debounce de 500ms
   function handleQueryChange(e) {
     const val = e.target.value
     setQuery(val)
@@ -318,18 +326,49 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
     }
     setSearchLoading(true)
     searchDebounce.current = setTimeout(async () => {
+      const term     = val.trim()
+      const itemType = tipo === 'L' ? 'book' : 'movie'
       try {
-        if (tipo === 'L') {
-          const res  = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(val.trim())}&limit=20`)
-          const data = await res.json()
-          setSearchResults(mapBooks(data.docs || []))
-        } else {
-          const res  = await fetch(
-            `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(val.trim())}&language=pt-BR&api_key=${TMDB_KEY}`
-          )
-          const data = await res.json()
-          setSearchResults(mapMovies((data.results || []).slice(0, 20)))
-        }
+        const [apiResults, manualRows] = await Promise.all([
+          // API externa
+          (async () => {
+            if (tipo === 'L') {
+              const res  = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(term)}&limit=20`)
+              const data = await res.json()
+              return mapBooks(data.docs || [])
+            }
+            const res  = await fetch(
+              `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(term)}&language=pt-BR&api_key=${TMDB_KEY}`
+            )
+            const data = await res.json()
+            return mapMovies((data.results || []).slice(0, 20))
+          })(),
+          // Supabase — itens manuais
+          supabase
+            .from('items')
+            .select('*')
+            .eq('is_manual', true)
+            .eq('type', itemType)
+            .or(`title.ilike.%${term}%,author.ilike.%${term}%,director.ilike.%${term}%`)
+            .limit(20)
+            .then(({ data }) => (data || []).map(r => ({
+              type:      r.type,
+              api_id:    r.api_id,
+              api_source: r.api_source,
+              title:     r.title,
+              author:    r.author    || null,
+              director:  r.director  || null,
+              year:      r.year      || null,
+              cover_url: r.cover_url || null,
+              subjects:  [],
+              genre_ids: [],
+              is_manual: true,
+            })))
+            .catch(() => []),
+        ])
+        // Mesclar sem duplicatas por (type, api_id)
+        const seen = new Set(apiResults.map(r => `${r.type}_${r.api_id}`))
+        setSearchResults([...apiResults, ...manualRows.filter(m => !seen.has(`${m.type}_${m.api_id}`))])
       } catch {
         setSearchResults([])
       } finally {

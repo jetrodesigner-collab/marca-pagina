@@ -11,17 +11,11 @@ const BLOBS = [
 const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
 const FILM_COLORS  = ['f1','f2','f3','f4','f5','f6']
 
-function BookCover({ coverId, title }) {
+function BookCover({ coverId, coverUrl, title }) {
   const [err, setErr] = useState(false)
-  if (coverId && !err) {
-    return (
-      <img
-        className="srcov"
-        src={`https://covers.openlibrary.org/b/id/${coverId}-M.jpg`}
-        alt=""
-        onError={() => setErr(true)}
-      />
-    )
+  const src = coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : (coverUrl || null)
+  if (src && !err) {
+    return <img className="srcov" src={src} alt="" onError={() => setErr(true)} />
   }
   const initials = title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
   const cls = COVER_COLORS[title.charCodeAt(0) % COVER_COLORS.length]
@@ -32,17 +26,11 @@ function BookCover({ coverId, title }) {
   )
 }
 
-function MovieCover({ posterPath, title }) {
+function MovieCover({ posterPath, coverUrl, title }) {
   const [err, setErr] = useState(false)
-  if (posterPath && !err) {
-    return (
-      <img
-        className="srcov"
-        src={`https://image.tmdb.org/t/p/w500${posterPath}`}
-        alt=""
-        onError={() => setErr(true)}
-      />
-    )
+  const src = posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : (coverUrl || null)
+  if (src && !err) {
+    return <img className="srcov" src={src} alt="" onError={() => setErr(true)} />
   }
   const initials = title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
   const cls = FILM_COLORS[title.charCodeAt(0) % FILM_COLORS.length]
@@ -182,13 +170,38 @@ export default function Search({ session, onNavigate }) {
     setBookLoading(true)
     bookDebounce.current = setTimeout(async () => {
       setBookSearched(true)
+      const term = val.trim()
       try {
-        const res  = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(val.trim())}&limit=10`)
-        const data = await res.json()
-        const docs = data.docs || []
-        setBookResults(docs)
+        const [olDocs, manualRows] = await Promise.all([
+          fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(term)}&limit=10`)
+            .then(r => r.json())
+            .then(d => d.docs || [])
+            .catch(() => []),
+          supabase
+            .from('items')
+            .select('*')
+            .eq('is_manual', true)
+            .eq('type', 'book')
+            .or(`title.ilike.%${term}%,author.ilike.%${term}%`)
+            .limit(10)
+            .then(({ data }) => (data || []).map(r => ({
+              key:               r.api_id,
+              title:             r.title,
+              author_name:       r.author ? [r.author] : null,
+              first_publish_year: r.year || null,
+              cover_i:           null,
+              _cover_url:        r.cover_url || null,
+              _isManual:         true,
+            })))
+            .catch(() => []),
+        ])
+        // Mesclar sem duplicatas por key
+        const seen = new Set(olDocs.map(b => b.key))
+        const merged = [...olDocs, ...manualRows.filter(m => !seen.has(m.key))]
+        setBookResults(merged)
+        // Pré-popular status para itens já na biblioteca
         const initial = {}
-        docs.forEach(book => {
+        merged.forEach(book => {
           if (userLibraryKeys.has(`book_${book.key}`)) initial[`book_${book.key}`] = 'exists'
         })
         if (Object.keys(initial).length > 0) setItemStatus(s => ({ ...s, ...initial }))
@@ -214,15 +227,37 @@ export default function Search({ session, onNavigate }) {
     setMovieLoading(true)
     movieDebounce.current = setTimeout(async () => {
       setMovieSearched(true)
+      const term = val.trim()
       try {
-        const res  = await fetch(
-          `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(val.trim())}&language=pt-BR&api_key=${TMDB_KEY}`
-        )
-        const data = await res.json()
-        const results = (data.results || []).slice(0, 10)
-        setMovieResults(results)
+        const [tmdbResults, manualRows] = await Promise.all([
+          fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(term)}&language=pt-BR&api_key=${TMDB_KEY}`)
+            .then(r => r.json())
+            .then(d => (d.results || []).slice(0, 10))
+            .catch(() => []),
+          supabase
+            .from('items')
+            .select('*')
+            .eq('is_manual', true)
+            .eq('type', 'movie')
+            .or(`title.ilike.%${term}%,director.ilike.%${term}%`)
+            .limit(10)
+            .then(({ data }) => (data || []).map(r => ({
+              id:             r.api_id,
+              title:          r.title,
+              original_title: null,
+              release_date:   r.year ? `${r.year}-01-01` : null,
+              poster_path:    null,
+              _cover_url:     r.cover_url || null,
+              _isManual:      true,
+            })))
+            .catch(() => []),
+        ])
+        // Mesclar sem duplicatas por id (string)
+        const seen = new Set(tmdbResults.map(m => String(m.id)))
+        const merged = [...tmdbResults, ...manualRows.filter(m => !seen.has(String(m.id)))]
+        setMovieResults(merged)
         const initial = {}
-        results.forEach(movie => {
+        merged.forEach(movie => {
           if (userLibraryKeys.has(`movie_${String(movie.id)}`)) initial[`movie_${movie.id}`] = 'exists'
         })
         if (Object.keys(initial).length > 0) setItemStatus(s => ({ ...s, ...initial }))
@@ -424,11 +459,12 @@ export default function Search({ session, onNavigate }) {
                 const st = itemStatus[k]
                 return (
                   <div key={book.key || i} className="srr">
-                    <BookCover coverId={book.cover_i} title={book.title} />
+                    <BookCover coverId={book.cover_i} coverUrl={book._cover_url} title={book.title} />
                     <div className="srm">
                       <div className="srt">{book.title}</div>
                       <div className="sra">{book.author_name?.join(', ') || 'Autor desconhecido'}</div>
                       {book.first_publish_year && <div className="sry">{book.first_publish_year}</div>}
+                      {book._isManual && <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--accent)', marginTop: 3, letterSpacing: '0.05em' }}>MANUAL</div>}
                       {st === 'added'  && <div style={{ fontSize: 10, color: '#7AAA8A', fontWeight: 700, marginTop: 2 }}>Adicionado!</div>}
                       {st === 'exists' && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Já está na sua biblioteca</div>}
                     </div>
@@ -488,11 +524,12 @@ export default function Search({ session, onNavigate }) {
                 const showOriginal = movie.original_title && movie.original_title !== movie.title
                 return (
                   <div key={movie.id || i} className="srr">
-                    <MovieCover posterPath={movie.poster_path} title={movie.title} />
+                    <MovieCover posterPath={movie.poster_path} coverUrl={movie._cover_url} title={movie.title} />
                     <div className="srm">
                       <div className="srt">{movie.title}</div>
                       {showOriginal && <div className="sra">{movie.original_title}</div>}
                       {year && <div className="sry">{year}</div>}
+                      {movie._isManual && <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--accent)', marginTop: 3, letterSpacing: '0.05em' }}>MANUAL</div>}
                       {st === 'added'  && <div style={{ fontSize: 10, color: '#7AAA8A', fontWeight: 700, marginTop: 2 }}>Adicionado!</div>}
                       {st === 'exists' && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Já está na sua biblioteca</div>}
                     </div>
