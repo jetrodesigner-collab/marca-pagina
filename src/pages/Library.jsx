@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const TMDB_KEY  = import.meta.env.VITE_TMDB_API_KEY
-const INIT_SIZE = 20
+const INIT_SIZE = 30
 const MORE_SIZE = 10
 
 const FRASES = [
@@ -44,6 +44,22 @@ const TMDB_GENRE_MAP = {
   'Documentário':   [99],
   'Histórico':      [36],
   'Crime':          [80],
+}
+
+// Category → Open Library subject query slug (for /search.json?subject=)
+const OL_SUBJECT_QUERY = {
+  'Ficção Científica': 'science_fiction',
+  'Lit. Brasileira':   'brazil',
+  'Lit. Internacional': 'fiction',
+  'Filosofia':         'philosophy',
+  'Fantasia':          'fantasy',
+  'Romance':           'romance_fiction',
+  'História':          'history',
+  'Biografia':         'biography',
+  'Psicologia':        'psychology',
+  'Negócios':          'business',
+  'Autoajuda':         'self_help',
+  'Policial':          'mystery_and_detective_stories',
 }
 
 // Category → Open Library subject keywords
@@ -148,6 +164,24 @@ function GridCard({ item, onClick }) {
 }
 
 function StatusSection({ label, badgeClass, dotClass, userItems, onItemClick, onAddClick }) {
+  const rowRef = useRef(null)
+  const drag   = useRef({ active: false, x: 0, scroll: 0 })
+
+  function onRowMouseDown(e) {
+    if (!rowRef.current) return
+    drag.current = { active: true, x: e.pageX, scroll: rowRef.current.scrollLeft }
+    rowRef.current.style.cursor = 'grabbing'
+  }
+  function onRowMouseMove(e) {
+    if (!drag.current.active || !rowRef.current) return
+    e.preventDefault()
+    rowRef.current.scrollLeft = drag.current.scroll - (e.pageX - drag.current.x)
+  }
+  function onRowMouseUp() {
+    drag.current.active = false
+    if (rowRef.current) rowRef.current.style.cursor = 'grab'
+  }
+
   return (
     <div className="ss">
       <div className="sh">
@@ -157,7 +191,15 @@ function StatusSection({ label, badgeClass, dotClass, userItems, onItemClick, on
         </div>
         {userItems.length > 0 && <span className="sc-n">{userItems.length}</span>}
       </div>
-      <div className="brow">
+      <div
+        className="brow"
+        ref={rowRef}
+        style={{ cursor: 'grab', userSelect: 'none' }}
+        onMouseDown={onRowMouseDown}
+        onMouseMove={onRowMouseMove}
+        onMouseUp={onRowMouseUp}
+        onMouseLeave={onRowMouseUp}
+      >
         {userItems.map(ui => (
           <ItemCard key={ui.id} item={ui.items} onClick={() => onItemClick(ui.items, ui)} />
         ))}
@@ -187,42 +229,53 @@ function GridSkeleton() {
 }
 
 function LibrarySection({ tipo, userLibrary, onItemClick }) {
-  const [items, setItems]           = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [tmdbPage, setTmdbPage]     = useState(1)
-  const [olOffset, setOlOffset]     = useState(INIT_SIZE)
-  const [hasMoreApi, setHasMoreApi] = useState(true)
+  const [items, setItems]             = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [tmdbPage, setTmdbPage]       = useState(1)
+  const [olOffset, setOlOffset]       = useState(0)
+  const [hasMoreApi, setHasMoreApi]   = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [activeCat, setActiveCat]   = useState('Todos')
-  const [query, setQuery]           = useState('')
+  const [activeCat, setActiveCat]     = useState('Todos')
+  const [query, setQuery]             = useState('')
 
-  const scrollRef   = useRef(null)
+  const gridWrapRef = useRef(null)
   const sentinelRef = useRef(null)
   const stateRef    = useRef({})
-  stateRef.current  = { loadingMore, hasMoreApi, tipo, olOffset, tmdbPage }
+  const gridDrag    = useRef({ active: false, startY: 0, startX: 0, scrollTop: 0 })
+  stateRef.current  = { loadingMore, hasMoreApi, tipo, olOffset, tmdbPage, activeCat }
 
   const cats = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
 
+  // Busca livros com suporte a categoria via API do Open Library
+  function fetchBooks(cat, offset = 0, append = false) {
+    const url = cat === 'Todos'
+      ? `https://openlibrary.org/trending/weekly.json?limit=${append ? MORE_SIZE : INIT_SIZE}${offset ? `&offset=${offset}` : ''}`
+      : `https://openlibrary.org/search.json?subject=${OL_SUBJECT_QUERY[cat] || encodeURIComponent(cat)}&limit=${append ? MORE_SIZE : INIT_SIZE}&offset=${offset}`
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        const works = cat === 'Todos' ? (data.works || []) : (data.docs || [])
+        const mapped = mapBooks(works)
+        setItems(prev => append ? [...prev, ...mapped] : mapped)
+        setOlOffset(offset + works.length)
+        setHasMoreApi(works.length >= (append ? MORE_SIZE : INIT_SIZE))
+      })
+      .catch(() => { if (!append) setItems([]) })
+      .finally(() => { setLoading(false); setLoadingMore(false) })
+  }
+
+  // Reset completo ao trocar tipo de mídia
   useEffect(() => {
     setItems([])
     setLoading(true)
     setTmdbPage(1)
-    setOlOffset(INIT_SIZE)
+    setOlOffset(0)
     setHasMoreApi(true)
     setQuery('')
     setActiveCat('Todos')
 
     if (tipo === 'L') {
-      fetch(`https://openlibrary.org/trending/weekly.json?limit=${INIT_SIZE}`)
-        .then(r => r.json())
-        .then(data => {
-          const works = data.works || []
-          setItems(mapBooks(works))
-          setOlOffset(works.length)
-          setHasMoreApi(works.length >= INIT_SIZE)
-        })
-        .catch(() => setItems([]))
-        .finally(() => setLoading(false))
+      fetchBooks('Todos')
     } else {
       fetch(`https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=1&api_key=${TMDB_KEY}`)
         .then(r => r.json())
@@ -233,58 +286,77 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
         .catch(() => { setItems([]); setHasMoreApi(false) })
         .finally(() => setLoading(false))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tipo])
 
+  // Troca de categoria em livros: rebusca no servidor
+  function handleCatChange(cat) {
+    setActiveCat(cat)
+    if (tipo !== 'L') return
+    setItems([])
+    setLoading(true)
+    setOlOffset(0)
+    setHasMoreApi(true)
+    fetchBooks(cat)
+  }
+
   async function fetchMore() {
-    const { loadingMore, hasMoreApi, tipo, olOffset, tmdbPage } = stateRef.current
+    const { loadingMore, hasMoreApi, tipo, olOffset, tmdbPage, activeCat } = stateRef.current
     if (loadingMore || !hasMoreApi) return
     setLoadingMore(true)
     try {
       if (tipo === 'L') {
-        const res = await fetch(
-          `https://openlibrary.org/trending/weekly.json?limit=${MORE_SIZE}&offset=${olOffset}`
-        )
-        const data = await res.json()
-        const works = data.works || []
-        setItems(prev => [...prev, ...mapBooks(works)])
-        setOlOffset(prev => prev + works.length)
-        setHasMoreApi(works.length >= MORE_SIZE)
+        fetchBooks(activeCat, olOffset, true)
       } else {
         const next = tmdbPage + 1
-        const res = await fetch(
+        const res  = await fetch(
           `https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=${next}&api_key=${TMDB_KEY}`
         )
         const data = await res.json()
         setItems(prev => [...prev, ...mapMovies(data.results || [])])
         setTmdbPage(next)
         setHasMoreApi(next < (data.total_pages || 1))
+        setLoadingMore(false)
       }
     } catch {
-      // silently ignore
-    } finally {
       setLoadingMore(false)
     }
   }
 
-  // Reconecta o observer quando loading/filtro muda (sentinel pode ter remontado)
+  // IntersectionObserver para scroll vertical infinito (root: null = viewport)
   useEffect(() => {
     if (loading || !sentinelRef.current) return
-    const sentinel  = sentinelRef.current
-    const container = scrollRef.current
-    const observer  = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting) fetchMore()
-      },
-      { root: container, threshold: 0, rootMargin: '0px 300px 0px 0px' }
+    const observer = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) fetchMore() },
+      { root: null, threshold: 0, rootMargin: '0px 0px 400px 0px' }
     )
-    observer.observe(sentinel)
+    observer.observe(sentinelRef.current)
     return () => observer.disconnect()
-    // fetchMore lê de stateRef, então não precisa ser dep
+    // fetchMore lê de stateRef — não precisa ser dep
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, activeCat, query])
+  }, [loading])
+
+  // Mouse drag para scroll no PC (arrasta o grid-sw, rola o .sc pai verticalmente)
+  function onGridMouseDown(e) {
+    const sc = gridWrapRef.current?.closest('.sc')
+    if (!sc) return
+    gridDrag.current = { active: true, startY: e.pageY, startX: e.pageX, scrollTop: sc.scrollTop }
+    if (gridWrapRef.current) gridWrapRef.current.style.cursor = 'grabbing'
+  }
+  function onGridMouseMove(e) {
+    if (!gridDrag.current.active) return
+    e.preventDefault()
+    const sc = gridWrapRef.current?.closest('.sc')
+    if (sc) sc.scrollTop = gridDrag.current.scrollTop - (e.pageY - gridDrag.current.startY)
+  }
+  function onGridMouseUp() {
+    gridDrag.current.active = false
+    if (gridWrapRef.current) gridWrapRef.current.style.cursor = 'grab'
+  }
 
   const filtered = items.filter(item => {
-    if (activeCat !== 'Todos' && !matchesCategory(item, activeCat)) return false
+    // Livros: server já filtra por categoria; filmes: filtro client-side
+    if (tipo === 'F' && activeCat !== 'Todos' && !matchesCategory(item, activeCat)) return false
     if (query) {
       const q = query.toLowerCase()
       return (
@@ -317,7 +389,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
           <button
             key={cat}
             className={`cat${activeCat === cat ? ' on' : ''}`}
-            onClick={() => setActiveCat(cat)}
+            onClick={() => handleCatChange(cat)}
           >
             {cat}
           </button>
@@ -345,7 +417,14 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
           </div>
         </div>
       ) : (
-        <div ref={scrollRef} className="grid-sw">
+        <div
+          ref={gridWrapRef}
+          className="grid-sw"
+          onMouseDown={onGridMouseDown}
+          onMouseMove={onGridMouseMove}
+          onMouseUp={onGridMouseUp}
+          onMouseLeave={onGridMouseUp}
+        >
           <div className="grid-h">
             {filtered.map(item => (
               <GridCard
@@ -354,14 +433,14 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
                 onClick={() => handleItemClick(item)}
               />
             ))}
-            {/* Sentinel de scroll infinito */}
-            <div ref={sentinelRef} style={{ flexShrink: 0, width: 1, alignSelf: 'stretch' }} />
             {loadingMore && (
-              <div className="carousel-spinner">
+              <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
                 <div className="spin" />
               </div>
             )}
           </div>
+          {/* Sentinel fora do grid para o IntersectionObserver vertical */}
+          <div ref={sentinelRef} style={{ height: 1 }} />
         </div>
       )}
     </div>

@@ -271,11 +271,11 @@ body {
 .cat { flex-shrink: 0; padding: 7px 14px; border-radius: 20px; border: none; font-family: 'Figtree', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; transition: all .2s; white-space: nowrap; }
 .cat.on { background: var(--cat-on); color: #fff; box-shadow: 0 3px 12px var(--btn-shad); }
 .cat:not(.on) { background: var(--cat-off); color: var(--cat-off-c); border: 1px solid var(--cat-off-b); }
-/* ── Biblioteca — carrossel horizontal ── */
-.grid-sw { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; margin-bottom: 12px; }
-.grid-sw::-webkit-scrollbar { display: none; }
-.grid-h { display: flex; gap: 12px; padding-bottom: 16px; }
-.gc { flex-shrink: 0; width: 120px; background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 8px; cursor: pointer; transition: all .25s; backdrop-filter: blur(16px); box-shadow: 0 4px 14px var(--shad); position: relative; display: flex; flex-direction: column; gap: 6px; }
+/* ── Biblioteca — grade 3 colunas vertical ── */
+.grid-sw { margin-bottom: 12px; user-select: none; cursor: grab; }
+.grid-sw:active { cursor: grabbing; }
+.grid-h { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.gc { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 8px; cursor: pointer; transition: all .25s; backdrop-filter: blur(16px); box-shadow: 0 4px 14px var(--shad); position: relative; display: flex; flex-direction: column; gap: 6px; }
 .gc:hover { transform: translateY(-2px); }
 .gcov { width: 100%; aspect-ratio: 2/3; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,.2); }
 .gtit { font-size: 10px; font-weight: 700; color: var(--text); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -393,14 +393,12 @@ body {
 @media (min-width: 640px) {
   .bc   { width: 118px; }
   .addc { width: 118px; height: 190px; }
-  .gc   { width: 148px; }
   .topbar { padding-top: 18px; }
 }
 
 @media (min-width: 1024px) {
   .bc   { width: 126px; }
   .addc { width: 126px; height: 200px; }
-  .gc   { width: 132px; }
   .topbar { padding-top: 22px; }
   .sc   { padding-left: 28px; padding-right: 28px; }
   .qbox { margin-left: 28px; margin-right: 28px; }
