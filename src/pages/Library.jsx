@@ -114,11 +114,19 @@ function StatusSection({ label, badgeClass, dotClass, userItems, onItemClick, on
   )
 }
 
+const PAGE_SIZE = 9
+
 function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
-  const [activeCat, setActiveCat] = useState('Todos')
-  const [query, setQuery] = useState('')
+  const [activeCat, setActiveCat]     = useState('Todos')
+  const [query, setQuery]             = useState('')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const cats = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
   const noun = tipo === 'L' ? 'livro' : 'filme'
+
+  function handleQueryChange(val) {
+    setQuery(val)
+    setVisibleCount(PAGE_SIZE)
+  }
 
   const filtered = catalogItems.filter(item => {
     if (!query) return true
@@ -129,6 +137,9 @@ function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
       (item.director || '').toLowerCase().includes(q)
     )
   })
+
+  const visible   = filtered.slice(0, visibleCount)
+  const hasMore   = filtered.length > visibleCount
 
   function handleItemClick(item) {
     const userEntry = userLibrary.find(ui => ui.item_id === item.id)
@@ -142,7 +153,7 @@ function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
         className="bib-srch"
         placeholder="Buscar no catálogo..."
         value={query}
-        onChange={e => setQuery(e.target.value)}
+        onChange={e => handleQueryChange(e.target.value)}
       />
       <div className="cats">
         {cats.map(cat => (
@@ -167,17 +178,27 @@ function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
           </div>
         </div>
       ) : (
-        <div className="grid-sw">
-          <div className="grid-h">
-            {filtered.map(item => (
-              <GridCard
-                key={item.id}
-                item={item}
-                onClick={() => handleItemClick(item)}
-              />
-            ))}
+        <>
+          <div className="grid-sw">
+            <div className="grid-h">
+              {visible.map(item => (
+                <GridCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => handleItemClick(item)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+          {hasMore && (
+            <button
+              className="ver-mais"
+              onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+            >
+              Ver mais ({filtered.length - visibleCount} restantes)
+            </button>
+          )}
+        </>
       )}
     </div>
   )

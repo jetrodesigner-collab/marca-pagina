@@ -271,10 +271,9 @@ body {
 .cat { flex-shrink: 0; padding: 7px 14px; border-radius: 20px; border: none; font-family: 'Figtree', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; transition: all .2s; white-space: nowrap; }
 .cat.on { background: var(--cat-on); color: #fff; box-shadow: 0 3px 12px var(--btn-shad); }
 .cat:not(.on) { background: var(--cat-off); color: var(--cat-off-c); border: 1px solid var(--cat-off-b); }
-.grid-sw { overflow-x: auto; scrollbar-width: none; margin-bottom: 12px; padding-bottom: 4px; }
-.grid-sw::-webkit-scrollbar { display: none; }
-.grid-h { display: grid; grid-template-rows: repeat(3, auto); grid-auto-flow: column; gap: 10px; width: max-content; }
-.gc { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 8px; cursor: pointer; transition: all .25s; backdrop-filter: blur(16px); box-shadow: 0 4px 14px var(--shad); position: relative; display: flex; flex-direction: column; gap: 6px; width: 108px; }
+.grid-sw { margin-bottom: 12px; }
+.grid-h { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.gc { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 8px; cursor: pointer; transition: all .25s; backdrop-filter: blur(16px); box-shadow: 0 4px 14px var(--shad); position: relative; display: flex; flex-direction: column; gap: 6px; }
 .gc:hover { transform: translateY(-2px); }
 .gcov { width: 100%; aspect-ratio: 2/3; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,.2); }
 .gtit { font-size: 10px; font-weight: 700; color: var(--text); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
