@@ -337,8 +337,8 @@ body {
 .rbox { background: var(--sur); border: 1px solid var(--bor); border-radius: 16px; padding: 14px; margin-bottom: 12px; backdrop-filter: blur(16px); }
 .rtxt { font-size: 13px; color: var(--text); line-height: 1.65; }
 .priv { display: flex; gap: 8px; margin-bottom: 12px; }
-.pb   { flex: 1; padding: 10px 0; border-radius: 12px; border: 1px solid var(--bor2); background: var(--sur); color: var(--muted); font-family: 'Figtree', sans-serif; font-size: 11px; cursor: pointer; text-align: center; transition: all .2s; }
-.pb.on { border-color: rgba(139,111,174,.45); color: var(--accent); background: rgba(196,184,232,.15); }
+.pb   { flex: 1; padding: 10px 0; border-radius: 12px; border: 1px solid var(--bor2); background: var(--sur); color: var(--muted); font-family: 'Figtree', sans-serif; font-size: 11px; cursor: pointer; text-align: center; transition: all .2s; opacity: .6; }
+.pb.on { border-color: var(--accent); color: #fff; background: var(--accent); opacity: 1; }
 
 /* ── Trechos ── */
 .addt { width: 100%; padding: 11px; border: 1.5px dashed var(--add-bor); border-radius: 12px; background: var(--add-bg); color: var(--accent); font-family: 'Figtree', sans-serif; font-size: 12px; text-align: center; cursor: pointer; margin-bottom: 14px; }

@@ -65,6 +65,15 @@ function TrashIconSmall() {
   )
 }
 
+function PencilIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ stroke: 'var(--muted)' }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  )
+}
+
 function formatExcerptDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
@@ -80,6 +89,11 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [isPublic,     setIsPublic]     = useState(false)
   const [saving,       setSaving]       = useState(false)
   const [saveFeedback, setSaveFeedback] = useState(null)
+  const [reviewMode,   setReviewMode]   = useState('edit')
+  const [savedReview,  setSavedReview]  = useState(null)
+  const [reviewExpanded, setReviewExpanded] = useState(false)
+  const [reviewNeedsBtn, setReviewNeedsBtn] = useState(false)
+  const reviewRef = useRef(null)
   const [adding,       setAdding]       = useState(false)
   const [addError,     setAddError]     = useState(false)
   const [synopsis,     setSynopsis]     = useState(() => localItem.overview || localItem.synopsis || null)
@@ -94,6 +108,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [excerptPage,  setExcerptPage]  = useState('')
   const [excerptPublic, setExcerptPublic] = useState(false)
   const [savingExcerpt, setSavingExcerpt] = useState(false)
+  const [editingExcerptId, setEditingExcerptId] = useState(null)
   const synRef = useRef(null)
 
   const isBook       = localItem.type === 'book'
@@ -113,12 +128,22 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       .eq('item_id', localItem.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) {
+        if (data && data.body) {
           setReview(data.body || '')
           setIsPublic(data.is_public || false)
+          setSavedReview(data)
+          setReviewMode('read')
+        } else {
+          setReviewMode('edit')
         }
       })
   }, [localItem.id, localUserItem?.id, session.user.id])
+
+  // Detecta se a resenha salva está sendo truncada (para mostrar/esconder "Ver mais")
+  useEffect(() => {
+    if (reviewMode !== 'read' || !savedReview?.body || !reviewRef.current || reviewExpanded) return
+    setReviewNeedsBtn(reviewRef.current.scrollHeight > reviewRef.current.clientHeight + 1)
+  }, [reviewMode, savedReview, reviewExpanded])
 
   // Carrega trechos (próprios + comunidade) quando o item está na biblioteca
   useEffect(() => {
@@ -235,6 +260,11 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       )
     setSaving(false)
     setSaveFeedback(error ? 'err' : 'ok')
+    if (!error) {
+      setSavedReview({ body: review, is_public: isPublic })
+      setReviewExpanded(false)
+      setReviewMode('read')
+    }
     setTimeout(() => setSaveFeedback(null), 2500)
   }
 
@@ -263,18 +293,43 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     setExcerptText('')
     setExcerptPage('')
     setExcerptPublic(false)
+    setEditingExcerptId(null)
+  }
+
+  function openNewExcerptForm() {
+    setEditingExcerptId(null)
+    setExcerptText('')
+    setExcerptPage('')
+    setExcerptPublic(false)
+    setShowExcerptForm(true)
+  }
+
+  function openEditExcerptForm(excerpt) {
+    setEditingExcerptId(excerpt.id)
+    setExcerptText(excerpt.content)
+    setExcerptPage(excerpt.page_number ? String(excerpt.page_number) : '')
+    setExcerptPublic(excerpt.is_public)
+    setShowExcerptForm(true)
   }
 
   async function saveExcerpt() {
     if (savingExcerpt || !excerptText.trim() || !localItem.id) return
     setSavingExcerpt(true)
-    const { error } = await supabase.from('excerpts').insert({
-      user_id:     session.user.id,
-      item_id:     localItem.id,
+    const payload = {
       content:     excerptText.trim(),
       page_number: excerptPage ? Number(excerptPage) : null,
       is_public:   excerptPublic,
-    })
+    }
+    const { error } = editingExcerptId
+      ? await supabase.from('excerpts')
+          .update(payload)
+          .eq('id', editingExcerptId)
+          .eq('user_id', session.user.id)
+      : await supabase.from('excerpts').insert({
+          user_id: session.user.id,
+          item_id: localItem.id,
+          ...payload,
+        })
     setSavingExcerpt(false)
     if (!error) {
       cancelExcerptForm()
@@ -488,39 +543,91 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
               {/* Resenha */}
               {activeTab === 'R' && (
                 <div>
-                  <div className="bl">Sua resenha pessoal</div>
-                  <div className="rbox">
-                    <textarea
-                      className="rtxt"
-                      style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 120, fontFamily: "'Figtree', sans-serif", lineHeight: 1.65 }}
-                      placeholder={`Escreva o que esse ${isBook ? 'livro' : 'filme'} representou para você...`}
-                      value={review}
-                      onChange={e => setReview(e.target.value)}
-                    />
-                  </div>
-                  <div className="bl">Privacidade</div>
-                  <div className="priv">
-                    <button className={`pb${!isPublic ? ' on' : ''}`} onClick={() => setIsPublic(false)}>🔒 Privado</button>
-                    <button className={`pb${isPublic  ? ' on' : ''}`} onClick={() => setIsPublic(true)}>🌐 Público</button>
-                  </div>
-                  <button className="savebtn" onClick={saveReview} disabled={saving}>
-                    {saving
-                      ? 'Salvando...'
-                      : saveFeedback === 'ok'
-                        ? '✓ Resenha salva!'
-                        : saveFeedback === 'err'
-                          ? 'Erro ao salvar'
-                          : 'Salvar Resenha'}
-                  </button>
+                  {reviewMode === 'read' && savedReview ? (
+                    <>
+                      <div className="bl">Sua resenha pessoal</div>
+                      <div className="rbox">
+                        <div
+                          ref={reviewRef}
+                          className="rtxt"
+                          style={{
+                            wordBreak: 'break-word',
+                            overflowWrap: 'break-word',
+                            ...(reviewExpanded ? {} : {
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }),
+                          }}
+                        >
+                          {savedReview.body}
+                        </div>
+                        {(reviewNeedsBtn || reviewExpanded) && (
+                          <button
+                            onClick={() => setReviewExpanded(e => !e)}
+                            style={{
+                              fontSize: 9, fontWeight: 700, color: 'var(--accent)',
+                              background: 'none', border: 'none', padding: '6px 0 0',
+                              cursor: 'pointer', fontFamily: "'Figtree', sans-serif",
+                              display: 'block',
+                            }}
+                          >
+                            {reviewExpanded ? 'Recolher ↑' : 'Ver mais ↓'}
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)' }}>
+                          {savedReview.is_public ? '🌐 Pública' : '🔒 Privada'}
+                        </span>
+                        <button
+                          onClick={() => setReviewMode('edit')}
+                          style={{
+                            fontSize: 11, fontWeight: 700, color: 'var(--accent)',
+                            background: 'none', border: 'none', padding: '4px 2px',
+                            cursor: 'pointer', fontFamily: "'Figtree', sans-serif",
+                          }}
+                        >
+                          ✏️ Editar resenha
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bl">Sua resenha pessoal</div>
+                      <div className="rbox">
+                        <textarea
+                          className="rtxt"
+                          style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 120, fontFamily: "'Figtree', sans-serif", lineHeight: 1.65 }}
+                          placeholder={`Escreva o que esse ${isBook ? 'livro' : 'filme'} representou para você...`}
+                          value={review}
+                          onChange={e => setReview(e.target.value)}
+                        />
+                      </div>
+                      <div className="bl">Privacidade</div>
+                      <div className="priv">
+                        <button className={`pb${!isPublic ? ' on' : ''}`} onClick={() => setIsPublic(false)}>🔒 Privado</button>
+                        <button className={`pb${isPublic  ? ' on' : ''}`} onClick={() => setIsPublic(true)}>🌐 Público</button>
+                      </div>
+                      <button className="savebtn" onClick={saveReview} disabled={saving}>
+                        {saving
+                          ? 'Salvando...'
+                          : saveFeedback === 'ok'
+                            ? '✓ Resenha salva!'
+                            : saveFeedback === 'err'
+                              ? 'Erro ao salvar'
+                              : 'Salvar Resenha'}
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 
               {/* Trechos (livros) */}
               {activeTab === 'T' && (
                 <div>
-                  {!showExcerptForm && (
-                    <button className="addt" onClick={() => setShowExcerptForm(true)}>＋ Adicionar trecho</button>
-                  )}
+                  <button className="addt" onClick={openNewExcerptForm}>＋ Adicionar trecho</button>
 
                   {showExcerptForm && (
                     <div className="rbox">
@@ -558,7 +665,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                           Cancelar
                         </button>
                         <button className="savebtn" style={{ flex: 1 }} onClick={saveExcerpt} disabled={savingExcerpt || !excerptText.trim()}>
-                          {savingExcerpt ? 'Salvando...' : 'Salvar trecho'}
+                          {savingExcerpt ? 'Salvando...' : editingExcerptId ? 'Salvar alterações' : 'Salvar trecho'}
                         </button>
                       </div>
                     </div>
@@ -584,6 +691,9 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                             title={ex.is_public ? 'Público — toque para tornar privado' : 'Privado — toque para tornar público'}
                           >
                             {ex.is_public ? '🌐' : '🔒'}
+                          </span>
+                          <span onClick={() => openEditExcerptForm(ex)} style={{ cursor: 'pointer', display: 'flex' }} title="Editar trecho">
+                            <PencilIcon />
                           </span>
                           <span onClick={() => deleteExcerpt(ex.id)} style={{ cursor: 'pointer', display: 'flex' }}>
                             <TrashIconSmall />
