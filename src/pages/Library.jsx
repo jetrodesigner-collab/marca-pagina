@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
+const TMDB_KEY  = import.meta.env.VITE_TMDB_API_KEY
+const PAGE_SIZE = 9
+
 const FRASES = [
   { t: 'Os livros são espelhos: só vemos neles o que já temos dentro de nós.', a: 'Carlos Ruiz Zafón' },
   { t: 'Um leitor vive mil vidas antes de morrer. Aquele que nunca lê vive apenas uma.', a: 'George R.R. Martin' },
@@ -42,22 +45,14 @@ function ItemCard({ item, onClick }) {
   return (
     <div className="bc" onClick={onClick}>
       {item.cover_url && !imgErr ? (
-        <img
-          className="cov"
-          src={item.cover_url}
-          alt=""
-          style={{ objectFit: 'cover' }}
-          onError={() => setImgErr(true)}
-        />
+        <img className="cov" src={item.cover_url} alt="" style={{ objectFit: 'cover' }} onError={() => setImgErr(true)} />
       ) : (
         <div className={`cov ${cls}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
         </div>
       )}
       <div className="btit">{item.title}</div>
-      {(item.author || item.director) && (
-        <div className="baut">{item.author || item.director}</div>
-      )}
+      {(item.author || item.director) && <div className="baut">{item.author || item.director}</div>}
     </div>
   )
 }
@@ -71,22 +66,14 @@ function GridCard({ item, onClick }) {
   return (
     <div className="gc" onClick={onClick}>
       {item.cover_url && !imgErr ? (
-        <img
-          className="gcov"
-          src={item.cover_url}
-          alt=""
-          style={{ objectFit: 'cover' }}
-          onError={() => setImgErr(true)}
-        />
+        <img className="gcov" src={item.cover_url} alt="" style={{ objectFit: 'cover' }} onError={() => setImgErr(true)} />
       ) : (
         <div className={`gcov ${cls}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
         </div>
       )}
       <div className="gtit">{item.title}</div>
-      {(item.author || item.director) && (
-        <div className="gaut">{item.author || item.director}</div>
-      )}
+      {(item.author || item.director) && <div className="gaut">{item.author || item.director}</div>}
     </div>
   )
 }
@@ -114,21 +101,117 @@ function StatusSection({ label, badgeClass, dotClass, userItems, onItemClick, on
   )
 }
 
-const PAGE_SIZE = 9
+function GridSkeleton() {
+  return (
+    <div className="grid-sw">
+      <div className="grid-h">
+        {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+          <div key={i} className="gc" style={{ opacity: 0.35, pointerEvents: 'none' }}>
+            <div className="gcov" style={{ background: 'var(--bor)' }} />
+            <div style={{ height: 10, borderRadius: 4, background: 'var(--bor)', margin: '2px 0' }} />
+            <div style={{ height: 8, borderRadius: 4, background: 'var(--bor)', width: '60%' }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
-function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
+function LibrarySection({ tipo, userLibrary, onItemClick }) {
+  const [items, setItems]             = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [tmdbPage, setTmdbPage]       = useState(1)
+  const [hasMoreApi, setHasMoreApi]   = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [activeCat, setActiveCat]     = useState('Todos')
   const [query, setQuery]             = useState('')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+
   const cats = tipo === 'L' ? CATS_LIVROS : CATS_FILMES
   const noun = tipo === 'L' ? 'livro' : 'filme'
+
+  useEffect(() => {
+    setItems([])
+    setLoading(true)
+    setTmdbPage(1)
+    setHasMoreApi(tipo === 'F')
+    setVisibleCount(PAGE_SIZE)
+    setQuery('')
+
+    if (tipo === 'L') {
+      fetch('https://openlibrary.org/trending/weekly.json?limit=27')
+        .then(r => r.json())
+        .then(data => {
+          setItems((data.works || []).map(w => ({
+            type: 'book',
+            api_id: w.key,
+            api_source: 'openlibrary',
+            title: w.title,
+            author: Array.isArray(w.author_name) ? w.author_name[0] : 'Autor desconhecido',
+            year: w.first_publish_year || null,
+            cover_url: w.cover_i ? `https://covers.openlibrary.org/b/id/${w.cover_i}-M.jpg` : null,
+          })))
+          setHasMoreApi(false)
+        })
+        .catch(() => setItems([]))
+        .finally(() => setLoading(false))
+    } else {
+      fetch(`https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=1&api_key=${TMDB_KEY}`)
+        .then(r => r.json())
+        .then(data => {
+          setItems(mapMovies(data.results || []))
+          setHasMoreApi((data.total_pages || 1) > 1)
+        })
+        .catch(() => { setItems([]); setHasMoreApi(false) })
+        .finally(() => setLoading(false))
+    }
+  }, [tipo])
+
+  function mapMovies(results) {
+    return results.map(m => ({
+      type: 'movie',
+      api_id: String(m.id),
+      api_source: 'tmdb',
+      title: m.title,
+      director: null,
+      year: m.release_date ? Number(m.release_date.split('-')[0]) : null,
+      cover_url: m.poster_path ? `https://image.tmdb.org/t/p/w342${m.poster_path}` : null,
+    }))
+  }
+
+  async function fetchNextMoviePage() {
+    if (loadingMore || !hasMoreApi) return
+    setLoadingMore(true)
+    const next = tmdbPage + 1
+    try {
+      const res = await fetch(
+        `https://api.themoviedb.org/3/movie/popular?language=pt-BR&page=${next}&api_key=${TMDB_KEY}`
+      )
+      const data = await res.json()
+      setItems(prev => [...prev, ...mapMovies(data.results || [])])
+      setTmdbPage(next)
+      setHasMoreApi(next < (data.total_pages || 1))
+    } catch {
+      // silently ignore
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   function handleQueryChange(val) {
     setQuery(val)
     setVisibleCount(PAGE_SIZE)
   }
 
-  const filtered = catalogItems.filter(item => {
+  function handleVerMais() {
+    const next = visibleCount + PAGE_SIZE
+    setVisibleCount(next)
+    if (tipo === 'F' && hasMoreApi && !loadingMore && next + PAGE_SIZE >= items.length) {
+      fetchNextMoviePage()
+    }
+  }
+
+  const filtered = items.filter(item => {
     if (!query) return true
     const q = query.toLowerCase()
     return (
@@ -138,12 +221,14 @@ function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
     )
   })
 
-  const visible   = filtered.slice(0, visibleCount)
-  const hasMore   = filtered.length > visibleCount
+  const visible  = filtered.slice(0, visibleCount)
+  const hasMore  = filtered.length > visibleCount || (hasMoreApi && tipo === 'F' && !query)
 
-  function handleItemClick(item) {
-    const userEntry = userLibrary.find(ui => ui.item_id === item.id)
-    if (userEntry) onItemClick(item, userEntry)
+  function handleItemClick(apiItem) {
+    const userEntry = userLibrary.find(
+      ui => ui.items?.api_id === apiItem.api_id && ui.items?.type === apiItem.type
+    )
+    onItemClick(userEntry ? userEntry.items : apiItem, userEntry || null)
   }
 
   return (
@@ -167,14 +252,16 @@ function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <GridSkeleton />
+      ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>{tipo === 'L' ? '📚' : '🎬'}</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>
-            {query ? 'Nenhum resultado' : 'Catálogo vazio'}
+            {query ? 'Nenhum resultado' : 'Não foi possível carregar o catálogo'}
           </div>
           <div style={{ fontSize: 11, lineHeight: 1.55 }}>
-            {query ? 'Tente outro termo' : `Seja o primeiro a adicionar um ${noun}`}
+            {query ? 'Tente outro termo' : 'Verifique sua conexão e recarregue'}
           </div>
         </div>
       ) : (
@@ -183,7 +270,7 @@ function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
             <div className="grid-h">
               {visible.map(item => (
                 <GridCard
-                  key={item.id}
+                  key={`${item.type}_${item.api_id}`}
                   item={item}
                   onClick={() => handleItemClick(item)}
                 />
@@ -191,11 +278,8 @@ function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
             </div>
           </div>
           {hasMore && (
-            <button
-              className="ver-mais"
-              onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
-            >
-              Ver mais ({filtered.length - visibleCount} restantes)
+            <button className="ver-mais" onClick={handleVerMais} disabled={loadingMore}>
+              {loadingMore ? 'Carregando...' : `Ver mais${filtered.length > visibleCount ? ` (${filtered.length - visibleCount})` : ''}`}
             </button>
           )}
         </>
@@ -205,11 +289,10 @@ function LibrarySection({ tipo, catalogItems, userLibrary, onItemClick }) {
 }
 
 export default function Library({ session, onNavigate }) {
-  const [profile, setProfile]         = useState(null)
-  const [activeTab, setActiveTab]     = useState('L')
-  const [theme]                       = useState(() => localStorage.getItem('tema') || 'D')
-  const [allItems, setAllItems]       = useState([])
-  const [catalogItems, setCatalogItems] = useState([])
+  const [profile, setProfile]     = useState(null)
+  const [activeTab, setActiveTab] = useState('L')
+  const [theme]                   = useState(() => localStorage.getItem('tema') || 'D')
+  const [allItems, setAllItems]   = useState([])
 
   const frase = getDailyFrase()
 
@@ -231,21 +314,11 @@ export default function Library({ session, onNavigate }) {
       .then(({ data }) => setAllItems(data || []))
   }, [session.user.id])
 
-  useEffect(() => {
-    supabase
-      .from('items')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => setCatalogItems(data || []))
-  }, [])
-
   const themeClass = theme === 'L' ? 'light' : 'dark'
   const initial = (profile?.full_name || profile?.username || session.user.email || '?')[0].toUpperCase()
 
-  const bookItems     = allItems.filter(ui => ui.items?.type === 'book')
-  const movieItems    = allItems.filter(ui => ui.items?.type === 'movie')
-  const catalogBooks  = catalogItems.filter(i => i.type === 'book')
-  const catalogMovies = catalogItems.filter(i => i.type === 'movie')
+  const bookItems  = allItems.filter(ui => ui.items?.type === 'book')
+  const movieItems = allItems.filter(ui => ui.items?.type === 'movie')
 
   const reading     = bookItems.filter(ui => ui.status === 'reading')
   const wantToRead  = bookItems.filter(ui => ui.status === 'want_to_read')
@@ -303,7 +376,7 @@ export default function Library({ session, onNavigate }) {
           <StatusSection label="Lendo"     badgeClass="BL" dotClass="DL" userItems={reading}    onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Quero Ler" badgeClass="BQ" dotClass="DQ" userItems={wantToRead} onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Lidos"     badgeClass="BD" dotClass="DD" userItems={read}        onItemClick={goToItem} onAddClick={goToSearch} />
-          <LibrarySection tipo="L" catalogItems={catalogBooks} userLibrary={allItems} onItemClick={goToItem} />
+          <LibrarySection tipo="L" userLibrary={allItems} onItemClick={goToItem} />
         </div>
 
         {/* Filmes */}
@@ -311,7 +384,7 @@ export default function Library({ session, onNavigate }) {
           <StatusSection label="Assistindo" badgeClass="BL" dotClass="DL" userItems={watching}    onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Quero Ver"  badgeClass="BQ" dotClass="DQ" userItems={wantToWatch} onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Assistidos" badgeClass="BD" dotClass="DD" userItems={watched}     onItemClick={goToItem} onAddClick={goToSearch} />
-          <LibrarySection tipo="F" catalogItems={catalogMovies} userLibrary={allItems} onItemClick={goToItem} />
+          <LibrarySection tipo="F" userLibrary={allItems} onItemClick={goToItem} />
         </div>
 
         {/* Bottom navigation */}
