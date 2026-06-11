@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { CURATED_BOOKS, CURATED_MOVIES } from '../data/curatedList'
 import ShelvesSection from '../components/books/ShelvesSection'
@@ -248,7 +248,7 @@ function GridSkeleton() {
   )
 }
 
-function LibrarySection({ tipo, userLibrary, onItemClick }) {
+function LibrarySection({ tipo, userLibrary, onItemClick, onManualAdd }) {
   const [curatedItems, setCuratedItems] = useState([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [loadingMore, setLoadingMore]     = useState(false)
@@ -785,17 +785,27 @@ function LibrarySection({ tipo, userLibrary, onItemClick }) {
           <div className="spin" />
         </div>
       )}
+
+      {tipo === 'F' && onManualAdd && (
+        <button className="addt" style={{ marginTop: 4 }} onClick={onManualAdd}>
+          ＋ Não encontrei meu filme/série
+        </button>
+      )}
     </div>
   )
 }
 
 export default function Library({ session, onNavigate }) {
   const [profile, setProfile]     = useState(null)
-  const [activeTab, setActiveTab] = useState('L')
+  const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('lib_active_tab') || 'L')
   const [theme]                   = useState(() => localStorage.getItem('tema') || 'D')
   const [allItems, setAllItems]   = useState([])
 
   const frase = getDailyFrase()
+
+  useEffect(() => {
+    sessionStorage.setItem('lib_active_tab', activeTab)
+  }, [activeTab])
 
   useEffect(() => {
     supabase
@@ -806,14 +816,40 @@ export default function Library({ session, onNavigate }) {
       .then(({ data }) => setProfile(data))
   }, [session.user.id])
 
-  useEffect(() => {
-    supabase
+  const loadAllItems = useCallback(() => {
+    return supabase
       .from('user_items')
       .select('*, items(*)')
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => setAllItems(data || []))
   }, [session.user.id])
+
+  // Carrega itens + mantém contagem das estantes em tempo real:
+  // refetch ao focar a aba/janela e via realtime subscription em user_items
+  useEffect(() => {
+    loadAllItems()
+
+    function onVisible() {
+      if (document.visibilityState === 'visible') loadAllItems()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', loadAllItems)
+
+    const channel = supabase
+      .channel(`user_items_${session.user.id}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'user_items',
+        filter: `user_id=eq.${session.user.id}`,
+      }, loadAllItems)
+      .subscribe()
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', loadAllItems)
+      supabase.removeChannel(channel)
+    }
+  }, [session.user.id, loadAllItems])
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
   const initial = (profile?.full_name || profile?.username || session.user.email || '?')[0].toUpperCase()
@@ -883,6 +919,7 @@ export default function Library({ session, onNavigate }) {
             bookItems={bookItems}
             userId={session.user.id}
             onItemClick={goToItem}
+            onNavigate={onNavigate}
           />
           <LibrarySection tipo="L" userLibrary={allItems} onItemClick={goToItem} />
         </div>
@@ -892,7 +929,7 @@ export default function Library({ session, onNavigate }) {
           <StatusSection label="Assistindo" badgeClass="BL" dotClass="DL" userItems={watching}    onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Quero Ver"  badgeClass="BQ" dotClass="DQ" userItems={wantToWatch} onItemClick={goToItem} onAddClick={goToSearch} />
           <StatusSection label="Assistidos" badgeClass="BD" dotClass="DD" userItems={watched}     onItemClick={goToItem} onAddClick={goToSearch} />
-          <LibrarySection tipo="F" userLibrary={allItems} onItemClick={goToItem} />
+          <LibrarySection tipo="F" userLibrary={allItems} onItemClick={goToItem} onManualAdd={() => onNavigate('s10')} />
         </div>
 
         {/* Bottom navigation */}

@@ -71,7 +71,7 @@ function ShelfCard({ label, dotClass, count, palette, onClick }) {
   )
 }
 
-export default function ShelvesSection({ counts, bookItems, userId, onItemClick }) {
+export default function ShelvesSection({ counts, bookItems, userId, onItemClick, onNavigate }) {
   const [openCategory, setOpenCategory] = useState(null)
   const activeMeta = SHELF_META.find(m => m.key === openCategory)
 
@@ -98,6 +98,7 @@ export default function ShelvesSection({ counts, bookItems, userId, onItemClick 
           bookItems={bookItems}
           onItemClick={onItemClick}
           onClose={() => setOpenCategory(null)}
+          onNavigate={onNavigate}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import ReadingProgress from '../components/books/ReadingProgress'
 
 const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
 const FILM_COLORS  = ['f1','f2','f3','f4','f5','f6']
@@ -92,8 +93,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [reviewMode,   setReviewMode]   = useState('edit')
   const [savedReview,  setSavedReview]  = useState(null)
   const [reviewExpanded, setReviewExpanded] = useState(false)
-  const [reviewNeedsBtn, setReviewNeedsBtn] = useState(false)
-  const reviewRef = useRef(null)
+  const [deleteReviewConfirm, setDeleteReviewConfirm] = useState(false)
+  const [toast,        setToast]        = useState(null)
   const [adding,       setAdding]       = useState(false)
   const [addError,     setAddError]     = useState(false)
   const [synopsis,     setSynopsis]     = useState(() => localItem.overview || localItem.synopsis || null)
@@ -109,6 +110,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [excerptPublic, setExcerptPublic] = useState(false)
   const [savingExcerpt, setSavingExcerpt] = useState(false)
   const [editingExcerptId, setEditingExcerptId] = useState(null)
+  const [expandedExcerptId, setExpandedExcerptId] = useState(null)
   const synRef = useRef(null)
 
   const isBook       = localItem.type === 'book'
@@ -139,11 +141,12 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       })
   }, [localItem.id, localUserItem?.id, session.user.id])
 
-  // Detecta se a resenha salva está sendo truncada (para mostrar/esconder "Ver mais")
+  // Some o toast automaticamente após alguns segundos
   useEffect(() => {
-    if (reviewMode !== 'read' || !savedReview?.body || !reviewRef.current || reviewExpanded) return
-    setReviewNeedsBtn(reviewRef.current.scrollHeight > reviewRef.current.clientHeight + 1)
-  }, [reviewMode, savedReview, reviewExpanded])
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 2400)
+    return () => clearTimeout(t)
+  }, [toast])
 
   // Carrega trechos (próprios + comunidade) quando o item está na biblioteca
   useEffect(() => {
@@ -266,6 +269,45 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       setReviewMode('read')
     }
     setTimeout(() => setSaveFeedback(null), 2500)
+  }
+
+  function editReview() {
+    setReview(savedReview.body)
+    setIsPublic(savedReview.is_public)
+    setReviewExpanded(false)
+    setReviewMode('edit')
+  }
+
+  async function toggleReviewPrivacy() {
+    if (!savedReview) return
+    const newPublic = !savedReview.is_public
+    const { error } = await supabase
+      .from('reviews')
+      .update({ is_public: newPublic })
+      .eq('user_id', session.user.id)
+      .eq('item_id', localItem.id)
+    if (!error) {
+      setSavedReview(prev => ({ ...prev, is_public: newPublic }))
+      setIsPublic(newPublic)
+      setToast(newPublic ? 'Resenha agora é pública' : 'Resenha agora é privada')
+    }
+  }
+
+  async function confirmDeleteReview() {
+    const { error } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('user_id', session.user.id)
+      .eq('item_id', localItem.id)
+    if (!error) {
+      setSavedReview(null)
+      setReview('')
+      setIsPublic(false)
+      setReviewExpanded(false)
+      setDeleteReviewConfirm(false)
+      setReviewMode('edit')
+      setToast('Resenha excluída')
+    }
   }
 
   async function loadExcerpts() {
@@ -514,6 +556,11 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                 ))}
               </div>
 
+              {/* Progresso de leitura (apenas livros em "Lendo") */}
+              {isBook && status === 'reading' && (
+                <ReadingProgress session={session} itemId={localItem.id} />
+              )}
+
               {/* Rating */}
               <div className="nota-card">
                 <div>
@@ -546,52 +593,30 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                   {reviewMode === 'read' && savedReview ? (
                     <>
                       <div className="bl">Sua resenha pessoal</div>
-                      <div className="rbox">
-                        <div
-                          ref={reviewRef}
-                          className="rtxt"
-                          style={{
-                            wordBreak: 'break-word',
-                            overflowWrap: 'break-word',
-                            ...(reviewExpanded ? {} : {
-                              display: '-webkit-box',
-                              WebkitLineClamp: 3,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                            }),
-                          }}
-                        >
-                          {savedReview.body}
-                        </div>
-                        {(reviewNeedsBtn || reviewExpanded) && (
-                          <button
-                            onClick={() => setReviewExpanded(e => !e)}
-                            style={{
-                              fontSize: 9, fontWeight: 700, color: 'var(--accent)',
-                              background: 'none', border: 'none', padding: '6px 0 0',
-                              cursor: 'pointer', fontFamily: "'Figtree', sans-serif",
-                              display: 'block',
-                            }}
-                          >
-                            {reviewExpanded ? 'Recolher ↑' : 'Ver mais ↓'}
-                          </button>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)' }}>
-                          {savedReview.is_public ? '🌐 Pública' : '🔒 Privada'}
-                        </span>
-                        <button
-                          onClick={() => setReviewMode('edit')}
-                          style={{
-                            fontSize: 11, fontWeight: 700, color: 'var(--accent)',
-                            background: 'none', border: 'none', padding: '4px 2px',
-                            cursor: 'pointer', fontFamily: "'Figtree', sans-serif",
-                          }}
-                        >
-                          ✏️ Editar resenha
+                      <div className="review-actions">
+                        <button className="review-action-btn" onClick={() => setReviewExpanded(e => !e)}>
+                          {reviewExpanded ? '🙈 Ocultar Resenha' : '👁 Ver Resenha'}
                         </button>
+                        <button className="review-action-btn" onClick={editReview}>✏️ Editar</button>
+                        <button className="review-action-btn" onClick={toggleReviewPrivacy}>
+                          {savedReview.is_public ? '🌐 Pública' : '🔒 Privada'}
+                        </button>
+                        <button className="review-action-btn danger" onClick={() => setDeleteReviewConfirm(true)}>🗑 Excluir Resenha</button>
                       </div>
+                      {deleteReviewConfirm && (
+                        <div className="del-confirm">
+                          <span>Tem certeza?</span>
+                          <div className="del-confirm-actions">
+                            <button className="confirm" onClick={confirmDeleteReview}>Confirmar</button>
+                            <button className="cancel" onClick={() => setDeleteReviewConfirm(false)}>Cancelar</button>
+                          </div>
+                        </div>
+                      )}
+                      {reviewExpanded && (
+                        <div className="rbox">
+                          <div className="rtxt" style={{ fontSize: 16, lineHeight: 1.6 }}>{savedReview.body}</div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
@@ -599,7 +624,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                       <div className="rbox">
                         <textarea
                           className="rtxt"
-                          style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 120, fontFamily: "'Figtree', sans-serif", lineHeight: 1.65 }}
+                          style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6 }}
                           placeholder={`Escreva o que esse ${isBook ? 'livro' : 'filme'} representou para você...`}
                           value={review}
                           onChange={e => setReview(e.target.value)}
@@ -633,7 +658,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                     <div className="rbox">
                       <textarea
                         className="rtxt"
-                        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 90, fontFamily: "'Figtree', sans-serif", lineHeight: 1.65, fontStyle: 'italic', marginBottom: 12 }}
+                        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6, fontStyle: 'italic', marginBottom: 12 }}
                         placeholder="Digite o trecho..."
                         value={excerptText}
                         onChange={e => setExcerptText(e.target.value)}
@@ -679,41 +704,83 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                     </div>
                   )}
 
-                  {excerpts.map(ex => (
-                    <div className="tcrd" key={ex.id}>
-                      <div className="ttxt">"{ex.content}"</div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div className="tpg">{ex.page_number ? `Página ${ex.page_number}` : ''}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <span
-                            onClick={() => toggleExcerptPrivacy(ex)}
-                            style={{ cursor: 'pointer', fontSize: 13, lineHeight: 1 }}
-                            title={ex.is_public ? 'Público — toque para tornar privado' : 'Privado — toque para tornar público'}
-                          >
-                            {ex.is_public ? '🌐' : '🔒'}
-                          </span>
-                          <span onClick={() => openEditExcerptForm(ex)} style={{ cursor: 'pointer', display: 'flex' }} title="Editar trecho">
-                            <PencilIcon />
-                          </span>
-                          <span onClick={() => deleteExcerpt(ex.id)} style={{ cursor: 'pointer', display: 'flex' }}>
-                            <TrashIconSmall />
-                          </span>
+                  {excerpts.map(ex => {
+                    const isExpanded = expandedExcerptId === ex.id
+                    return (
+                      <div className="tcrd" key={ex.id}>
+                        <div
+                          className="ttxt"
+                          style={isExpanded ? {} : {
+                            display: '-webkit-box',
+                            WebkitLineClamp: 8,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          "{ex.content}"
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div className="tpg">{ex.page_number ? `Página ${ex.page_number}` : ''}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span
+                              onClick={() => setExpandedExcerptId(isExpanded ? null : ex.id)}
+                              style={{ cursor: 'pointer', fontSize: 13, lineHeight: 1, color: isExpanded ? 'var(--accent)' : undefined }}
+                              title={isExpanded ? 'Recolher trecho' : 'Ver trecho completo'}
+                            >
+                              {isExpanded ? '👁‍🗨' : '👁'}
+                            </span>
+                            <span
+                              onClick={() => toggleExcerptPrivacy(ex)}
+                              style={{ cursor: 'pointer', fontSize: 13, lineHeight: 1 }}
+                              title={ex.is_public ? 'Público — toque para tornar privado' : 'Privado — toque para tornar público'}
+                            >
+                              {ex.is_public ? '🌐' : '🔒'}
+                            </span>
+                            <span onClick={() => openEditExcerptForm(ex)} style={{ cursor: 'pointer', display: 'flex' }} title="Editar trecho">
+                              <PencilIcon />
+                            </span>
+                            <span onClick={() => deleteExcerpt(ex.id)} style={{ cursor: 'pointer', display: 'flex' }}>
+                              <TrashIconSmall />
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{formatExcerptDate(ex.created_at)}</div>
                       </div>
-                      <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{formatExcerptDate(ex.created_at)}</div>
-                    </div>
-                  ))}
+                    )
+                  })}
 
                   {communityExcerpts.length > 0 && (
                     <>
                       <div className="bl" style={{ marginTop: 18 }}>Trechos da comunidade</div>
-                      {communityExcerpts.map(ex => (
-                        <div className="tcrd" key={ex.id}>
-                          <div className="ttxt">"{ex.content}"</div>
-                          <div className="tpg">{ex.page_number ? `Página ${ex.page_number}` : ''}</div>
-                          <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{formatExcerptDate(ex.created_at)}</div>
-                        </div>
-                      ))}
+                      {communityExcerpts.map(ex => {
+                        const isExpanded = expandedExcerptId === ex.id
+                        return (
+                          <div className="tcrd" key={ex.id}>
+                            <div
+                              className="ttxt"
+                              style={isExpanded ? {} : {
+                                display: '-webkit-box',
+                                WebkitLineClamp: 8,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              "{ex.content}"
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div className="tpg">{ex.page_number ? `Página ${ex.page_number}` : ''}</div>
+                              <span
+                                onClick={() => setExpandedExcerptId(isExpanded ? null : ex.id)}
+                                style={{ cursor: 'pointer', fontSize: 13, lineHeight: 1, color: isExpanded ? 'var(--accent)' : undefined }}
+                                title={isExpanded ? 'Recolher trecho' : 'Ver trecho completo'}
+                              >
+                                {isExpanded ? '👁‍🗨' : '👁'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{formatExcerptDate(ex.created_at)}</div>
+                          </div>
+                        )
+                      })}
                     </>
                   )}
                 </div>
@@ -796,6 +863,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
           </div>
         </div>
       )}
+
+      {toast && <div className="toast">{toast}</div>}
     </div>
   )
 }

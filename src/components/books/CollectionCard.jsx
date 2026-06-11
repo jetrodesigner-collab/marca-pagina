@@ -44,75 +44,12 @@ function CollectionBookCard({ ci, onRemove, onClick }) {
   )
 }
 
-function BookPicker({ bookItems, existingIds, adding, onSelect, onClose }) {
-  const [query, setQuery] = useState('')
-  const available = bookItems.filter(ui => ui.items && !existingIds.has(ui.id))
-  const term = query.trim().toLowerCase()
-  const filtered = term
-    ? available.filter(ui => {
-        const it = ui.items
-        return (it.title || '').toLowerCase().includes(term) || (it.author || '').toLowerCase().includes(term)
-      })
-    : available
-
-  return (
-    <div className="shelf-overlay" style={{ zIndex: 110 }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="shelf-sheet">
-        <div className="modal-handle" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <div style={{ flex: 1, fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>Adicionar livro</div>
-          <button onClick={onClose} className="bk" style={{ width: 34, height: 34 }}>✕</button>
-        </div>
-        <input
-          className="bib-srch"
-          placeholder="Buscar na sua biblioteca..."
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-        />
-        {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted)', fontSize: 12 }}>
-            {available.length === 0 ? 'Todos os livros da sua biblioteca já estão nesta coleção' : 'Nenhum livro encontrado'}
-          </div>
-        ) : (
-          <div className="grid-h">
-            {filtered.map(ui => {
-              const item = ui.items
-              const { initials, cls } = coverFallback(item)
-              return (
-                <div
-                  key={ui.id}
-                  className="gc"
-                  onClick={() => { if (!adding) onSelect(ui) }}
-                  style={{ opacity: adding ? 0.6 : 1, pointerEvents: adding ? 'none' : 'auto' }}
-                >
-                  {item.cover_url ? (
-                    <img className="gcov" src={item.cover_url} alt="" style={{ objectFit: 'cover' }} />
-                  ) : (
-                    <div className={`gcov ${cls}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
-                    </div>
-                  )}
-                  <div className="gtit">{item.title}</div>
-                  {item.author && <div className="gaut">{item.author}</div>}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-export default function CollectionCard({ collection, bookItems, onRename, onDelete, onAddItem, onRemoveItem, onItemClick, onToast }) {
+export default function CollectionCard({ collection, onRename, onDelete, onAddItemRequest, onRemoveItem, onItemClick, onToast }) {
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [nameValue, setNameValue] = useState(collection.name)
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const [adding, setAdding] = useState(false)
 
   const items = collection.collection_items || []
-  const existingIds = new Set(items.map(ci => ci.user_item_id))
 
   function startEdit() {
     setNameValue(collection.name)
@@ -128,16 +65,6 @@ export default function CollectionCard({ collection, bookItems, onRename, onDele
   function handleDelete() {
     onDelete()
     onToast('Coleção removida')
-  }
-
-  async function handleSelectBook(ui) {
-    setAdding(true)
-    const { error } = await onAddItem(ui.id)
-    setAdding(false)
-    if (!error) {
-      setPickerOpen(false)
-      onToast('Livro adicionado à coleção')
-    }
   }
 
   function handleItemClick(ci) {
@@ -212,20 +139,10 @@ export default function CollectionCard({ collection, bookItems, onRename, onDele
               ))}
             </div>
           )}
-          <button className="addt" style={{ marginBottom: 0 }} onClick={() => setPickerOpen(true)}>
+          <button className="addt" style={{ marginBottom: 0 }} onClick={onAddItemRequest}>
             ＋ Adicionar livro
           </button>
         </div>
-      )}
-
-      {pickerOpen && (
-        <BookPicker
-          bookItems={bookItems}
-          existingIds={existingIds}
-          adding={adding}
-          onSelect={handleSelectBook}
-          onClose={() => setPickerOpen(false)}
-        />
       )}
     </div>
   )

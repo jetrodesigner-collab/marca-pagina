@@ -7,6 +7,8 @@ import Library from './pages/Library'
 import Search from './pages/Search'
 import ItemDetail from './pages/ItemDetail'
 import Profile from './pages/Profile'
+import ManualBookEntry from './pages/ManualBookEntry'
+import ManualMovieEntry from './pages/ManualMovieEntry'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -73,6 +75,14 @@ export default function App() {
 
   if (screen === 'profile') {
     return <Profile session={session} onNavigate={navigate} />
+  }
+
+  if (screen === 's9') {
+    return <ManualBookEntry onBack={() => setScreen('library')} />
+  }
+
+  if (screen === 's10') {
+    return <ManualMovieEntry onBack={() => setScreen('library')} />
   }
 
   return <Library session={session} onNavigate={navigate} />

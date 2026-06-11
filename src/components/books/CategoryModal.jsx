@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useCollections } from '../../hooks/useCollections'
 import CollectionCard from './CollectionCard'
+import AddBookScreen from './AddBookScreen'
 
-export default function CategoryModal({ category, meta, userId, bookItems, onItemClick, onClose }) {
+export default function CategoryModal({ category, meta, userId, bookItems, onItemClick, onClose, onNavigate }) {
   const {
     collections, loading,
     createCollection, renameCollection, deleteCollection,
@@ -11,6 +12,8 @@ export default function CategoryModal({ category, meta, userId, bookItems, onIte
 
   const [toast, setToast] = useState(null)
   const [creating, setCreating] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const [addBookCollection, setAddBookCollection] = useState(null)
 
   useEffect(() => {
     if (!toast) return
@@ -26,22 +29,38 @@ export default function CategoryModal({ category, meta, userId, bookItems, onIte
     setCreating(false)
   }
 
+  function handleBack() {
+    setClosing(true)
+    setTimeout(onClose, 300)
+  }
+
+  if (addBookCollection) {
+    return (
+      <AddBookScreen
+        collection={addBookCollection}
+        bookItems={bookItems}
+        onAddItem={userItemId => addItemToCollection(addBookCollection.id, userItemId)}
+        onNavigate={onNavigate}
+        onClose={() => setAddBookCollection(null)}
+        onAdded={() => setToast('Livro adicionado à coleção')}
+      />
+    )
+  }
+
   return (
-    <div className="shelf-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="shelf-sheet">
-        <div className="modal-handle" />
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <div className={`dot ${meta.dotClass}`} style={{ width: 10, height: 10, flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>{meta.label}</div>
-            <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-              {itemsInCategory.length} {itemsInCategory.length === 1 ? 'livro' : 'livros'} · {collections.length} {collections.length === 1 ? 'coleção' : 'coleções'}
-            </div>
+    <div className={`fs-push${closing ? ' fs-out' : ''}`}>
+      <div className="fs-header">
+        <div className="bk" onClick={handleBack}>←</div>
+        <div className="fs-title-wrap">
+          <div className="fs-title">{meta.label}</div>
+          <div className="fs-subtitle">
+            {itemsInCategory.length} {itemsInCategory.length === 1 ? 'livro' : 'livros'} · {collections.length} {collections.length === 1 ? 'coleção' : 'coleções'}
           </div>
-          <button onClick={onClose} className="bk" style={{ width: 34, height: 34, flexShrink: 0 }}>✕</button>
         </div>
+        <div className="fs-spacer" />
+      </div>
 
+      <div className="sc">
         <button
           className="addt"
           onClick={handleCreate}
@@ -64,10 +83,9 @@ export default function CategoryModal({ category, meta, userId, bookItems, onIte
             <CollectionCard
               key={col.id}
               collection={col}
-              bookItems={bookItems}
               onRename={name => renameCollection(col.id, name)}
               onDelete={() => deleteCollection(col.id)}
-              onAddItem={userItemId => addItemToCollection(col.id, userItemId)}
+              onAddItemRequest={() => setAddBookCollection(col)}
               onRemoveItem={collectionItemId => removeItemFromCollection(col.id, collectionItemId)}
               onItemClick={onItemClick}
               onToast={setToast}

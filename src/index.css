@@ -305,7 +305,7 @@ body {
 .ph-t { font-size: 16px; font-weight: 700; color: var(--text); }
 
 /* ── Hero detalhe (capa + meta) ── */
-.hero { background: var(--sur); border: 1px solid var(--bor); border-radius: 22px; padding: 16px; display: flex; gap: 14px; margin-bottom: 16px; backdrop-filter: blur(20px); box-shadow: 0 6px 24px var(--shad); overflow: hidden; }
+.hero { background: var(--sur); border: 1px solid var(--bor); border-radius: 22px; padding: 16px; display: flex; gap: 14px; margin-top: 4px; margin-bottom: 16px; backdrop-filter: blur(20px); box-shadow: 0 6px 24px var(--shad); overflow: hidden; }
 .hcov { border-radius: 12px; flex-shrink: 0; width: 88px; height: 126px; box-shadow: 4px 8px 20px rgba(0,0,0,.25); }
 .hm { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 5px; overflow-x: hidden; word-break: break-word; overflow-wrap: break-word; }
 .ht { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1.15; letter-spacing: -.01em; word-break: break-word; overflow-wrap: break-word; }
@@ -326,6 +326,17 @@ body {
 .light .star.on { color: #8B6FAE; }
 .star:hover { transform: scale(1.2); }
 
+/* ── Progresso de leitura ── */
+.rprog { background: var(--sur); border: 1px solid var(--bor); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; backdrop-filter: blur(16px); box-shadow: 0 4px 16px var(--shad); }
+.rprog-inputs { display: flex; gap: 10px; margin-bottom: 12px; }
+.rprog-field { flex: 1; }
+.rprog-field label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+.rprog-field input { width: 100%; background: var(--inp); border: 1px solid var(--bor2); border-radius: 12px; padding: 10px 12px; font-family: 'Figtree', sans-serif; font-size: 13px; color: var(--text); outline: none; }
+.rprog-field input::placeholder { color: var(--muted); }
+.rprog-bar { width: 100%; height: 8px; border-radius: 99px; background: rgba(196,168,240,0.15); overflow: hidden; margin-bottom: 8px; }
+.rprog-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #C4A8F0, #A078D0); transition: width .3s ease; }
+.rprog-text { font-size: 11px; color: var(--muted); text-align: center; }
+
 /* ── Abas internas (segmented control) ── */
 .itabs { display: flex; background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 4px; margin-bottom: 16px; backdrop-filter: blur(12px); }
 .it    { flex: 1; padding: 8px 4px; text-align: center; font-size: 11px; color: var(--muted); cursor: pointer; border-radius: 10px; transition: all .2s; }
@@ -335,7 +346,8 @@ body {
 /* ── Resenha ── */
 .bl   { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
 .rbox { background: var(--sur); border: 1px solid var(--bor); border-radius: 16px; padding: 14px; margin-bottom: 12px; backdrop-filter: blur(16px); }
-.rtxt { font-size: 13px; color: var(--text); line-height: 1.65; }
+.rtxt { font-size: 13px; color: var(--text); line-height: 1.65; word-break: break-word; overflow-wrap: break-word; max-width: 100%; overflow: hidden; }
+.rtxt::placeholder { color: var(--muted); }
 .priv { display: flex; gap: 8px; margin-bottom: 12px; }
 .pb   { flex: 1; padding: 10px 0; border-radius: 12px; border: 1px solid var(--bor2); background: var(--sur); color: var(--muted); font-family: 'Figtree', sans-serif; font-size: 11px; cursor: pointer; text-align: center; transition: all .2s; opacity: .6; }
 .pb.on { border-color: var(--accent); color: #fff; background: var(--accent); opacity: 1; }
@@ -343,8 +355,32 @@ body {
 /* ── Trechos ── */
 .addt { width: 100%; padding: 11px; border: 1.5px dashed var(--add-bor); border-radius: 12px; background: var(--add-bg); color: var(--accent); font-family: 'Figtree', sans-serif; font-size: 12px; text-align: center; cursor: pointer; margin-bottom: 14px; }
 .tcrd { background: var(--sur); border: 1px solid var(--bor); border-radius: 16px; padding: 13px 14px; margin-bottom: 10px; backdrop-filter: blur(16px); }
-.ttxt { font-size: 13px; font-style: italic; color: var(--text2); line-height: 1.65; margin-bottom: 8px; }
+.ttxt { font-size: 13px; font-style: italic; color: var(--text2); line-height: 1.65; margin-bottom: 8px; word-break: break-word; overflow-wrap: break-word; max-width: 100%; overflow: hidden; }
 .tpg  { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
+
+/* ── Resenha: grid de ações 2x2 ── */
+.review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.review-action-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 13px 8px; border-radius: 12px; background: var(--sur);
+  border: 1px solid var(--bor2); color: var(--text);
+  font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 600;
+  cursor: pointer; text-align: center;
+}
+.review-action-btn.danger { color: #E57373; border-color: rgba(229,115,115,.35); }
+.del-confirm {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: rgba(229,115,115,.1); border: 1px solid rgba(229,115,115,.35);
+  border-radius: 12px; padding: 10px 14px; margin-bottom: 12px;
+  font-size: 12px; font-weight: 600; color: var(--text);
+}
+.del-confirm-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.del-confirm-actions button {
+  border: none; border-radius: 10px; padding: 6px 12px;
+  font-family: 'Figtree', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.del-confirm-actions .confirm { background: #E57373; color: #fff; }
+.del-confirm-actions .cancel { background: var(--sur); color: var(--text); border: 1px solid var(--bor2); }
 
 /* ── Botões de status ── */
 .sts-row { display: flex; gap: 8px; }
@@ -389,11 +425,16 @@ body {
 .modal-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--bor); margin: 0 auto 18px; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-/* ── Bottom sheet — Estantes (aba Livros) ── */
-.shelf-overlay { position: fixed; inset: 0; background: rgba(10,8,16,.85); z-index: 100; display: flex; align-items: flex-end; backdrop-filter: blur(8px); }
-.shelf-sheet { width: 100%; background: var(--bg); border-radius: 24px 24px 0 0; padding: 12px 20px 36px; max-height: 88vh; overflow-y: auto; scrollbar-width: none; animation: shelfSlideUp .3s cubic-bezier(.2,.8,.4,1); }
-.shelf-sheet::-webkit-scrollbar { display: none; }
-@keyframes shelfSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+/* ── Tela cheia (push) — Estantes / Adicionar livro / S9 / S10 ── */
+.fs-push { position: fixed; inset: 0; z-index: 150; background: var(--bg); display: flex; flex-direction: column; animation: fsIn .3s ease-out; }
+.fs-push.fs-out { animation: fsOut .3s ease-out forwards; }
+@keyframes fsIn  { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes fsOut { from { transform: translateX(0); } to { transform: translateX(100%); } }
+.fs-header { display: flex; align-items: center; padding: 6px 22px 12px; gap: 12px; flex-shrink: 0; }
+.fs-title-wrap { flex: 1; text-align: center; min-width: 0; }
+.fs-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.fs-subtitle { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.fs-spacer { width: 34px; flex-shrink: 0; }
 
 /* ── Toast ── */
 .toast {
