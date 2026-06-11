@@ -389,6 +389,22 @@ body {
 .modal-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--bor); margin: 0 auto 18px; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
+/* ── Bottom sheet — Estantes (aba Livros) ── */
+.shelf-overlay { position: fixed; inset: 0; background: rgba(10,8,16,.85); z-index: 100; display: flex; align-items: flex-end; backdrop-filter: blur(8px); }
+.shelf-sheet { width: 100%; background: var(--bg); border-radius: 24px 24px 0 0; padding: 12px 20px 36px; max-height: 88vh; overflow-y: auto; scrollbar-width: none; animation: shelfSlideUp .3s cubic-bezier(.2,.8,.4,1); }
+.shelf-sheet::-webkit-scrollbar { display: none; }
+@keyframes shelfSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+  background: var(--sur); border: 1px solid var(--bor); backdrop-filter: blur(16px);
+  color: var(--text); font-size: 12px; font-weight: 600; padding: 10px 18px;
+  border-radius: 20px; box-shadow: 0 6px 20px var(--shad); z-index: 200;
+  animation: toastIn .25s ease; white-space: nowrap;
+}
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
 /* ── Responsive breakpoints ── */
 @media (min-width: 640px) {
   .bc   { width: 118px; }

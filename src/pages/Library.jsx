@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { CURATED_BOOKS, CURATED_MOVIES } from '../data/curatedList'
+import ShelvesSection from '../components/books/ShelvesSection'
 
 const TMDB_KEY = import.meta.env.VITE_TMDB_API_KEY
 const GB_KEY   = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY
@@ -877,9 +878,12 @@ export default function Library({ session, onNavigate }) {
 
         {/* Livros */}
         <div className="sc" style={{ display: activeTab === 'L' ? undefined : 'none' }}>
-          <StatusSection label="Lendo"     badgeClass="BL" dotClass="DL" userItems={reading}    onItemClick={goToItem} onAddClick={goToSearch} />
-          <StatusSection label="Quero Ler" badgeClass="BQ" dotClass="DQ" userItems={wantToRead} onItemClick={goToItem} onAddClick={goToSearch} />
-          <StatusSection label="Lidos"     badgeClass="BD" dotClass="DD" userItems={read}        onItemClick={goToItem} onAddClick={goToSearch} />
+          <ShelvesSection
+            counts={{ reading: reading.length, want_to_read: wantToRead.length, read: read.length }}
+            bookItems={bookItems}
+            userId={session.user.id}
+            onItemClick={goToItem}
+          />
           <LibrarySection tipo="L" userLibrary={allItems} onItemClick={goToItem} />
         </div>
 
