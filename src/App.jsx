@@ -99,11 +99,11 @@ export default function App() {
   }
 
   if (screen === 's9') {
-    return <ManualBookEntry onBack={() => setScreen('library')} />
+    return <ManualBookEntry session={session} onNavigate={navigate} />
   }
 
   if (screen === 's10') {
-    return <ManualMovieEntry onBack={() => setScreen('library')} />
+    return <ManualMovieEntry session={session} onNavigate={navigate} />
   }
 
   return <Library session={session} onNavigate={navigate} />

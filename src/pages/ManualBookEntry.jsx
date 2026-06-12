@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { supabase } from '../lib/supabase'
+import { moderateImage } from '../utils/moderateImage'
 
 const BLOBS = [
   { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
@@ -7,9 +9,113 @@ const BLOBS = [
   { width: 200, height: 200, background: 'var(--bl4)', bottom: 40, right: -50 },
 ]
 
-export default function ManualBookEntry({ onBack }) {
+const CATEGORIES = [
+  'Literatura Brasileira', 'Literatura Internacional', 'Ficção Científica', 'Fantasia',
+  'Romance', 'Filosofia', 'História', 'Autoajuda', 'Negócios', 'Psicologia',
+  'Religião e Espiritualidade', 'Policial e Suspense', 'Biografia', 'Outros',
+]
+
+const STATUSES = [
+  { value: 'reading',      label: '📖 Lendo' },
+  { value: 'read',         label: '✅ Lido' },
+  { value: 'want_to_read', label: '🔖 Quero Ler' },
+]
+
+export default function ManualBookEntry({ session, onNavigate }) {
   const [theme] = useState(() => localStorage.getItem('tema') || 'D')
   const themeClass = theme === 'L' ? 'light' : 'dark'
+
+  const [title,    setTitle]    = useState('')
+  const [author,   setAuthor]   = useState('')
+  const [year,     setYear]     = useState('')
+  const [category, setCategory] = useState('')
+  const [status,   setStatus]   = useState('want_to_read')
+  const [coverFile,    setCoverFile]    = useState(null)
+  const [coverPreview, setCoverPreview] = useState(null)
+  const [saving,  setSaving]  = useState(false)
+  const [error,   setError]   = useState(null)
+  const [toast,   setToast]   = useState(null)
+  const fileRef = useRef(null)
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 2400)
+    return () => clearTimeout(t)
+  }, [toast])
+
+  async function handleCoverChange(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    const result = await moderateImage(file)
+    if (!result.approved) {
+      setToast(result.reason || 'Imagem não permitida')
+      return
+    }
+    setCoverFile(file)
+    setCoverPreview(URL.createObjectURL(file))
+  }
+
+  async function handleSubmit() {
+    if (!title.trim() || !author.trim() || !category) {
+      setError('Preencha os campos obrigatórios.')
+      return
+    }
+    setError(null)
+    setSaving(true)
+
+    let cover_url = null
+    if (coverFile) {
+      const ext = coverFile.name.split('.').pop()
+      const path = `${session.user.id}/${crypto.randomUUID()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('covers').upload(path, coverFile)
+      if (upErr) {
+        setSaving(false)
+        setError('Erro ao enviar a capa: ' + upErr.message)
+        return
+      }
+      const { data: { publicUrl } } = supabase.storage.from('covers').getPublicUrl(path)
+      cover_url = publicUrl
+    }
+
+    const { data: item, error: itemErr } = await supabase
+      .from('items')
+      .insert({
+        type:       'book',
+        api_id:     `manual_${crypto.randomUUID()}`,
+        title:      title.trim(),
+        author:     author.trim(),
+        year:       year ? parseInt(year) : null,
+        category,
+        cover_url,
+        api_source: 'manual',
+        is_manual:  true,
+        created_by: session.user.id,
+      })
+      .select()
+      .single()
+
+    if (itemErr) {
+      setSaving(false)
+      setError('Erro ao salvar o livro: ' + itemErr.message)
+      return
+    }
+
+    const { data: userItem, error: uiErr } = await supabase
+      .from('user_items')
+      .insert({ user_id: session.user.id, item_id: item.id, status })
+      .select()
+      .single()
+
+    setSaving(false)
+    if (uiErr) {
+      setError('Erro ao adicionar à biblioteca: ' + uiErr.message)
+      return
+    }
+
+    onNavigate('item', { item, userItem, isOwner: true })
+  }
 
   return (
     <div
@@ -22,20 +128,70 @@ export default function ManualBookEntry({ onBack }) {
 
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <div className="ph">
-          <div className="bk" onClick={onBack}>←</div>
-          <div className="ph-t">Cadastrar Livro</div>
+          <div className="bk" onClick={() => onNavigate('library')}>←</div>
+          <div className="ph-t">Adicionar Livro</div>
         </div>
 
         <div className="gl" />
 
-        <div className="sc" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 14 }}>📎</div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>Em construção</div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6, maxWidth: 260 }}>
-            Em breve você poderá cadastrar manualmente um livro que não foi encontrado na biblioteca.
+        <div className="sc">
+          <div className="type-badge tb-l">📷 Cadastro manual</div>
+
+          <div className="photo-up" onClick={() => fileRef.current?.click()}>
+            {coverPreview
+              ? <img src={coverPreview} alt="" />
+              : (
+                <>
+                  <div className="pico">📷</div>
+                  <div className="plab">Adicionar capa</div>
+                  <div className="psub">Tire uma foto ou escolha da galeria</div>
+                </>
+              )
+            }
           </div>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCoverChange} />
+
+          <div className="sec-t">Informações do livro</div>
+
+          <span className="flab">Título *</span>
+          <input className="finp" placeholder="Ex: Crime e Castigo" value={title} onChange={e => setTitle(e.target.value)} />
+
+          <span className="flab">Autor *</span>
+          <input className="finp" placeholder="Ex: Fiódor Dostoiévski" value={author} onChange={e => setAuthor(e.target.value)} />
+
+          <span className="flab">Ano de publicação</span>
+          <input className="finp" type="number" placeholder="Ex: 1866" value={year} onChange={e => setYear(e.target.value)} />
+
+          <span className="flab">Categoria *</span>
+          <div className="sel-w">
+            <select className="finp" value={category} onChange={e => setCategory(e.target.value)}>
+              <option value="" disabled>Selecione</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div className="sec-t">Status de leitura</div>
+          <div className="sts-row">
+            {STATUSES.map(s => (
+              <button
+                key={s.value}
+                className={`sts-btn${status === s.value ? ' on' : ''}`}
+                onClick={() => setStatus(s.value)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {error && <p className="ferr">{error}</p>}
+
+          <button className="savebtn" style={{ marginTop: 16 }} onClick={handleSubmit} disabled={saving}>
+            {saving ? 'Salvando…' : 'Adicionar à Biblioteca'}
+          </button>
         </div>
       </div>
+
+      {toast && <div className="toast">{toast}</div>}
     </div>
   )
 }

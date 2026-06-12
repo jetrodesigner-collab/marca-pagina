@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { moderateImage } from '../utils/moderateImage'
 
 const BLOBS = [
   { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
@@ -16,6 +17,9 @@ export default function Profile({ session, onNavigate }) {
   const [editData,  setEditData] = useState({ full_name: '', bio: '', link_1: '', link_2: '' })
   const [saving,    setSaving]   = useState(false)
   const [saveErr,   setSaveErr]  = useState(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [toast,     setToast]    = useState(null)
+  const avatarInputRef = useRef(null)
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
 
@@ -84,6 +88,54 @@ export default function Profile({ session, onNavigate }) {
     // App.jsx detecta session = null e exibe Login
   }
 
+  async function handleAvatarChange(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setAvatarUploading(true)
+    const result = await moderateImage(file)
+    if (!result.approved) {
+      setAvatarUploading(false)
+      setToast(result.reason || 'Imagem não permitida')
+      return
+    }
+
+    const ext = file.name.split('.').pop()
+    const path = `${session.user.id}/avatar.${ext}`
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true })
+
+    if (upErr) {
+      setAvatarUploading(false)
+      setToast('Erro ao enviar imagem')
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+    const avatar_url = `${publicUrl}?t=${Date.now()}`
+
+    const { error: dbErr } = await supabase
+      .from('profiles')
+      .update({ avatar_url })
+      .eq('id', session.user.id)
+
+    setAvatarUploading(false)
+    if (dbErr) {
+      setToast('Erro ao salvar imagem')
+      return
+    }
+    setProfile(prev => ({ ...prev, avatar_url }))
+  }
+
+  // Some o toast automaticamente após alguns segundos
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 2400)
+    return () => clearTimeout(t)
+  }, [toast])
+
   function formatLink(url) {
     return url.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0]
   }
@@ -110,12 +162,20 @@ export default function Profile({ session, onNavigate }) {
 
           {/* Avatar com flutuação */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
-            <div className="prof-av float-av">
+            <div className="prof-av float-av" onClick={() => avatarInputRef.current?.click()}>
               {profile?.avatar_url
                 ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                 : <span style={{ fontSize: 34, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{initial}</span>
               }
+              <div className="pav-up-ov">{avatarUploading ? '…' : '📷'}</div>
             </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleAvatarChange}
+            />
 
             <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginTop: 14, letterSpacing: '-.01em', textAlign: 'center' }}>
               {profile?.full_name || profile?.username || '—'}
@@ -283,6 +343,8 @@ export default function Profile({ session, onNavigate }) {
           </div>
         </div>
       )}
+
+      {toast && <div className="toast">{toast}</div>}
     </div>
   )
 }
