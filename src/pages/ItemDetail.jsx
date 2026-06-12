@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import ReadingProgress from '../components/books/ReadingProgress'
+import { useComments } from '../hooks/useComments'
+import CommentList from '../components/comments/CommentList'
+import CommentInput from '../components/comments/CommentInput'
 
 const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
 const FILM_COLORS  = ['f1','f2','f3','f4','f5','f6']
@@ -112,6 +115,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [editingExcerptId, setEditingExcerptId] = useState(null)
   const [expandedExcerptId, setExpandedExcerptId] = useState(null)
   const synRef = useRef(null)
+
+  const { comments, loading: commentsLoading, addComment, deleteComment } = useComments(localItem.id, session.user.id)
 
   const isBook       = localItem.type === 'book'
   const themeClass   = theme === 'L' ? 'light' : 'dark'
@@ -400,6 +405,15 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     }
   }
 
+  async function handleSendComment(content) {
+    return addComment(content, session.user.id)
+  }
+
+  async function handleDeleteComment(commentId) {
+    const { error } = await deleteComment(commentId)
+    if (error) setToast('Erro ao excluir comentário.')
+  }
+
   async function removeFromLibrary() {
     if (!localItem.id || removing) return
     setRemoving(true)
@@ -457,7 +471,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
         <div className="gl" />
 
         {/* Scroll area */}
-        <div className="sc">
+        <div className="sc" style={activeTab === 'C' && isInLibrary ? { paddingBottom: 84 } : undefined}>
 
           {/* Hero */}
           <div className="hero">
@@ -788,11 +802,12 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
 
               {/* Comunidade */}
               {activeTab === 'C' && (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)' }}>
-                  <div style={{ fontSize: 36, marginBottom: 10 }}>👥</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>Em breve</div>
-                  <div style={{ fontSize: 11, lineHeight: 1.55 }}>Resenhas e comentários da comunidade</div>
-                </div>
+                <CommentList
+                  comments={comments}
+                  loading={commentsLoading}
+                  currentUserId={session.user.id}
+                  onDelete={handleDeleteComment}
+                />
               )}
             </>
           )}
@@ -862,6 +877,13 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
             </div>
           </div>
         </div>
+      )}
+
+      {activeTab === 'C' && isInLibrary && (
+        <CommentInput
+          onSend={handleSendComment}
+          onError={() => setToast('Erro ao enviar comentário. Tente novamente.')}
+        />
       )}
 
       {toast && <div className="toast">{toast}</div>}
