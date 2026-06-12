@@ -195,7 +195,7 @@ export default function Profile({ session, onNavigate }) {
             <span className="nic">📚</span>
             <span className="nla">Biblioteca</span>
           </div>
-          <div className="ni">
+          <div className="ni" onClick={() => onNavigate('community')}>
             <span className="nic">👥</span>
             <span className="nla">Comunidade</span>
           </div>

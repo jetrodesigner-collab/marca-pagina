@@ -1,0 +1,171 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { useCommunity } from '../hooks/useCommunity'
+
+const BLOBS = [
+  { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
+  { width: 220, height: 220, background: 'var(--bl2)', top: 100, right: -70 },
+  { width: 240, height: 240, background: 'var(--bl3)', bottom: 120, left: -60 },
+  { width: 200, height: 200, background: 'var(--bl4)', bottom: 40, right: -50 },
+]
+
+const AVATAR_GRADIENTS = ['U1', 'U2', 'U3', 'U4', 'U5', 'U6']
+const COVER_COLORS = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9']
+const FILM_COLORS  = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']
+
+function hashToIndex(str, mod) {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) % mod
+  return Math.abs(hash) % mod
+}
+
+function UserAvatar({ user }) {
+  const [err, setErr] = useState(false)
+  const name = user.full_name || user.username || '?'
+  const initial = name.charAt(0).toUpperCase()
+
+  if (user.avatar_url && !err) {
+    return (
+      <div className="uav">
+        <img src={user.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setErr(true)} />
+      </div>
+    )
+  }
+
+  const cls = AVATAR_GRADIENTS[hashToIndex(user.id, AVATAR_GRADIENTS.length)]
+  return <div className={`uav ${cls}`}>{initial}</div>
+}
+
+function MiniCover({ item }) {
+  const [err, setErr] = useState(false)
+
+  if (item?.cover_url && !err) {
+    return <img className="mcc" src={item.cover_url} alt="" onError={() => setErr(true)} />
+  }
+
+  const colors = item?.type === 'movie' ? FILM_COLORS : COVER_COLORS
+  const cls = colors[hashToIndex(item?.title || '?', colors.length)]
+  return <div className={`mcc ${cls}`} />
+}
+
+export default function Community({ session, onNavigate }) {
+  const [theme]   = useState(() => localStorage.getItem('tema') || 'D')
+  const [profile, setProfile] = useState(null)
+  const [search, setSearch]   = useState('')
+  const { users, loading } = useCommunity(session.user.id)
+
+  const themeClass = theme === 'L' ? 'light' : 'dark'
+
+  useEffect(() => {
+    supabase
+      .from('profiles')
+      .select('full_name, username, avatar_url')
+      .eq('id', session.user.id)
+      .maybeSingle()
+      .then(({ data }) => setProfile(data))
+  }, [session.user.id])
+
+  const initial = (profile?.full_name || profile?.username || session.user.email || '?')[0].toUpperCase()
+
+  const query = search.trim().toLowerCase()
+  const filteredUsers = query
+    ? users.filter(u =>
+        (u.full_name || '').toLowerCase().includes(query) ||
+        (u.username || '').toLowerCase().includes(query)
+      )
+    : users
+
+  return (
+    <div
+      className={themeClass}
+      style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
+    >
+      {BLOBS.map((b, i) => (
+        <div key={i} style={{ position: 'fixed', borderRadius: '50%', filter: 'blur(55px)', pointerEvents: 'none', zIndex: 0, ...b }} />
+      ))}
+
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+
+        {/* Topbar */}
+        <div className="topbar">
+          <div className="logo">marca<em>·página</em></div>
+          <div
+            className="av"
+            style={profile?.avatar_url ? { padding: 0, overflow: 'hidden' } : {}}
+            onClick={() => onNavigate('profile')}
+          >
+            {profile?.avatar_url
+              ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : initial}
+          </div>
+        </div>
+
+        <div className="gl" />
+
+        <div className="sc">
+          <div className="srch">
+            <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
+            <input
+              placeholder="Buscar pessoa..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="slb">Ativos recentemente</div>
+
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
+              Carregando...
+            </div>
+          )}
+
+          {!loading && filteredUsers.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
+              {query ? 'Nenhuma pessoa encontrada.' : 'Nenhuma outra pessoa por aqui ainda.'}
+            </div>
+          )}
+
+          {!loading && filteredUsers.map(user => (
+            <div key={user.id} className="uc" onClick={() => onNavigate('publicProfile', { userId: user.id })}>
+              <UserAvatar user={user} />
+              <div className="ui">
+                <div className="un">{user.full_name || user.username || 'Usuário'}</div>
+                <div className="us">
+                  {user.books} livro{user.books === 1 ? '' : 's'} · {user.reviews} resenha{user.reviews === 1 ? '' : 's'}
+                </div>
+              </div>
+              <div className="mcs">
+                {user.recentCovers.map((item, i) => (
+                  <MiniCover key={i} item={item} />
+                ))}
+              </div>
+              <div className={user.online ? 'on-d' : 'off-d'} />
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom navigation */}
+        <div className="bnav">
+          <div className="ni" onClick={() => onNavigate('library')}>
+            <span className="nic">📚</span>
+            <span className="nla">Biblioteca</span>
+          </div>
+          <div className="ni on">
+            <span className="nic">👥</span>
+            <span className="nla">Comunidade</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('search')}>
+            <span className="nic">🔍</span>
+            <span className="nla">Buscar</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('profile')}>
+            <span className="nic">👤</span>
+            <span className="nla">Perfil</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}

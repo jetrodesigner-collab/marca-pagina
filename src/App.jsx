@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { useLastSeen } from './hooks/useLastSeen'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import CompleteProfile from './pages/CompleteProfile'
@@ -7,6 +8,8 @@ import Library from './pages/Library'
 import Search from './pages/Search'
 import ItemDetail from './pages/ItemDetail'
 import Profile from './pages/Profile'
+import Community from './pages/Community'
+import PublicProfile from './pages/PublicProfile'
 import ManualBookEntry from './pages/ManualBookEntry'
 import ManualMovieEntry from './pages/ManualMovieEntry'
 
@@ -17,6 +20,9 @@ export default function App() {
   const [authView, setAuthView] = useState('login')
   const [screen, setScreen] = useState('library')
   const [itemContext, setItemContext] = useState(null) // { item, userItem }
+  const [profileContext, setProfileContext] = useState(null) // { userId }
+
+  useLastSeen(session?.user?.id)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -54,6 +60,7 @@ export default function App() {
   function navigate(target, payload = null) {
     setScreen(target)
     if (target === 'item' && payload) setItemContext(payload)
+    if (target === 'publicProfile' && payload) setProfileContext(payload)
   }
 
   if (screen === 'item' && itemContext) {
@@ -75,6 +82,20 @@ export default function App() {
 
   if (screen === 'profile') {
     return <Profile session={session} onNavigate={navigate} />
+  }
+
+  if (screen === 'community') {
+    return <Community session={session} onNavigate={navigate} />
+  }
+
+  if (screen === 'publicProfile' && profileContext) {
+    return (
+      <PublicProfile
+        userId={profileContext.userId}
+        onNavigate={navigate}
+        onBack={() => setScreen('community')}
+      />
+    )
   }
 
   if (screen === 's9') {
