@@ -92,7 +92,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [review,       setReview]       = useState('')
   const [isPublic,     setIsPublic]     = useState(false)
   const [saving,       setSaving]       = useState(false)
-  const [reviewMode,   setReviewMode]   = useState('read')
   const [savedReview,  setSavedReview]  = useState(null)
   const [deleteReviewConfirm, setDeleteReviewConfirm] = useState(false)
   const [toast,        setToast]        = useState(null)
@@ -122,6 +121,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const isInLibrary  = !!localUserItem
   const statusInfo   = status ? STATUS_META[status] : null
   const showTrash    = isOwner && isInLibrary
+  const reviewDirty  = review !== (savedReview?.body || '')
 
   // Load existing review only when item has a Supabase UUID and is in library
   useEffect(() => {
@@ -138,7 +138,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
           setIsPublic(data.is_public || false)
           setSavedReview(data)
         }
-        setReviewMode('read')
       })
   }, [localItem.id, localUserItem?.id, session.user.id])
 
@@ -255,6 +254,24 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   async function saveReview() {
     if (saving || !localItem.id) return
     setSaving(true)
+
+    if (!review.trim() && savedReview) {
+      const { error } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('user_id', session.user.id)
+        .eq('item_id', localItem.id)
+      setSaving(false)
+      if (!error) {
+        setSavedReview(null)
+        setReview('')
+        setToast('Resenha excluída')
+      } else {
+        setToast('Erro ao salvar resenha')
+      }
+      return
+    }
+
     const { error } = await supabase
       .from('reviews')
       .upsert(
@@ -264,28 +281,14 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     setSaving(false)
     if (!error) {
       setSavedReview({ body: review, is_public: isPublic })
-      setReviewMode('read')
       setToast('Resenha salva')
     } else {
       setToast('Erro ao salvar resenha')
     }
   }
 
-  async function handleViewReview() {
-    if (reviewMode !== 'edit') return
-    if (review.trim()) {
-      await saveReview()
-    } else {
-      setReviewMode('read')
-    }
-  }
-
-  function editReview() {
-    if (savedReview) {
-      setReview(savedReview.body)
-      setIsPublic(savedReview.is_public)
-    }
-    setReviewMode('edit')
+  function cancelReview() {
+    setReview(savedReview?.body || '')
   }
 
   async function setReviewPrivacy(newPublic) {
@@ -321,7 +324,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       setReview('')
       setIsPublic(false)
       setDeleteReviewConfirm(false)
-      setReviewMode('read')
       setToast('Resenha excluída')
     }
   }
@@ -618,30 +620,23 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                   <div className="bl">Sua resenha pessoal</div>
 
                   <div className="rbox">
-                    {reviewMode === 'edit' ? (
-                      <textarea
-                        className="rtxt"
-                        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6 }}
-                        placeholder={`Escreva o que esse ${isBook ? 'livro' : 'filme'} representou para você...`}
-                        value={review}
-                        onChange={e => setReview(e.target.value)}
-                        autoFocus
-                      />
-                    ) : (
-                      <div className="rtxt" style={{ fontSize: 16, lineHeight: 1.6 }}>
-                        {savedReview?.body || `Você ainda não escreveu uma resenha. Toque em "editar" para começar.`}
-                      </div>
-                    )}
+                    <textarea
+                      className="rtxt"
+                      style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6 }}
+                      placeholder={`Escreva o que esse ${isBook ? 'livro' : 'filme'} representou para você...`}
+                      value={review}
+                      onChange={e => setReview(e.target.value)}
+                    />
                   </div>
 
                   <div className="rev-actions">
-                    <button className={`ra${reviewMode === 'read' ? ' on' : ''}`} onClick={handleViewReview}>
-                      <span className="ico">👁️</span> ver resenha
+                    <button className={`ra${reviewDirty ? ' on' : ''}`} onClick={saveReview} disabled={!reviewDirty || saving}>
+                      <span className="ico">💾</span> salvar
                     </button>
-                    <button className={`ra${reviewMode === 'edit' ? ' on' : ''}`} onClick={editReview}>
-                      <span className="ico">✏️</span> editar
+                    <button className="ra" onClick={cancelReview} disabled={!reviewDirty}>
+                      <span className="ico">↩️</span> cancelar
                     </button>
-                    <button className="ra danger" onClick={() => setDeleteReviewConfirm(true)}>
+                    <button className="ra danger" onClick={() => setDeleteReviewConfirm(true)} disabled={!savedReview}>
                       <span className="ico">🗑️</span> excluir
                     </button>
                   </div>
