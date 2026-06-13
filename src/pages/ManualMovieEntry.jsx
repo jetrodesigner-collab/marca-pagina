@@ -93,6 +93,7 @@ export default function ManualMovieEntry({ session, onNavigate }) {
         api_source: 'manual',
         is_manual:  true,
         created_by: session.user.id,
+        status:     'pending',
       })
       .select()
       .single()
@@ -115,7 +116,8 @@ export default function ManualMovieEntry({ session, onNavigate }) {
       return
     }
 
-    onNavigate('item', { item, userItem, isOwner: true })
+    setToast('Filme enviado para aprovação! Ele já aparece na sua coleção.')
+    setTimeout(() => onNavigate('item', { item, userItem, isOwner: true }), 900)
   }
 
   return (
