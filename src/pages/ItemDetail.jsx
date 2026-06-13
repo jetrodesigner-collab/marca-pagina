@@ -93,6 +93,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [isPublic,     setIsPublic]     = useState(false)
   const [saving,       setSaving]       = useState(false)
   const [savedReview,  setSavedReview]  = useState(null)
+  const [reviewExpanded, setReviewExpanded] = useState(false)
   const [deleteReviewConfirm, setDeleteReviewConfirm] = useState(false)
   const [toast,        setToast]        = useState(null)
   const [adding,       setAdding]       = useState(false)
@@ -112,6 +113,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [editingExcerptId, setEditingExcerptId] = useState(null)
   const [expandedExcerptId, setExpandedExcerptId] = useState(null)
   const synRef = useRef(null)
+  const reviewRef = useRef(null)
 
   const { comments, loading: commentsLoading, addComment, deleteComment } = useComments(localItem.id, session.user.id)
 
@@ -147,6 +149,18 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     const t = setTimeout(() => setToast(null), 2400)
     return () => clearTimeout(t)
   }, [toast])
+
+  // Expande/recolhe a caixa de resenha
+  useEffect(() => {
+    const el = reviewRef.current
+    if (!el) return
+    if (reviewExpanded) {
+      el.style.height = 'auto'
+      el.style.height = `${el.scrollHeight}px`
+    } else {
+      el.style.height = '144px'
+    }
+  }, [reviewExpanded, review])
 
   // Carrega trechos (próprios + comunidade) quando o item está na biblioteca
   useEffect(() => {
@@ -265,6 +279,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       if (!error) {
         setSavedReview(null)
         setReview('')
+        setReviewExpanded(false)
         setToast('Resenha excluída')
       } else {
         setToast('Erro ao salvar resenha')
@@ -281,6 +296,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     setSaving(false)
     if (!error) {
       setSavedReview({ body: review, is_public: isPublic })
+      setReviewExpanded(false)
       setToast('Resenha salva')
     } else {
       setToast('Erro ao salvar resenha')
@@ -289,6 +305,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
 
   function cancelReview() {
     setReview(savedReview?.body || '')
+    setReviewExpanded(false)
   }
 
   async function setReviewPrivacy(newPublic) {
@@ -324,6 +341,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       setReview('')
       setIsPublic(false)
       setDeleteReviewConfirm(false)
+      setReviewExpanded(false)
       setToast('Resenha excluída')
     }
   }
@@ -621,8 +639,9 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
 
                   <div className="rbox">
                     <textarea
+                      ref={reviewRef}
                       className="rtxt"
-                      style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6 }}
+                      style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden', height: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6 }}
                       placeholder={`Escreva o que esse ${isBook ? 'livro' : 'filme'} representou para você...`}
                       value={review}
                       onChange={e => setReview(e.target.value)}
@@ -630,6 +649,12 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                   </div>
 
                   <div className="rev-actions">
+                    <button className={`ra${reviewExpanded ? ' on' : ''}`} onClick={() => setReviewExpanded(e => !e)}>
+                      <span className="ico">👁️</span> ver resenha
+                    </button>
+                    <button className="ra" onClick={() => { setReviewExpanded(true); reviewRef.current?.focus() }}>
+                      <span className="ico">✏️</span> editar
+                    </button>
                     <button className={`ra${reviewDirty ? ' on' : ''}`} onClick={saveReview} disabled={!reviewDirty || saving}>
                       <span className="ico">💾</span> salvar
                     </button>

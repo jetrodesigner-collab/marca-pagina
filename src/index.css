@@ -406,7 +406,7 @@ select.finp { appearance: none; cursor: pointer; }
 .tpg  { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
 
 /* ── Resenha: ações pequenas (ver resenha · editar · excluir) ── */
-.rev-actions { display: flex; gap: 22px; justify-content: center; margin: 0 0 14px; }
+.rev-actions { display: flex; flex-wrap: wrap; gap: 10px 18px; justify-content: center; margin: 0 0 14px; }
 .ra { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); cursor: pointer; background: none; border: none; font-family: 'Figtree', sans-serif; transition: color .2s; padding: 0; }
 .ra .ico { font-size: 14px; }
 .ra:hover { color: var(--accent); }
