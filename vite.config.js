@@ -9,10 +9,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       manifest: {
         name: 'marca·página',
-        short_name: 'marca·página',
+        short_name: 'marcapagina',
         description: 'Sua biblioteca pessoal de leituras',
-        theme_color: '#8B6FAE',
-        background_color: '#F5F2F8',
+        start_url: '/',
+        theme_color: '#C4A8F0',
+        background_color: '#1A1720',
         display: 'standalone',
         icons: [
           {
