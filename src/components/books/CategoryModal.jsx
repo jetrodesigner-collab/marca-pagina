@@ -21,7 +21,7 @@ export default function CategoryModal({ category, meta, userId, bookItems, onIte
     return () => clearTimeout(t)
   }, [toast])
 
-  const itemsInCategory = bookItems.filter(ui => ui.status === category)
+  const itemsInCategory = collections.reduce((sum, c) => sum + (c.collection_items?.length || 0), 0)
 
   async function handleCreate() {
     setCreating(true)
@@ -54,7 +54,7 @@ export default function CategoryModal({ category, meta, userId, bookItems, onIte
         <div className="fs-title-wrap">
           <div className="fs-title">{meta.label}</div>
           <div className="fs-subtitle">
-            {itemsInCategory.length} {itemsInCategory.length === 1 ? 'livro' : 'livros'} · {collections.length} {collections.length === 1 ? 'coleção' : 'coleções'}
+            {itemsInCategory} {itemsInCategory === 1 ? 'livro' : 'livros'} · {collections.length} {collections.length === 1 ? 'coleção' : 'coleções'}
           </div>
         </div>
         <div className="fs-spacer" />

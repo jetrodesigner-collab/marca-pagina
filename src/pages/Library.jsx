@@ -800,6 +800,7 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
   const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('lib_active_tab') || 'L')
   const [theme]                   = useState(() => localStorage.getItem('tema') || 'D')
   const [allItems, setAllItems]   = useState([])
+  const [shelfCounts, setShelfCounts] = useState({ reading: 0, want_to_read: 0, read: 0 })
 
   const frase = getDailyFrase()
 
@@ -825,16 +826,38 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
       .then(({ data }) => setAllItems(data || []))
   }, [session.user.id])
 
+  // Contagem das estantes de livros = itens que aparecem nas coleções
+  // (não o total histórico em user_items, que pode incluir itens já
+  // removidos das coleções)
+  const loadShelfCounts = useCallback(() => {
+    return supabase
+      .from('collections')
+      .select('category, collection_items(id)')
+      .eq('user_id', session.user.id)
+      .then(({ data }) => {
+        const counts = { reading: 0, want_to_read: 0, read: 0 }
+        ;(data || []).forEach(col => {
+          if (col.category in counts) counts[col.category] += (col.collection_items || []).length
+        })
+        setShelfCounts(counts)
+      })
+  }, [session.user.id])
+
   // Carrega itens + mantém contagem das estantes em tempo real:
-  // refetch ao focar a aba/janela e via realtime subscription em user_items
+  // refetch ao focar a aba/janela e via realtime subscription em user_items/collections/collection_items
   useEffect(() => {
     loadAllItems()
+    loadShelfCounts()
 
     function onVisible() {
-      if (document.visibilityState === 'visible') loadAllItems()
+      if (document.visibilityState === 'visible') {
+        loadAllItems()
+        loadShelfCounts()
+      }
     }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', loadAllItems)
+    window.addEventListener('focus', loadShelfCounts)
 
     const channel = supabase
       .channel(`user_items_${session.user.id}`)
@@ -842,14 +865,22 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
         event: '*', schema: 'public', table: 'user_items',
         filter: `user_id=eq.${session.user.id}`,
       }, loadAllItems)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'collections',
+        filter: `user_id=eq.${session.user.id}`,
+      }, loadShelfCounts)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'collection_items',
+      }, loadShelfCounts)
       .subscribe()
 
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('focus', loadAllItems)
+      window.removeEventListener('focus', loadShelfCounts)
       supabase.removeChannel(channel)
     }
-  }, [session.user.id, loadAllItems])
+  }, [session.user.id, loadAllItems, loadShelfCounts])
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
   const initial = (profile?.full_name || profile?.username || session.user.email || '?')[0].toUpperCase()
@@ -857,9 +888,6 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
   const bookItems  = allItems.filter(ui => ui.items?.type === 'book')
   const movieItems = allItems.filter(ui => ui.items?.type === 'movie')
 
-  const reading     = bookItems.filter(ui => ui.status === 'reading')
-  const wantToRead  = bookItems.filter(ui => ui.status === 'want_to_read')
-  const read        = bookItems.filter(ui => ui.status === 'read')
   const watching    = movieItems.filter(ui => ui.status === 'watching')
   const wantToWatch = movieItems.filter(ui => ui.status === 'want_to_watch')
   const watched     = movieItems.filter(ui => ui.status === 'watched')
@@ -915,7 +943,7 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
         {/* Livros */}
         <div className="sc" style={{ display: activeTab === 'L' ? undefined : 'none' }}>
           <ShelvesSection
-            counts={{ reading: reading.length, want_to_read: wantToRead.length, read: read.length }}
+            counts={shelfCounts}
             bookItems={bookItems}
             userId={session.user.id}
             onItemClick={goToItem}
