@@ -52,8 +52,16 @@ export default function Profile({ session, onNavigate }) {
         .select('item_id, items(type)')
         .eq('user_id', session.user.id)
 
-      const books  = (userItems || []).filter(ui => ui.items?.type === 'book').length
       const movies = (userItems || []).filter(ui => ui.items?.type === 'movie').length
+
+      const { data: collections } = await supabase
+        .from('collections')
+        .select('category, collection_items(id)')
+        .eq('user_id', session.user.id)
+
+      const books = (collections || [])
+        .filter(c => c.category === 'read')
+        .reduce((sum, c) => sum + (c.collection_items?.length || 0), 0)
 
       const { count: reviewCount } = await supabase
         .from('reviews')
