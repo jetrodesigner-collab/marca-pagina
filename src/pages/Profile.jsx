@@ -190,7 +190,7 @@ export default function Profile({ session, onNavigate }) {
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
 
         {/* Área de scroll */}
-        <div className="sc" style={{ paddingTop: 32 }}>
+        <div className="sc" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top, 0px))' }}>
 
           {/* Avatar com flutuação */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>

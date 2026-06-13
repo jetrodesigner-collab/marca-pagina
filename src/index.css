@@ -229,7 +229,7 @@ select.finp { appearance: none; cursor: pointer; }
 .f6 { background: linear-gradient(145deg, #2e2a1a, #6a5a3a, #aa9a6a); }
 
 /* ── Topbar / Logo / Avatar ── */
-.topbar { padding: 16px 22px 12px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.topbar { padding: calc(24px + env(safe-area-inset-top, 0px)) 22px 12px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .logo { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -.02em; cursor: pointer; }
 .logo em { font-style: italic; font-weight: 300; color: var(--accent); }
 .av { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-g); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; box-shadow: 0 4px 12px var(--btn-shad); cursor: pointer; transition: transform .15s; }
@@ -320,7 +320,7 @@ select.finp { appearance: none; cursor: pointer; }
 .sry { font-size: 10px; color: var(--muted); }
 
 /* ── Page header (voltar + título) ── */
-.ph { display: flex; align-items: center; padding: 6px 22px 12px; gap: 12px; flex-shrink: 0; }
+.ph { display: flex; align-items: center; padding: calc(24px + env(safe-area-inset-top, 0px)) 22px 12px; gap: 12px; flex-shrink: 0; }
 .bk { width: 34px; height: 34px; border-radius: 50%; background: var(--sur); border: 1px solid var(--bor); display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--accent); cursor: pointer; flex-shrink: 0; }
 .ph-t { font-size: 16px; font-weight: 700; color: var(--text); }
 
@@ -403,16 +403,13 @@ select.finp { appearance: none; cursor: pointer; }
 .ttxt { font-size: 13px; font-style: italic; color: var(--text2); line-height: 1.65; margin-bottom: 8px; word-break: break-word; overflow-wrap: break-word; max-width: 100%; overflow: hidden; }
 .tpg  { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
 
-/* ── Resenha: grid de ações 2x2 ── */
-.review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-.review-action-btn {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 13px 8px; border-radius: 12px; background: var(--sur);
-  border: 1px solid var(--bor2); color: var(--text);
-  font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 600;
-  cursor: pointer; text-align: center;
-}
-.review-action-btn.danger { color: #E57373; border-color: rgba(229,115,115,.35); }
+/* ── Resenha: ações pequenas (ver resenha · editar · excluir) ── */
+.rev-actions { display: flex; gap: 22px; justify-content: center; margin: 0 0 14px; }
+.ra { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); cursor: pointer; background: none; border: none; font-family: 'Figtree', sans-serif; transition: color .2s; padding: 0; }
+.ra .ico { font-size: 14px; }
+.ra:hover { color: var(--accent); }
+.ra.on { color: var(--accent); font-weight: 700; }
+.ra.danger:hover { color: var(--red); }
 .del-confirm {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   background: rgba(229,115,115,.1); border: 1px solid rgba(229,115,115,.35);
@@ -544,13 +541,13 @@ select.finp { appearance: none; cursor: pointer; }
 @media (min-width: 640px) {
   .bc   { width: 118px; }
   .addc { width: 118px; height: 190px; }
-  .topbar { padding-top: 18px; }
+  .topbar { padding-top: calc(26px + env(safe-area-inset-top, 0px)); }
 }
 
 @media (min-width: 1024px) {
   .bc   { width: 126px; }
   .addc { width: 126px; height: 200px; }
-  .topbar { padding-top: 22px; }
+  .topbar { padding-top: calc(30px + env(safe-area-inset-top, 0px)); }
   .sc   { padding-left: 28px; padding-right: 28px; }
   .qbox { margin-left: 28px; margin-right: 28px; }
   .mtabs { padding: 0 28px; }

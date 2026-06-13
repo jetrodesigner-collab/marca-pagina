@@ -92,10 +92,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [review,       setReview]       = useState('')
   const [isPublic,     setIsPublic]     = useState(false)
   const [saving,       setSaving]       = useState(false)
-  const [saveFeedback, setSaveFeedback] = useState(null)
-  const [reviewMode,   setReviewMode]   = useState('edit')
+  const [reviewMode,   setReviewMode]   = useState('read')
   const [savedReview,  setSavedReview]  = useState(null)
-  const [reviewExpanded, setReviewExpanded] = useState(false)
   const [deleteReviewConfirm, setDeleteReviewConfirm] = useState(false)
   const [toast,        setToast]        = useState(null)
   const [adding,       setAdding]       = useState(false)
@@ -139,10 +137,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
           setReview(data.body || '')
           setIsPublic(data.is_public || false)
           setSavedReview(data)
-          setReviewMode('read')
-        } else {
-          setReviewMode('edit')
         }
+        setReviewMode('read')
       })
   }, [localItem.id, localUserItem?.id, session.user.id])
 
@@ -259,7 +255,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   async function saveReview() {
     if (saving || !localItem.id) return
     setSaving(true)
-    setSaveFeedback(null)
     const { error } = await supabase
       .from('reviews')
       .upsert(
@@ -267,19 +262,29 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
         { onConflict: 'user_id,item_id' }
       )
     setSaving(false)
-    setSaveFeedback(error ? 'err' : 'ok')
     if (!error) {
       setSavedReview({ body: review, is_public: isPublic })
-      setReviewExpanded(false)
+      setReviewMode('read')
+      setToast('Resenha salva')
+    } else {
+      setToast('Erro ao salvar resenha')
+    }
+  }
+
+  async function handleViewReview() {
+    if (reviewMode !== 'edit') return
+    if (review.trim()) {
+      await saveReview()
+    } else {
       setReviewMode('read')
     }
-    setTimeout(() => setSaveFeedback(null), 2500)
   }
 
   function editReview() {
-    setReview(savedReview.body)
-    setIsPublic(savedReview.is_public)
-    setReviewExpanded(false)
+    if (savedReview) {
+      setReview(savedReview.body)
+      setIsPublic(savedReview.is_public)
+    }
     setReviewMode('edit')
   }
 
@@ -297,6 +302,14 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     }
   }
 
+  function handlePrivacyClick(newPublic) {
+    if (savedReview) {
+      setReviewPrivacy(newPublic)
+    } else {
+      setIsPublic(newPublic)
+    }
+  }
+
   async function confirmDeleteReview() {
     const { error } = await supabase
       .from('reviews')
@@ -307,9 +320,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       setSavedReview(null)
       setReview('')
       setIsPublic(false)
-      setReviewExpanded(false)
       setDeleteReviewConfirm(false)
-      setReviewMode('edit')
+      setReviewMode('read')
       setToast('Resenha excluída')
     }
   }
@@ -603,63 +615,52 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
               {/* Resenha */}
               {activeTab === 'R' && (
                 <div>
-                  {reviewMode === 'read' && savedReview ? (
-                    <>
-                      <div className="bl">Sua resenha pessoal</div>
-                      <div className="review-actions">
-                        <button className="review-action-btn" onClick={() => setReviewExpanded(e => !e)}>
-                          {reviewExpanded ? '🙈 Ocultar Resenha' : '👁 Ver Resenha'}
-                        </button>
-                        <button className="review-action-btn" onClick={editReview}>✏️ Editar</button>
+                  <div className="bl">Sua resenha pessoal</div>
+
+                  <div className="rbox">
+                    {reviewMode === 'edit' ? (
+                      <textarea
+                        className="rtxt"
+                        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6 }}
+                        placeholder={`Escreva o que esse ${isBook ? 'livro' : 'filme'} representou para você...`}
+                        value={review}
+                        onChange={e => setReview(e.target.value)}
+                        autoFocus
+                      />
+                    ) : (
+                      <div className="rtxt" style={{ fontSize: 16, lineHeight: 1.6 }}>
+                        {savedReview?.body || `Você ainda não escreveu uma resenha. Toque em "editar" para começar.`}
                       </div>
-                      <div className="priv">
-                        <button className={`pb${!savedReview.is_public ? ' on' : ''}`} onClick={() => setReviewPrivacy(false)}>🔒 Privado</button>
-                        <button className={`pb${savedReview.is_public ? ' on' : ''}`} onClick={() => setReviewPrivacy(true)}>🌐 Público</button>
+                    )}
+                  </div>
+
+                  <div className="rev-actions">
+                    <button className={`ra${reviewMode === 'read' ? ' on' : ''}`} onClick={handleViewReview}>
+                      <span className="ico">👁️</span> ver resenha
+                    </button>
+                    <button className={`ra${reviewMode === 'edit' ? ' on' : ''}`} onClick={editReview}>
+                      <span className="ico">✏️</span> editar
+                    </button>
+                    <button className="ra danger" onClick={() => setDeleteReviewConfirm(true)}>
+                      <span className="ico">🗑️</span> excluir
+                    </button>
+                  </div>
+
+                  {deleteReviewConfirm && (
+                    <div className="del-confirm">
+                      <span>Tem certeza?</span>
+                      <div className="del-confirm-actions">
+                        <button className="confirm" onClick={confirmDeleteReview}>Confirmar</button>
+                        <button className="cancel" onClick={() => setDeleteReviewConfirm(false)}>Cancelar</button>
                       </div>
-                      <button className="review-action-btn danger" style={{ width: '100%', marginBottom: 12 }} onClick={() => setDeleteReviewConfirm(true)}>🗑 Excluir Resenha</button>
-                      {deleteReviewConfirm && (
-                        <div className="del-confirm">
-                          <span>Tem certeza?</span>
-                          <div className="del-confirm-actions">
-                            <button className="confirm" onClick={confirmDeleteReview}>Confirmar</button>
-                            <button className="cancel" onClick={() => setDeleteReviewConfirm(false)}>Cancelar</button>
-                          </div>
-                        </div>
-                      )}
-                      {reviewExpanded && (
-                        <div className="rbox">
-                          <div className="rtxt" style={{ fontSize: 16, lineHeight: 1.6 }}>{savedReview.body}</div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="bl">Sua resenha pessoal</div>
-                      <div className="rbox">
-                        <textarea
-                          className="rtxt"
-                          style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', minHeight: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6 }}
-                          placeholder={`Escreva o que esse ${isBook ? 'livro' : 'filme'} representou para você...`}
-                          value={review}
-                          onChange={e => setReview(e.target.value)}
-                        />
-                      </div>
-                      <div className="bl">Privacidade</div>
-                      <div className="priv">
-                        <button className={`pb${!isPublic ? ' on' : ''}`} onClick={() => setIsPublic(false)}>🔒 Privado</button>
-                        <button className={`pb${isPublic  ? ' on' : ''}`} onClick={() => setIsPublic(true)}>🌐 Público</button>
-                      </div>
-                      <button className="savebtn" onClick={saveReview} disabled={saving}>
-                        {saving
-                          ? 'Salvando...'
-                          : saveFeedback === 'ok'
-                            ? '✓ Resenha salva!'
-                            : saveFeedback === 'err'
-                              ? 'Erro ao salvar'
-                              : 'Salvar Resenha'}
-                      </button>
-                    </>
+                    </div>
                   )}
+
+                  <div className="bl">Privacidade</div>
+                  <div className="priv">
+                    <button className={`pb${!isPublic ? ' on' : ''}`} onClick={() => handlePrivacyClick(false)}>🔒 Privado</button>
+                    <button className={`pb${isPublic  ? ' on' : ''}`} onClick={() => handlePrivacyClick(true)}>🌐 Público</button>
+                  </div>
                 </div>
               )}
 
