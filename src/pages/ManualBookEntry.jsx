@@ -65,56 +65,55 @@ export default function ManualBookEntry({ session, onNavigate }) {
     setError(null)
     setSaving(true)
 
-    let cover_url = null
-    if (coverFile) {
-      const ext = coverFile.name.split('.').pop()
-      const path = `${session.user.id}/${crypto.randomUUID()}.${ext}`
-      const { error: upErr } = await supabase.storage.from('covers').upload(path, coverFile)
-      if (upErr) {
-        setSaving(false)
-        setError('Erro ao enviar a capa: ' + upErr.message)
-        return
+    try {
+      const { data: { user }, error: userErr } = await supabase.auth.getUser()
+      if (userErr || !user) throw new Error('Sessão inválida. Faça login novamente.')
+
+      let cover_url = null
+      if (coverFile) {
+        const ext = coverFile.name.split('.').pop()
+        const path = `${user.id}/${crypto.randomUUID()}.${ext}`
+        const { error: upErr } = await supabase.storage.from('covers').upload(path, coverFile)
+        if (upErr) throw new Error('Erro ao enviar a capa: ' + upErr.message)
+        const { data: { publicUrl } } = supabase.storage.from('covers').getPublicUrl(path)
+        cover_url = publicUrl
       }
-      const { data: { publicUrl } } = supabase.storage.from('covers').getPublicUrl(path)
-      cover_url = publicUrl
-    }
 
-    const { data: item, error: itemErr } = await supabase
-      .from('items')
-      .insert({
-        type:       'book',
-        api_id:     `manual_${crypto.randomUUID()}`,
-        title:      title.trim(),
-        author:     author.trim(),
-        year:       year ? parseInt(year) : null,
-        category,
-        cover_url,
-        api_source: 'manual',
-        is_manual:  true,
-        created_by: session.user.id,
-      })
-      .select()
-      .single()
+      const { data: item, error: itemErr } = await supabase
+        .from('items')
+        .insert({
+          type:       'book',
+          api_id:     `manual_${crypto.randomUUID()}`,
+          title:      title.trim(),
+          author:     author.trim(),
+          year:       year ? parseInt(year) : null,
+          category,
+          cover_url,
+          api_source: 'manual',
+          is_manual:  true,
+          created_by: user.id,
+        })
+        .select()
+        .single()
 
-    if (itemErr) {
+      if (itemErr) throw new Error('Erro ao salvar o livro: ' + itemErr.message)
+
+      const { data: userItem, error: uiErr } = await supabase
+        .from('user_items')
+        .insert({ user_id: user.id, item_id: item.id, status })
+        .select()
+        .single()
+
+      if (uiErr) throw new Error('Erro ao adicionar à biblioteca: ' + uiErr.message)
+
+      setToast('Livro adicionado com sucesso!')
+      setTimeout(() => onNavigate('item', { item, userItem, isOwner: true }), 900)
+    } catch (err) {
+      console.error('ManualBookEntry handleSubmit:', err)
+      setError(err.message || 'Erro ao salvar o livro.')
+    } finally {
       setSaving(false)
-      setError('Erro ao salvar o livro: ' + itemErr.message)
-      return
     }
-
-    const { data: userItem, error: uiErr } = await supabase
-      .from('user_items')
-      .insert({ user_id: session.user.id, item_id: item.id, status })
-      .select()
-      .single()
-
-    setSaving(false)
-    if (uiErr) {
-      setError('Erro ao adicionar à biblioteca: ' + uiErr.message)
-      return
-    }
-
-    onNavigate('item', { item, userItem, isOwner: true })
   }
 
   return (

@@ -28,6 +28,10 @@ function fileToBase64(file) {
 // Modera uma imagem via Google Cloud Vision SafeSearch.
 // Acima do limite mensal, aprova silenciosamente sem chamar a API.
 export async function moderateImage(file) {
+  if (import.meta.env.DEV) {
+    console.log('Vision key:', VISION_KEY)
+  }
+
   if (getCallCount() >= MONTHLY_LIMIT) {
     return { approved: true, skipped: true }
   }
@@ -48,15 +52,21 @@ export async function moderateImage(file) {
       }
     )
     const data = await res.json()
+
+    if (!res.ok || data.error) {
+      console.error('⚠️ moderateImage: Vision API error — moderação indisponível, aprovando sem checagem', res.status, data.error)
+      return { approved: true, skipped: true }
+    }
+
     incrementCallCount()
 
     const safe = data.responses?.[0]?.safeSearchAnnotation
     if (safe && (BLOCKED_LEVELS.includes(safe.adult) || BLOCKED_LEVELS.includes(safe.violence))) {
-      return { approved: false, reason: 'Imagem não permitida' }
+      return { approved: false, reason: 'Esta imagem não é permitida. Escolha uma capa adequada.' }
     }
     return { approved: true }
   } catch (err) {
-    console.error('moderateImage:', err)
-    return { approved: true }
+    console.error('⚠️ moderateImage: erro de rede — moderação indisponível, aprovando sem checagem', err)
+    return { approved: true, skipped: true }
   }
 }

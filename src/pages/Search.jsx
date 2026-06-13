@@ -521,8 +521,6 @@ export default function Search({ session, onNavigate }) {
             />
           </div>
 
-          <button className="addt" onClick={() => onNavigate('s9')}>＋ Adicionar meu próprio livro</button>
-
           {bookLoading && <SkeletonList />}
 
           {!bookLoading && !bookSearched && (
@@ -563,17 +561,6 @@ export default function Search({ session, onNavigate }) {
                   </div>
                 )
               })}
-              <div style={{ textAlign: 'center', padding: '20px 0 8px' }}>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Não encontrou? Adicione manualmente</div>
-                <button
-                  onClick={() => onNavigate('s9')}
-                  style={{
-                    padding: '10px 24px', borderRadius: 12,
-                    border: '1.5px dashed var(--add-bor)', background: 'var(--add-bg)',
-                    color: 'var(--accent)', fontFamily: "'Figtree', sans-serif",
-                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  }}>📷 Adicionar com foto</button>
-              </div>
             </>
           )}
         </div>
@@ -588,8 +575,6 @@ export default function Search({ session, onNavigate }) {
               onChange={handleMovieInput}
             />
           </div>
-
-          <button className="addt" onClick={() => onNavigate('s10')}>＋ Adicionar meu próprio filme</button>
 
           {movieLoading && <SkeletonList />}
 
@@ -632,17 +617,6 @@ export default function Search({ session, onNavigate }) {
                   </div>
                 )
               })}
-              <div style={{ textAlign: 'center', padding: '20px 0 8px' }}>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Não encontrou? Adicione manualmente</div>
-                <button
-                  onClick={() => onNavigate('s10')}
-                  style={{
-                    padding: '10px 24px', borderRadius: 12,
-                    border: '1.5px dashed var(--add-bor)', background: 'var(--add-bg)',
-                    color: 'var(--accent)', fontFamily: "'Figtree', sans-serif",
-                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  }}>📷 Adicionar com foto</button>
-              </div>
             </>
           )}
         </div>
