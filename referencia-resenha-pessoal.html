@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>marca·página — Referência Resenha Pessoal</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--accent-g:linear-gradient(135deg,#C4B8E8,#9A88C8);--green:#7AAA8A;--red:#C05050;}
+body.L{--bg:linear-gradient(160deg,#F5F2F8,#EEF0F8,#F2EEF5);--text:#2A2435;--text2:#7A6E8A;--muted:#B0A8C0;--accent:#8B6FAE;--sur:rgba(255,255,255,.62);--bor:rgba(255,255,255,.95);--bor2:rgba(200,190,220,.3);--shad:rgba(120,100,160,.12);--btn-shad:rgba(139,111,174,.3);--bl1:rgba(196,184,232,.35);--bl2:rgba(232,180,200,.3);--bl3:rgba(184,216,200,.25);--gl:rgba(180,160,210,.4);}
+body.D{--bg:linear-gradient(160deg,#1A1720,#161420,#1C1828);--text:#F0ECF8;--text2:#C0B4D0;--muted:#8A7EA0;--accent:#C4A8F0;--sur:rgba(255,255,255,.07);--bor:rgba(255,255,255,.11);--bor2:rgba(180,160,220,.15);--shad:rgba(0,0,0,.28);--btn-shad:rgba(100,70,160,.4);--bl1:rgba(120,90,180,.18);--bl2:rgba(180,90,130,.14);--bl3:rgba(70,130,100,.12);--gl:rgba(160,130,210,.2);}
+body{font-family:'Figtree',sans-serif;background:var(--bg);display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px 0 40px;transition:background .4s;}
+
+.ctrl{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;justify-content:center;}
+.ctrl button{font-family:'Figtree';font-size:12px;font-weight:700;padding:8px 16px;border-radius:20px;border:1px solid var(--bor);background:var(--sur);color:var(--text);cursor:pointer;backdrop-filter:blur(10px);}
+.ctrl button.on{background:var(--accent-g);color:#fff;border-color:transparent;}
+.note{font-size:11px;color:var(--muted);margin-bottom:18px;text-align:center;max-width:360px;line-height:1.5;}
+
+.phone{width:390px;min-height:720px;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 60px rgba(0,0,0,.3);border-radius:32px;transition:background .4s;}
+.blob{position:absolute;border-radius:50%;filter:blur(55px);pointer-events:none;z-index:0;}
+.b1{width:260px;height:260px;background:var(--bl1);top:-80px;left:-80px;}
+.b2{width:220px;height:220px;background:var(--bl2);top:100px;right:-70px;}
+.b3{width:240px;height:240px;background:var(--bl3);bottom:120px;left:-60px;}
+
+.ph{display:flex;align-items:center;padding:18px 22px 12px;gap:12px;flex-shrink:0;position:relative;z-index:1;}
+.bk{width:34px;height:34px;border-radius:50%;background:var(--sur);border:1px solid var(--bor);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent);cursor:pointer;flex-shrink:0;}
+.ph-t{font-size:16px;font-weight:700;color:var(--text);}
+.sc{flex:1;overflow-y:auto;padding:8px 22px 22px;scrollbar-width:none;position:relative;z-index:1;}
+.sc::-webkit-scrollbar{display:none;}
+
+/* INNER TABS */
+.itabs{display:flex;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:4px;margin-bottom:18px;backdrop-filter:blur(12px);}
+.it{flex:1;padding:9px 4px;text-align:center;font-size:12px;color:var(--muted);cursor:pointer;border-radius:10px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.it.on{background:rgba(255,255,255,.85);color:var(--accent);font-weight:700;}
+body.D .it.on{background:rgba(255,255,255,.14);}
+
+/* ===== BLOCO RESENHA PESSOAL ===== */
+.bl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;}
+.rbox{background:var(--sur);border:1px solid var(--bor);border-radius:18px;padding:18px;backdrop-filter:blur(16px);min-height:200px;display:flex;}
+.rtxt{font-size:14px;color:var(--text2);line-height:1.7;width:100%;}
+.rtextarea{width:100%;background:transparent;border:none;outline:none;resize:none;font-family:'Figtree',sans-serif;font-size:14px;color:var(--text2);line-height:1.7;}
+.rtextarea::placeholder{color:var(--muted);}
+
+/* Linha de ações pequenas com íconezinho (ver resenha · editar · excluir) */
+.rev-actions{display:flex;gap:22px;justify-content:center;margin:14px 0 22px;}
+.ra{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Figtree',sans-serif;transition:color .2s;padding:0;}
+.ra .ico{font-size:14px;}
+.ra:hover{color:var(--accent);}
+.ra.on{color:var(--accent);font-weight:700;}
+.ra.danger:hover{color:var(--red);}
+
+/* PRIVACIDADE: botões grandes */
+.priv{display:flex;gap:10px;}
+.pb{flex:1;padding:13px 0;border-radius:14px;border:1px solid var(--bor2);background:var(--sur);color:var(--muted);font-family:'Figtree',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;backdrop-filter:blur(10px);}
+.pb.on{border-color:rgba(139,111,174,.45);color:var(--accent);background:rgba(196,184,232,.15);}
+</style>
+</head>
+<body class="D">
+
+<div class="ctrl">
+  <button id="bBook" onclick="setItem('book')">📚 Livro (S3)</button>
+  <button id="bMovie" class="on" onclick="setItem('movie')">🎬 Filme (S4)</button>
+  <button onclick="toggleTheme()">🌓 Claro / Escuro</button>
+</div>
+<div class="note">Bloco "Sua resenha pessoal". Abaixo da caixa: ações pequenas com íconezinho (ver resenha · editar · excluir). Embaixo, grandes: Privado / Público.</div>
+
+<div class="phone">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+  <div class="ph"><div class="bk">←</div><div class="ph-t" id="phTitle">Detalhes do Filme</div></div>
+
+  <div class="sc">
+    <!-- INNER TABS (filme = 2; livro = 3 com Trechos) -->
+    <div class="itabs">
+      <div class="it on">✍️ Resenha</div>
+      <div class="it" id="tabTrechos" style="display:none">💬 Trechos</div>
+      <div class="it">👥 Comunidade</div>
+    </div>
+
+    <!-- TÍTULO -->
+    <div class="bl">Sua resenha pessoal</div>
+
+    <!-- CAIXA DE TEXTO -->
+    <div class="rbox">
+      <div class="rtxt" id="viewMode"></div>
+      <textarea class="rtextarea" id="editMode" style="display:none" placeholder="Escreva o que esse filme representou para você..."></textarea>
+    </div>
+
+    <!-- AÇÕES PEQUENAS COM ÍCONE -->
+    <div class="rev-actions">
+      <button class="ra on" id="raVer" onclick="setMode('view')"><span class="ico">👁️</span> ver resenha</button>
+      <button class="ra" id="raEdit" onclick="setMode('edit')"><span class="ico">✏️</span> editar</button>
+      <button class="ra danger" id="raDel" onclick="delReview()"><span class="ico">🗑️</span> excluir</button>
+    </div>
+
+    <!-- PRIVACIDADE -->
+    <div class="bl">Privacidade</div>
+    <div class="priv">
+      <button class="pb on" id="pbPriv" onclick="setPriv('priv')">🔒 Privado</button>
+      <button class="pb" id="pbPub" onclick="setPriv('pub')">🌐 Público</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const reviews = {
+  movie: 'Um retrato cru e sem concessões. A montagem é vertiginosa e os atores não-profissionais dão uma verdade que nenhum estúdio compraria. Ficou comigo por semanas.',
+  book:  'Dostoiévski consegue algo raro: fazer o leitor sentir culpa junto com o protagonista. Raskolnikov não é um vilão — é um espelho desconfortável. A leitura me deixou inquieto por dias.'
+};
+let current = 'movie';
+
+function render(){
+  const view=document.getElementById('viewMode');
+  const edit=document.getElementById('editMode');
+  const txt = reviews[current];
+  view.textContent = txt && txt.trim() ? txt : 'Você ainda não escreveu uma resenha. Toque em "editar" para começar.';
+  edit.value = txt;
+}
+function setMode(mode){
+  const view=document.getElementById('viewMode');
+  const edit=document.getElementById('editMode');
+  const rV=document.getElementById('raVer');
+  const rE=document.getElementById('raEdit');
+  if(mode==='edit'){
+    view.style.display='none'; edit.style.display='block';
+    rE.classList.add('on'); rV.classList.remove('on'); edit.focus();
+  }else{
+    reviews[current]=edit.value;
+    edit.style.display='none'; view.style.display='block';
+    render();
+    rV.classList.add('on'); rE.classList.remove('on');
+  }
+}
+function delReview(){
+  if(confirm('Excluir esta resenha?')){
+    reviews[current]='';
+    document.getElementById('editMode').value='';
+    setMode('view');
+  }
+}
+function setPriv(p){
+  document.getElementById('pbPriv').classList.toggle('on', p==='priv');
+  document.getElementById('pbPub').classList.toggle('on', p==='pub');
+}
+function setItem(type){
+  current=type;
+  document.getElementById('bBook').classList.toggle('on', type==='book');
+  document.getElementById('bMovie').classList.toggle('on', type==='movie');
+  document.getElementById('tabTrechos').style.display = type==='book' ? 'flex' : 'none';
+  document.getElementById('phTitle').textContent = type==='book' ? 'Detalhes do Livro' : 'Detalhes do Filme';
+  document.getElementById('editMode').placeholder = type==='book'
+    ? 'Escreva o que esse livro representou para você...'
+    : 'Escreva o que esse filme representou para você...';
+  setMode('view');
+}
+function toggleTheme(){ document.body.classList.toggle('D'); document.body.classList.toggle('L'); }
+
+render();
+</script>
+</body>
+</html>
