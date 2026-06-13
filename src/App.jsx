@@ -12,6 +12,7 @@ import Community from './pages/Community'
 import PublicProfile from './pages/PublicProfile'
 import ManualBookEntry from './pages/ManualBookEntry'
 import ManualMovieEntry from './pages/ManualMovieEntry'
+import AdminPanel from './pages/AdminPanel'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -110,6 +111,10 @@ export default function App() {
 
   if (screen === 's10') {
     return <ManualMovieEntry session={session} onNavigate={navigate} />
+  }
+
+  if (screen === 'admin') {
+    return <AdminPanel session={session} onNavigate={navigate} />
   }
 
   return (

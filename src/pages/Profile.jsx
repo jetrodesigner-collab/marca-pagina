@@ -22,6 +22,7 @@ export default function Profile({ session, onNavigate }) {
   const [toast,     setToast]    = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting,  setDeleting] = useState(false)
+  const [isAdmin,   setIsAdmin]  = useState(false)
   const avatarInputRef = useRef(null)
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
@@ -43,6 +44,15 @@ export default function Profile({ session, onNavigate }) {
           })
         }
       })
+  }, [session.user.id])
+
+  useEffect(() => {
+    supabase
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', session.user.id)
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data))
   }, [session.user.id])
 
   useEffect(() => {
@@ -279,6 +289,16 @@ export default function Profile({ session, onNavigate }) {
               <span className="pmlab">Ajuda e suporte</span>
               <span className="pmchev">›</span>
             </div>
+            {isAdmin && (
+              <>
+                <div className="pmdiv" />
+                <div className="pmitem" onClick={() => onNavigate('admin')}>
+                  <span className="pmicon">🛡️</span>
+                  <span className="pmlab">Painel Admin</span>
+                  <span className="pmchev">›</span>
+                </div>
+              </>
+            )}
           </div>
 
           <button className="signout-btn" onClick={handleSignOut}>

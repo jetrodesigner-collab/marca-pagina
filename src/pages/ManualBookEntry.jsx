@@ -92,6 +92,7 @@ export default function ManualBookEntry({ session, onNavigate }) {
           api_source: 'manual',
           is_manual:  true,
           created_by: user.id,
+          status:     'pending',
         })
         .select()
         .single()
@@ -106,7 +107,7 @@ export default function ManualBookEntry({ session, onNavigate }) {
 
       if (uiErr) throw new Error('Erro ao adicionar à biblioteca: ' + uiErr.message)
 
-      setToast('Livro adicionado com sucesso!')
+      setToast('Livro enviado para aprovação! Ele já aparece na sua coleção enquanto aguarda.')
       setTimeout(() => onNavigate('item', { item, userItem, isOwner: true }), 900)
     } catch (err) {
       console.error('ManualBookEntry handleSubmit:', err)

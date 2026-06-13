@@ -103,6 +103,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [synNeedsBtn,  setSynNeedsBtn]  = useState(false)
   const [showRemoveModal, setShowRemoveModal] = useState(false)
   const [removing,     setRemoving]     = useState(false)
+  const [showDeleteBookModal, setShowDeleteBookModal] = useState(false)
+  const [deletingBook, setDeletingBook] = useState(false)
   const [excerpts,        setExcerpts]        = useState([])
   const [communityExcerpts, setCommunityExcerpts] = useState([])
   const [showExcerptForm, setShowExcerptForm] = useState(false)
@@ -123,6 +125,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const isInLibrary  = !!localUserItem
   const statusInfo   = status ? STATUS_META[status] : null
   const showTrash    = isOwner && isInLibrary
+  const canDeleteBook = localItem.is_manual && localItem.created_by === session.user.id
   const reviewDirty  = review !== (savedReview?.body || '')
 
   // Load existing review only when item has a Supabase UUID and is in library
@@ -469,6 +472,21 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     }
   }
 
+  async function deleteBookPermanently() {
+    if (!localItem.id || deletingBook) return
+    setDeletingBook(true)
+    const { error } = await supabase.from('items').delete().eq('id', localItem.id)
+    if (!error) {
+      setShowDeleteBookModal(false)
+      setToast('Livro excluído.')
+      setTimeout(() => onBack(), 900)
+    } else {
+      setDeletingBook(false)
+      setShowDeleteBookModal(false)
+      setToast('Erro ao excluir livro.')
+    }
+  }
+
   return (
     <div
       className={themeClass}
@@ -512,6 +530,17 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
               {localItem.author   && <div className="hs">{localItem.author}</div>}
               {localItem.director && <div className="hs">Dir. {localItem.director}</div>}
               {localItem.year     && <div className="hy">{localItem.year}</div>}
+
+              {localItem.is_manual && localItem.status === 'pending' && localItem.created_by === session.user.id && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', alignSelf: 'flex-start',
+                  fontSize: 9, fontWeight: 800, color: '#F59E0B',
+                  background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.35)',
+                  borderRadius: 20, padding: '3px 9px', marginTop: 6, letterSpacing: '0.04em',
+                }}>
+                  ⏳ Pendente
+                </div>
+              )}
 
               {synopsis && (
                 <div style={{ marginTop: 2 }}>
@@ -559,6 +588,20 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
               )}
             </div>
           </div>
+
+          {canDeleteBook && (
+            <button
+              onClick={() => setShowDeleteBookModal(true)}
+              style={{
+                width: '100%', padding: 10, marginBottom: 14,
+                background: 'rgba(192,80,80,.12)', border: '1.5px solid rgba(192,80,80,.35)',
+                borderRadius: 14, color: 'var(--red)', fontFamily: "'Figtree', sans-serif",
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              🗑 Excluir livro
+            </button>
+          )}
 
           {/* ── Not in library: add to library ── */}
           {!isInLibrary && (
@@ -894,6 +937,70 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                 }}
               >
                 {removing ? 'Removendo...' : 'Remover'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmação de exclusão definitiva do livro */}
+      {showDeleteBookModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)',
+            padding: '0 20px',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setShowDeleteBookModal(false) }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 360,
+            background: 'var(--bg)', backgroundImage: 'var(--bg)',
+            border: '1px solid var(--bor)',
+            borderRadius: 22, padding: '24px 20px',
+            backdropFilter: 'blur(24px)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
+          }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: '50%',
+              background: 'rgba(229,115,115,0.15)', border: '1px solid rgba(229,115,115,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 14px',
+            }}>
+              <TrashIcon />
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', textAlign: 'center', marginBottom: 8 }}>
+              Excluir este livro?
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'center', lineHeight: 1.55, marginBottom: 22 }}>
+              Tem certeza? Esse livro e todas as anotações serão excluídos permanentemente.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setShowDeleteBookModal(false)}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 14,
+                  border: '1px solid var(--bor2)', background: 'var(--sur)',
+                  color: 'var(--text)', fontFamily: "'Figtree', sans-serif",
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={deleteBookPermanently}
+                disabled={deletingBook}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 14,
+                  border: 'none', background: '#E57373',
+                  color: '#fff', fontFamily: "'Figtree', sans-serif",
+                  fontSize: 13, fontWeight: 700, cursor: deletingBook ? 'default' : 'pointer',
+                  opacity: deletingBook ? 0.7 : 1,
+                }}
+              >
+                {deletingBook ? 'Excluindo...' : 'Excluir'}
               </button>
             </div>
           </div>
