@@ -795,7 +795,7 @@ function LibrarySection({ tipo, userLibrary, onItemClick, onManualAdd }) {
   )
 }
 
-export default function Library({ session, onNavigate }) {
+export default function Library({ session, onNavigate, reopen, onReopenConsumed }) {
   const [profile, setProfile]     = useState(null)
   const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('lib_active_tab') || 'L')
   const [theme]                   = useState(() => localStorage.getItem('tema') || 'D')
@@ -864,8 +864,8 @@ export default function Library({ session, onNavigate }) {
   const wantToWatch = movieItems.filter(ui => ui.status === 'want_to_watch')
   const watched     = movieItems.filter(ui => ui.status === 'watched')
 
-  function goToItem(item, userItem) {
-    onNavigate('item', { item, userItem, isOwner: true })
+  function goToItem(item, userItem, origin) {
+    onNavigate('item', { item, userItem, isOwner: true, origin })
   }
 
   function goToSearch() {
@@ -920,6 +920,8 @@ export default function Library({ session, onNavigate }) {
             userId={session.user.id}
             onItemClick={goToItem}
             onNavigate={onNavigate}
+            reopen={reopen}
+            onReopenConsumed={onReopenConsumed}
           />
           <LibrarySection tipo="L" userLibrary={allItems} onItemClick={goToItem} />
         </div>

@@ -10,7 +10,8 @@ const BLOBS = [
 ]
 
 export default function Profile({ session, onNavigate }) {
-  const [theme]     = useState(() => localStorage.getItem('tema') || 'D')
+  const [theme,     setTheme]    = useState(() => localStorage.getItem('tema') || 'D')
+  const [apOpen,    setApOpen]   = useState(false)
   const [profile,   setProfile]  = useState(null)
   const [stats,     setStats]    = useState({ books: 0, movies: 0, reviews: 0 })
   const [editOpen,  setEditOpen] = useState(false)
@@ -19,6 +20,8 @@ export default function Profile({ session, onNavigate }) {
   const [saveErr,   setSaveErr]  = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [toast,     setToast]    = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting,  setDeleting] = useState(false)
   const avatarInputRef = useRef(null)
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
@@ -84,6 +87,27 @@ export default function Profile({ session, onNavigate }) {
   }
 
   async function handleSignOut() {
+    await supabase.auth.signOut()
+    // App.jsx detecta session = null e exibe Login
+  }
+
+  function handleSetTheme(t) {
+    setTheme(t)
+    localStorage.setItem('tema', t)
+    document.body.classList.remove('light', 'dark')
+    document.body.classList.add(t === 'L' ? 'light' : 'dark')
+  }
+
+  async function handleDeleteAccount() {
+    if (deleting) return
+    setDeleting(true)
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) {
+      setDeleting(false)
+      setDeleteConfirm(false)
+      setToast('Erro ao excluir conta')
+      return
+    }
     await supabase.auth.signOut()
     // App.jsx detecta session = null e exibe Login
   }
@@ -230,13 +254,19 @@ export default function Profile({ session, onNavigate }) {
               <span className="pmchev">›</span>
             </div>
             <div className="pmdiv" />
-            <div className="pmitem">
+            <div className="pmitem" onClick={() => setApOpen(o => !o)}>
               <span className="pmicon">🎨</span>
               <span className="pmlab">Aparência</span>
-              <span className="pmchev">›</span>
+              <span className="pmchev">{apOpen ? '⌄' : '›'}</span>
             </div>
+            {apOpen && (
+              <div className="priv" style={{ padding: '0 16px 14px', marginBottom: 0 }}>
+                <button className={`pb${theme === 'L' ? ' on' : ''}`} onClick={() => handleSetTheme('L')}>☀️ Claro</button>
+                <button className={`pb${theme === 'D' ? ' on' : ''}`} onClick={() => handleSetTheme('D')}>🌙 Escuro</button>
+              </div>
+            )}
             <div className="pmdiv" />
-            <div className="pmitem">
+            <div className="pmitem" onClick={() => { window.location.href = 'mailto:jetrodesigner@gmail.com' }}>
               <span className="pmicon">❓</span>
               <span className="pmlab">Ajuda e suporte</span>
               <span className="pmchev">›</span>
@@ -246,6 +276,26 @@ export default function Profile({ session, onNavigate }) {
           <button className="signout-btn" onClick={handleSignOut}>
             Sair da conta
           </button>
+
+          {deleteConfirm ? (
+            <div className="del-confirm" style={{ marginBottom: 28 }}>
+              <span>Excluir sua conta e todos os seus dados? Isso não pode ser desfeito.</span>
+              <div className="del-confirm-actions">
+                <button className="confirm" onClick={handleDeleteAccount} disabled={deleting}>
+                  {deleting ? 'Excluindo...' : 'Confirmar'}
+                </button>
+                <button className="cancel" onClick={() => setDeleteConfirm(false)} disabled={deleting}>Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="signout-btn"
+              style={{ opacity: 0.85 }}
+              onClick={() => setDeleteConfirm(true)}
+            >
+              Excluir conta
+            </button>
+          )}
 
         </div>
 

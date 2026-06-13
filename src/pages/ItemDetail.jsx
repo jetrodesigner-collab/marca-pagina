@@ -283,9 +283,8 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     setReviewMode('edit')
   }
 
-  async function toggleReviewPrivacy() {
-    if (!savedReview) return
-    const newPublic = !savedReview.is_public
+  async function setReviewPrivacy(newPublic) {
+    if (!savedReview || savedReview.is_public === newPublic) return
     const { error } = await supabase
       .from('reviews')
       .update({ is_public: newPublic })
@@ -612,11 +611,12 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                           {reviewExpanded ? '🙈 Ocultar Resenha' : '👁 Ver Resenha'}
                         </button>
                         <button className="review-action-btn" onClick={editReview}>✏️ Editar</button>
-                        <button className="review-action-btn" onClick={toggleReviewPrivacy}>
-                          {savedReview.is_public ? '🌐 Pública' : '🔒 Privada'}
-                        </button>
-                        <button className="review-action-btn danger" onClick={() => setDeleteReviewConfirm(true)}>🗑 Excluir Resenha</button>
                       </div>
+                      <div className="priv">
+                        <button className={`pb${!savedReview.is_public ? ' on' : ''}`} onClick={() => setReviewPrivacy(false)}>🔒 Privado</button>
+                        <button className={`pb${savedReview.is_public ? ' on' : ''}`} onClick={() => setReviewPrivacy(true)}>🌐 Público</button>
+                      </div>
+                      <button className="review-action-btn danger" style={{ width: '100%', marginBottom: 12 }} onClick={() => setDeleteReviewConfirm(true)}>🗑 Excluir Resenha</button>
                       {deleteReviewConfirm && (
                         <div className="del-confirm">
                           <span>Tem certeza?</span>

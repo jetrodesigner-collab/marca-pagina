@@ -3,7 +3,7 @@ import { useCollections } from '../../hooks/useCollections'
 import CollectionCard from './CollectionCard'
 import AddBookScreen from './AddBookScreen'
 
-export default function CategoryModal({ category, meta, userId, bookItems, onItemClick, onClose, onNavigate }) {
+export default function CategoryModal({ category, meta, userId, bookItems, onItemClick, onClose, onNavigate, autoExpandCollectionId }) {
   const {
     collections, loading,
     createCollection, renameCollection, deleteCollection,
@@ -87,8 +87,9 @@ export default function CategoryModal({ category, meta, userId, bookItems, onIte
               onDelete={() => deleteCollection(col.id)}
               onAddItemRequest={() => setAddBookCollection(col)}
               onRemoveItem={collectionItemId => removeItemFromCollection(col.id, collectionItemId)}
-              onItemClick={onItemClick}
+              onItemClick={(item, userItem) => onItemClick(item, userItem, { category, collectionId: col.id })}
               onToast={setToast}
+              forceExpanded={col.id === autoExpandCollectionId}
             />
           ))
         )}

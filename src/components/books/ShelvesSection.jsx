@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import CategoryModal from './CategoryModal'
 
 const PALETTES = {
@@ -71,9 +71,19 @@ function ShelfCard({ label, dotClass, count, palette, onClick }) {
   )
 }
 
-export default function ShelvesSection({ counts, bookItems, userId, onItemClick, onNavigate }) {
+export default function ShelvesSection({ counts, bookItems, userId, onItemClick, onNavigate, reopen, onReopenConsumed }) {
   const [openCategory, setOpenCategory] = useState(null)
+  const [autoExpandId, setAutoExpandId] = useState(null)
   const activeMeta = SHELF_META.find(m => m.key === openCategory)
+
+  useEffect(() => {
+    if (reopen) {
+      setOpenCategory(reopen.category)
+      setAutoExpandId(reopen.collectionId)
+      onReopenConsumed?.()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reopen])
 
   return (
     <div style={{ marginBottom: 26 }}>
@@ -97,8 +107,9 @@ export default function ShelvesSection({ counts, bookItems, userId, onItemClick,
           userId={userId}
           bookItems={bookItems}
           onItemClick={onItemClick}
-          onClose={() => setOpenCategory(null)}
+          onClose={() => { setOpenCategory(null); setAutoExpandId(null) }}
           onNavigate={onNavigate}
+          autoExpandCollectionId={autoExpandId}
         />
       )}
     </div>

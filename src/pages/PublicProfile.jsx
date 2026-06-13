@@ -134,51 +134,61 @@ export default function PublicProfile({ userId, onNavigate, onBack }) {
                 </div>
               </div>
 
-              {recentItems.length > 0 && (
+              {recentItems.length === 0 && publicReviews.length === 0 && privateReviews.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>Nada por aqui ainda</div>
+                  <div style={{ fontSize: 11, lineHeight: 1.55 }}>{name} ainda não adicionou livros, filmes ou resenhas</div>
+                </div>
+              ) : (
                 <>
-                  <div className="slb">Lidos recentemente</div>
-                  <div className="mnr">
-                    {recentItems.map(ui => (
-                      <div key={ui.items.id} className="mnc" onClick={() => goToItem(ui.items)}>
-                        <RecentCover item={ui.items} />
-                        <div className="mnt">{ui.items.title}</div>
-                        <div className="mna">{ui.items.author || ui.items.director || ''}</div>
+                  {recentItems.length > 0 && (
+                    <>
+                      <div className="slb">Lidos recentemente</div>
+                      <div className="mnr">
+                        {recentItems.map(ui => (
+                          <div key={ui.items.id} className="mnc" onClick={() => goToItem(ui.items)}>
+                            <RecentCover item={ui.items} />
+                            <div className="mnt">{ui.items.title}</div>
+                            <div className="mna">{ui.items.author || ui.items.director || ''}</div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </>
-              )}
+                    </>
+                  )}
 
-              {publicReviews.length > 0 && (
-                <>
-                  <div className="slb">Resenhas públicas</div>
-                  {publicReviews.map(r => (
-                    <div key={r.id} className="prc">
-                      <ReviewCover item={r.items} />
-                      <div className="prcb">
-                        <div className="prcbk">
-                          {r.items?.title}{(r.items?.author || r.items?.director) ? ` · ${r.items.author || r.items.director}` : ''}
+                  {publicReviews.length > 0 && (
+                    <>
+                      <div className="slb">Resenhas públicas</div>
+                      {publicReviews.map(r => (
+                        <div key={r.id} className="prc">
+                          <ReviewCover item={r.items} />
+                          <div className="prcb">
+                            <div className="prcbk">
+                              {r.items?.title}{(r.items?.author || r.items?.director) ? ` · ${r.items.author || r.items.director}` : ''}
+                            </div>
+                            <div className="prct">{r.body}</div>
+                            <div className="prcd">{formatCommentDate(r.created_at)} · 🌐 Pública</div>
+                          </div>
                         </div>
-                        <div className="prct">{r.body}</div>
-                        <div className="prcd">{formatCommentDate(r.created_at)} · 🌐 Pública</div>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
+                      ))}
+                    </>
+                  )}
 
-              {privateReviews.length > 0 && (
-                <>
-                  <div className="slb">Resenhas privadas</div>
-                  {privateReviews.map(r => (
-                    <div key={r.id} className="lkc">
-                      <div className="lki">🔒</div>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)' }}>{r.items?.title}</div>
-                        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>Resenha privada</div>
-                      </div>
-                    </div>
-                  ))}
+                  {privateReviews.length > 0 && (
+                    <>
+                      <div className="slb">Resenhas privadas</div>
+                      {privateReviews.map(r => (
+                        <div key={r.id} className="lkc">
+                          <div className="lki">🔒</div>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)' }}>{r.items?.title}</div>
+                            <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>Resenha privada</div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </>
               )}
             </>

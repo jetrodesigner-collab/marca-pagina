@@ -140,7 +140,7 @@ const CURATED_MOVIE_TITLES = new Set(CURATED_MOVIES.map(m => normalizeTitleForCu
 
 export default function Search({ session, onNavigate }) {
   const [profile, setProfile]           = useState(null)
-  const [activeTab, setActiveTab]       = useState('L')
+  const [activeTab, setActiveTab]       = useState(() => sessionStorage.getItem('lib_active_tab') || 'L')
   const [theme]                         = useState(() => localStorage.getItem('tema') || 'D')
 
   // Livros
@@ -521,6 +521,8 @@ export default function Search({ session, onNavigate }) {
             />
           </div>
 
+          <button className="addt" onClick={() => onNavigate('s9')}>＋ Adicionar meu próprio livro</button>
+
           {bookLoading && <SkeletonList />}
 
           {!bookLoading && !bookSearched && (
@@ -586,6 +588,8 @@ export default function Search({ session, onNavigate }) {
               onChange={handleMovieInput}
             />
           </div>
+
+          <button className="addt" onClick={() => onNavigate('s10')}>＋ Adicionar meu próprio filme</button>
 
           {movieLoading && <SkeletonList />}
 
@@ -657,7 +661,7 @@ export default function Search({ session, onNavigate }) {
             <span className="nic">🔍</span>
             <span className="nla">Buscar</span>
           </div>
-          <div className="ni">
+          <div className="ni" onClick={() => onNavigate('profile')}>
             <span className="nic">👤</span>
             <span className="nla">Perfil</span>
           </div>

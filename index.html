@@ -13,6 +13,12 @@
     <title>marca·página</title>
   </head>
   <body>
+    <script>
+      (function () {
+        var t = localStorage.getItem('tema');
+        document.body.classList.add(t === 'L' ? 'light' : 'dark');
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

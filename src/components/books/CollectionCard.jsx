@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
 
@@ -44,12 +44,16 @@ function CollectionBookCard({ ci, onRemove, onClick }) {
   )
 }
 
-export default function CollectionCard({ collection, onRename, onDelete, onAddItemRequest, onRemoveItem, onItemClick, onToast }) {
+export default function CollectionCard({ collection, onRename, onDelete, onAddItemRequest, onRemoveItem, onItemClick, onToast, forceExpanded }) {
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [nameValue, setNameValue] = useState(collection.name)
 
   const items = collection.collection_items || []
+
+  useEffect(() => {
+    if (forceExpanded) setExpanded(true)
+  }, [forceExpanded])
 
   function startEdit() {
     setNameValue(collection.name)

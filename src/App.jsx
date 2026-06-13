@@ -21,6 +21,7 @@ export default function App() {
   const [screen, setScreen] = useState('library')
   const [itemContext, setItemContext] = useState(null) // { item, userItem }
   const [profileContext, setProfileContext] = useState(null) // { userId }
+  const [libraryReopen, setLibraryReopen] = useState(null) // { category, collectionId }
 
   useLastSeen(session?.user?.id)
 
@@ -70,7 +71,12 @@ export default function App() {
         item={itemContext.item}
         userItem={itemContext.userItem}
         isOwner={itemContext.isOwner ?? true}
-        onBack={() => setScreen('library')}
+        onBack={() => {
+          if (itemContext.origin?.collectionId) {
+            setLibraryReopen({ category: itemContext.origin.category, collectionId: itemContext.origin.collectionId })
+          }
+          setScreen('library')
+        }}
         onUserItemUpdate={updated => setItemContext(c => ({ ...c, userItem: updated }))}
       />
     )
@@ -106,5 +112,12 @@ export default function App() {
     return <ManualMovieEntry session={session} onNavigate={navigate} />
   }
 
-  return <Library session={session} onNavigate={navigate} />
+  return (
+    <Library
+      session={session}
+      onNavigate={navigate}
+      reopen={libraryReopen}
+      onReopenConsumed={() => setLibraryReopen(null)}
+    />
+  )
 }
