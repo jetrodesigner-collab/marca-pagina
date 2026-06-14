@@ -80,8 +80,8 @@ export default function NotificationBell({ session }) {
 
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 8px)', right: 0, left: 'auto', zIndex: 50,
-          width: 'calc(100vw - 32px)', maxWidth: 320, maxHeight: 400, overflowY: 'auto',
+          position: 'fixed', top: 70, left: 16, right: 16, width: 'auto', zIndex: 50,
+          maxWidth: 320, maxHeight: 400, overflowY: 'auto',
           background: '#211E2B', borderRadius: 12,
           border: '1px solid var(--bor)', boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
         }}>
