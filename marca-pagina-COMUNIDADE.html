@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>marca·página — Comunidade</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,600;0,700;0,800;1,300&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body.D{--bg:linear-gradient(160deg,#1A1720,#161420,#1C1828);--text:#F0ECF8;--text2:#C0B4D0;--muted:#8A7EA0;--accent:#C4A8F0;--sur:rgba(255,255,255,.07);--sur2:rgba(255,255,255,.04);--bor:rgba(255,255,255,.11);--bor2:rgba(180,160,220,.15);--nav:rgba(18,16,26,.95);--shad:rgba(0,0,0,.28);--btn-shad:rgba(100,70,160,.4);--bl1:rgba(120,90,180,.18);--bl2:rgba(180,90,130,.14);--bl3:rgba(70,130,100,.12);--bl4:rgba(160,100,60,.1);--gl:rgba(160,130,210,.2);--inp:rgba(255,255,255,.07);--red:rgba(192,80,80,1);--red-bg:rgba(192,80,80,.12);--red-bor:rgba(192,80,80,.3);--accent-g:linear-gradient(135deg,#C4B8E8,#9A88C8);}
+body.L{--bg:linear-gradient(160deg,#F5F2F8,#EEF0F8,#F2EEF5);--text:#2A2435;--text2:#7A6E8A;--muted:#B0A8C0;--accent:#8B6FAE;--sur:rgba(255,255,255,.62);--sur2:rgba(255,255,255,.4);--bor:rgba(255,255,255,.95);--bor2:rgba(200,190,220,.3);--nav:rgba(255,255,255,.95);--shad:rgba(120,100,160,.12);--btn-shad:rgba(139,111,174,.3);--bl1:rgba(196,184,232,.35);--bl2:rgba(232,180,200,.3);--bl3:rgba(184,216,200,.25);--bl4:rgba(240,200,168,.2);--gl:rgba(180,160,210,.4);--inp:rgba(255,255,255,.7);--red:rgba(192,80,80,1);--red-bg:rgba(192,80,80,.08);--red-bor:rgba(192,80,80,.25);--accent-g:linear-gradient(135deg,#C4B8E8,#9A88C8);}
+body{font-family:'Figtree',sans-serif;background:var(--bg);display:flex;justify-content:center;min-height:100vh;}
+.phone{width:390px;min-height:100vh;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 80px rgba(0,0,0,.3);}
+.blob{position:absolute;border-radius:50%;filter:blur(55px);pointer-events:none;z-index:0;}
+.b1{width:260px;height:260px;background:var(--bl1);top:-80px;left:-80px;}
+.b2{width:220px;height:220px;background:var(--bl2);top:100px;right:-70px;}
+.b3{width:240px;height:240px;background:var(--bl3);bottom:120px;left:-60px;}
+.b4{width:200px;height:200px;background:var(--bl4);bottom:40px;right:-50px;}
+.z{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;}
+.screen{display:none;flex-direction:column;height:100vh;}.screen.on{display:flex;}
+
+/* UTILS */
+.sbar{padding:14px 22px 6px;display:flex;justify-content:space-between;flex-shrink:0;}
+.sbar-t{font-size:13px;font-weight:600;color:var(--text);}
+.sbar-i{font-size:11px;color:var(--text2);}
+.topbar{padding:6px 22px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.logo{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.02em;}
+.logo em{font-style:italic;font-weight:300;color:var(--accent);}
+.av{width:36px;height:36px;border-radius:50%;background:var(--accent-g);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;box-shadow:0 4px 12px var(--btn-shad);cursor:pointer;}
+.ph{display:flex;align-items:center;padding:6px 22px 12px;gap:12px;flex-shrink:0;}
+.bk{width:34px;height:34px;border-radius:50%;background:var(--sur);border:1px solid var(--bor);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent);cursor:pointer;flex-shrink:0;}
+.ph-t{font-size:16px;font-weight:700;color:var(--text);}
+.gl{width:calc(100% - 44px);height:1px;background:linear-gradient(90deg,transparent,var(--gl),transparent);margin:0 22px;flex-shrink:0;}
+
+/* SCROLL AREA */
+.sc{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 22px 20px;scrollbar-width:none;}
+.sc::-webkit-scrollbar{display:none;}
+
+/* TABS */
+.mtabs{display:flex;padding:0 22px;border-bottom:1px solid var(--bor2);flex-shrink:0;}
+.mt{flex:1;padding:11px 0;text-align:center;font-size:13px;font-weight:400;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.mt.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+.itabs2{display:flex;background:var(--sur);border:1px solid var(--bor);border-radius:14px;padding:4px;margin-bottom:16px;backdrop-filter:blur(12px);}
+.it2{flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:10px;transition:all .2s;}
+.it2.on{background:rgba(255,255,255,.85);color:var(--accent);font-weight:700;}
+body.D .it2.on{background:rgba(255,255,255,.14);}
+
+/* NAV */
+.bnav{display:flex;padding:10px 0 30px;flex-shrink:0;background:var(--nav);backdrop-filter:blur(20px);border-top:1px solid var(--bor);}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:5px 0;}
+.nic{font-size:20px;line-height:1;}
+.nla{font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;}
+.ni.on .nla{color:var(--accent);}
+
+/* CORES CAPAS */
+.c1{background:linear-gradient(135deg,#9A7AC8,#7A5AA8);}
+.c2{background:linear-gradient(135deg,#7A9AC8,#5A7AA8);}
+.c3{background:linear-gradient(135deg,#8AC8A0,#6AA880);}
+.c4{background:linear-gradient(135deg,#C8A07A,#A8805A);}
+.c5{background:linear-gradient(135deg,#C87A7A,#A85A5A);}
+.c6{background:linear-gradient(135deg,#C8C07A,#A8A05A);}
+.c7{background:linear-gradient(135deg,#7AC8C8,#5AA8A8);}
+.c8{background:linear-gradient(135deg,#B87AAC,#985A8C);}
+.c9{background:linear-gradient(135deg,#88A87A,#68885A);}
+.f1{background:linear-gradient(135deg,#C89880,#A87860);}
+.f2{background:linear-gradient(135deg,#8098C0,#6078A0);}
+.mcc{width:24px;height:34px;border-radius:4px;}
+
+/* AVATARS */
+.U1{background:linear-gradient(135deg,#C4B8E8,#9A88C8);}
+.U2{background:linear-gradient(135deg,#B8D8C8,#88B898);}
+.U3{background:linear-gradient(135deg,#B8D0E8,#88A8C8);}
+.U4{background:linear-gradient(135deg,#E8B4C8,#C884A8);}
+.U5{background:linear-gradient(135deg,#F0C8A8,#C8A078);}
+.U6{background:linear-gradient(135deg,#D4C0E8,#B490C8);}
+.A1{background:linear-gradient(135deg,#C4B8E8,#9A88C8);}
+.A2{background:linear-gradient(135deg,#B8D8C8,#88B898);}
+.A3{background:linear-gradient(135deg,#E8B4C8,#C884A8);}
+.A4{background:linear-gradient(135deg,#B8D0E8,#88A8C8);}
+
+/* SEARCH */
+.srch{display:flex;align-items:center;gap:8px;background:var(--sur);border:1px solid var(--bor);border-radius:16px;padding:11px 16px;margin-bottom:14px;backdrop-filter:blur(16px);}
+.srch input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Figtree',sans-serif;font-size:13px;}
+.srch input::placeholder{color:var(--muted);}
+.slb{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:13px;}
+
+/* USER CARD */
+.uc{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--sur);border:1px solid var(--bor);border-radius:18px;margin-bottom:10px;cursor:pointer;backdrop-filter:blur(16px);transition:transform .2s;}
+.uc:hover{transform:translateY(-2px);}
+.uav{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;}
+.ui{flex:1;}
+.un{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.us{font-size:11px;color:var(--text2);}
+.mcs{display:flex;gap:4px;}
+.on-d{width:8px;height:8px;border-radius:50%;background:#7AAA8A;box-shadow:0 0 7px rgba(122,170,138,.6);flex-shrink:0;}
+.off-d{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+
+/* FOLLOW BTN */
+.follow-btn{padding:7px 14px;border-radius:20px;border:1px solid rgba(196,168,240,.4);background:rgba(196,168,240,.1);color:var(--accent);font-family:'Figtree',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;transition:all .2s;white-space:nowrap;}
+.follow-btn.following{background:var(--accent-g);border-color:transparent;color:#fff;}
+
+/* ======= BOTÃO POST ======= */
+.post-btn-wrap{margin-bottom:16px;}
+.post-community-btn{width:100%;border:none;border-radius:20px;cursor:pointer;background:transparent;position:relative;overflow:hidden;font-family:'Figtree',sans-serif;display:block;}
+.post-community-btn::before{content:'';position:absolute;inset:0;border-radius:20px;background:linear-gradient(135deg,#6A3A9E,#9A68D8,#C4A8F0,#7A50B8);background-size:250% 250%;animation:gradAnim 4s ease infinite;}
+@keyframes gradAnim{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.post-community-btn::after{content:'';position:absolute;inset:0;border-radius:20px;background:linear-gradient(135deg,rgba(255,255,255,.18),transparent 55%);}
+.shine{position:absolute;top:-40px;left:-70px;width:90px;height:220px;background:rgba(255,255,255,.15);transform:rotate(25deg);animation:shine 3.5s ease-in-out infinite;z-index:2;pointer-events:none;}
+@keyframes shine{0%{left:-70px;opacity:0}15%{opacity:1}35%{left:130%;opacity:0}100%{left:130%;opacity:0}}
+.post-btn-inner{position:relative;z-index:1;display:flex;align-items:center;gap:14px;padding:16px 18px;}
+.post-btn-icon{width:44px;height:44px;border-radius:13px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 2px 10px rgba(0,0,0,.18);}
+.post-btn-text{flex:1;text-align:left;}
+.post-btn-title{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.01em;margin-bottom:3px;}
+.post-btn-sub{font-size:11px;color:rgba(255,255,255,.72);}
+.post-btn-arrow{font-size:20px;color:rgba(255,255,255,.75);}
+
+/* ======= CARD DE POST NO FEED ======= */
+.post-feed-card{border-radius:20px;margin-bottom:14px;overflow:hidden;background:var(--sur);backdrop-filter:blur(16px);border:1px solid rgba(196,168,240,.18);box-shadow:0 4px 20px var(--shad);width:100%;display:block;}
+.post-feed-top{background:linear-gradient(135deg,rgba(106,58,158,.2),rgba(196,168,240,.06));padding:14px 16px 12px;border-bottom:1px solid rgba(196,168,240,.1);}
+.post-feed-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.post-feed-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+.post-feed-name{font-size:13px;font-weight:700;color:var(--text);}
+.post-feed-handle{font-size:10px;color:var(--muted);}
+.post-feed-time{font-size:10px;color:var(--muted);margin-left:auto;white-space:nowrap;}
+.post-feed-title{font-size:15px;font-weight:800;color:var(--text);line-height:1.25;letter-spacing:-.01em;}
+.post-feed-body{padding:12px 16px 14px;}
+.post-feed-text{font-size:13px;color:var(--text2);line-height:1.7;word-break:break-word;}
+.post-feed-text.collapsed{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.post-feed-expand{font-size:11px;color:var(--accent);font-weight:700;cursor:pointer;margin-top:6px;display:inline-block;}
+
+/* ======= AÇÕES DO POST ======= */
+.post-actions{display:flex;align-items:center;gap:4px;margin-top:12px;padding-top:10px;border-top:1px solid var(--bor2);flex-wrap:wrap;}
+.cma-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-weight:600;cursor:pointer;background:none;border:none;font-family:'Figtree',sans-serif;transition:all .15s;padding:6px 10px;border-radius:10px;}
+.cma-btn:hover{color:var(--accent);background:rgba(196,168,240,.08);}
+.cma-btn.liked{color:#E06060;}
+.cma-btn.liked .heart{animation:pop .2s ease;}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
+.cma-sep{width:1px;height:16px;background:var(--bor2);flex-shrink:0;}
+/* Ações do dono (editar/excluir) */
+.owner-actions{display:flex;align-items:center;gap:4px;margin-left:auto;}
+.edit-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:600;cursor:pointer;background:rgba(196,168,240,.1);border:1px solid rgba(196,168,240,.2);font-family:'Figtree',sans-serif;padding:5px 10px;border-radius:10px;transition:all .15s;}
+.edit-btn:hover{background:rgba(196,168,240,.2);}
+.del-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--red);font-weight:600;cursor:pointer;background:var(--red-bg);border:1px solid var(--red-bor);font-family:'Figtree',sans-serif;padding:5px 10px;border-radius:10px;transition:all .15s;}
+.del-btn:hover{background:rgba(192,80,80,.2);}
+
+/* ======= SEÇÃO COMENTÁRIOS NO CARD ======= */
+.comments-section{border-top:1px solid var(--bor2);padding:12px 16px 14px;display:none;}
+.comments-section.open{display:block;}
+.cmt-item{display:flex;gap:9px;margin-bottom:12px;}
+.cmt-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.cmt-body{flex:1;}
+.cmt-name{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:2px;}
+.cmt-text{font-size:12px;color:var(--text2);line-height:1.5;}
+.cmt-meta{display:flex;align-items:center;gap:10px;margin-top:5px;}
+.cmt-time{font-size:10px;color:var(--muted);}
+.cmt-like{font-size:11px;color:var(--muted);cursor:pointer;font-weight:600;transition:color .15s;background:none;border:none;font-family:'Figtree',sans-serif;display:flex;align-items:center;gap:3px;}
+.cmt-like:hover{color:#E06060;}
+.cmt-like.liked{color:#E06060;}
+.cmt-reply-btn{font-size:11px;color:var(--muted);cursor:pointer;font-weight:600;background:none;border:none;font-family:'Figtree',sans-serif;transition:color .15s;}
+.cmt-reply-btn:hover{color:var(--accent);}
+/* Respostas aninhadas */
+.replies{margin-top:8px;padding-left:0;border-left:2px solid var(--bor2);padding-left:10px;}
+.reply-item{display:flex;gap:8px;margin-bottom:8px;}
+.reply-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;}
+.reply-body{flex:1;}
+.reply-name{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:1px;}
+.reply-text{font-size:11px;color:var(--text2);line-height:1.45;}
+.reply-meta{display:flex;gap:8px;margin-top:4px;}
+/* Input comentário */
+.cmt-input-row{display:flex;gap:8px;align-items:flex-end;margin-top:8px;}
+.cmt-inp{flex:1;background:var(--inp);border:1px solid var(--bor2);border-radius:16px;padding:9px 14px;color:var(--text);font-family:'Figtree',sans-serif;font-size:12px;outline:none;resize:none;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:36px;max-height:80px;line-height:1.4;}
+.cmt-inp::placeholder{color:var(--muted);}
+.cmt-send{width:34px;height:34px;border-radius:50%;background:var(--accent-g);border:none;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+
+/* ======= MODAL CONFIRMAR EXCLUSÃO ======= */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--bg);border-radius:24px 24px 0 0;padding:24px 22px 40px;width:390px;border-top:1px solid var(--bor);}
+.modal-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.5;}
+.modal-del-btn{width:100%;padding:14px;border:none;border-radius:14px;background:rgba(192,80,80,.12);border:1px solid rgba(192,80,80,.3);color:var(--red);font-family:'Figtree',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;}
+.modal-cancel-btn{width:100%;padding:14px;border:1px solid var(--bor2);border-radius:14px;background:var(--sur);color:var(--muted);font-family:'Figtree',sans-serif;font-size:14px;font-weight:600;cursor:pointer;}
+
+/* ======= TELA CRIAR/EDITAR POST ======= */
+.post-card-form{border-radius:24px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden;background:var(--sur);backdrop-filter:blur(20px);}
+.post-card-form::before{content:'';position:absolute;inset:0;border-radius:24px;padding:1.5px;background:linear-gradient(135deg,#6A3A9E,#C4A8F0,#7AAA8A,#6A3A9E);background-size:300% 300%;animation:borderAnim 5s linear infinite;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+@keyframes borderAnim{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.post-form-header{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+.post-form-av{width:38px;height:38px;border-radius:50%;background:var(--accent-g);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0;}
+.post-form-name{font-size:14px;font-weight:700;color:var(--text);}
+.post-form-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:var(--accent);background:rgba(196,168,240,.15);border:1px solid rgba(196,168,240,.3);border-radius:20px;padding:3px 9px;margin-left:6px;}
+.post-form-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.post-field-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.post-field-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+.post-char-count{font-size:10px;color:var(--muted);}
+.post-char-count.warn{color:var(--accent);}
+.post-title-input{width:100%;background:var(--inp);border:1px solid var(--bor2);border-radius:14px;padding:13px 15px;font-family:'Figtree',sans-serif;font-size:15px;font-weight:700;color:var(--text);outline:none;margin-bottom:18px;transition:border-color .2s,box-shadow .2s;}
+.post-title-input:focus{border-color:rgba(196,168,240,.5);box-shadow:0 0 0 3px rgba(196,168,240,.1);}
+.post-title-input::placeholder{color:var(--muted);font-weight:400;}
+.post-content-area{width:100%;background:var(--inp);border:1px solid var(--bor2);border-radius:14px;padding:13px 15px;font-family:'Figtree',sans-serif;font-size:13px;color:var(--text);outline:none;resize:none;min-height:140px;max-height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;line-height:1.65;transition:border-color .2s,box-shadow .2s,min-height .3s;}
+.post-content-area:focus{border-color:rgba(196,168,240,.5);box-shadow:0 0 0 3px rgba(196,168,240,.1);min-height:200px;}
+.post-content-area::placeholder{color:var(--muted);}
+.post-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(196,168,240,.25),transparent);margin:18px 0;}
+.post-form-btns{display:flex;gap:10px;}
+.post-cancel-btn{flex:1;padding:14px;border:1px solid var(--bor2);border-radius:16px;background:var(--sur);color:var(--muted);font-family:'Figtree',sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+.post-publish-btn{flex:2;padding:14px;border:none;border-radius:16px;background:linear-gradient(135deg,#6A3A9E,#C4A8F0);color:#fff;font-family:'Figtree',sans-serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 6px 22px rgba(106,58,158,.4);display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s;}
+.post-publish-btn:hover{transform:translateY(-1px);}
+
+/* TOGGLE TEMA */
+.tog{position:fixed;top:16px;right:16px;z-index:999;display:flex;background:var(--sur);border:1px solid var(--bor);border-radius:30px;padding:4px;gap:3px;backdrop-filter:blur(16px);}
+.tb{padding:6px 14px;border-radius:24px;border:none;font-family:'Figtree',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .25s;background:transparent;color:var(--muted);}
+.tb.on{background:var(--accent-g);color:#fff;}
+</style>
+</head>
+<body class="D">
+<div class="tog"><button class="tb" id="tL" onclick="setT('L')">☀️</button><button class="tb on" id="tD" onclick="setT('D')">🌙</button></div>
+
+<!-- MODAL CONFIRMAR EXCLUSÃO -->
+<div class="modal-overlay" id="modalDel">
+  <div class="modal-box">
+    <div class="modal-title">Excluir post?</div>
+    <div class="modal-sub">Essa ação não pode ser desfeita. O post será removido permanentemente da comunidade.</div>
+    <button class="modal-del-btn" onclick="confirmDelete()">🗑 Sim, excluir</button>
+    <button class="modal-cancel-btn" onclick="closeModal()">Cancelar</button>
+  </div>
+</div>
+
+<div class="phone">
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+<div class="z">
+
+<!-- ===== S5 COMUNIDADE ===== -->
+<div class="screen on" id="S5"><div class="z">
+  <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+  <div class="topbar"><div class="logo">marca<em>·página</em></div><div class="av">J</div></div>
+  <div class="gl"></div>
+  <div class="mtabs">
+    <div class="mt on" id="tabP" onclick="swS5('P')">👥 Pessoas</div>
+    <div class="mt" id="tabF" onclick="swS5('F')">📢 Posts públicos</div>
+  </div>
+
+  <!-- ABA PESSOAS -->
+  <div class="sc" id="s5Pc">
+    <div class="post-btn-wrap">
+      <button class="post-community-btn" onclick="go('SP')">
+        <div class="shine"></div>
+        <div class="post-btn-inner">
+          <div class="post-btn-icon">✏️</div>
+          <div class="post-btn-text">
+            <div class="post-btn-title">Faça um post na comunidade</div>
+            <div class="post-btn-sub">Compartilhe uma ideia, reflexão ou descoberta</div>
+          </div>
+          <div class="post-btn-arrow">›</div>
+        </div>
+      </button>
+    </div>
+    <div class="srch"><span style="font-size:14px;color:var(--muted)">🔍</span><input placeholder="Buscar pessoa..."></div>
+    <div class="itabs2">
+      <div class="it2 on" onclick="swPessoas('A',this)">Amigos</div>
+      <div class="it2" onclick="swPessoas('E',this)">Explorar</div>
+    </div>
+    <div id="pessoasA">
+      <div class="slb">Seguindo</div>
+      <div class="uc"><div class="uav U2">M</div><div class="ui"><div class="un">Maria Silva</div><div class="us">12 livros · 8 resenhas</div></div><div class="mcs"><div class="mcc c1"></div><div class="mcc c3"></div><div class="mcc c6"></div></div><div style="width:8px"></div><button class="follow-btn following" onclick="event.stopPropagation();toggleFollow(this)">✓ Seguindo</button></div>
+      <div class="uc"><div class="uav U3">R</div><div class="ui"><div class="un">Rafael Torres</div><div class="us">24 livros · 19 resenhas</div></div><div class="mcs"><div class="mcc c2"></div><div class="mcc c5"></div><div class="mcc c9"></div></div><div style="width:8px"></div><button class="follow-btn following" onclick="event.stopPropagation();toggleFollow(this)">✓ Seguindo</button></div>
+      <div class="uc"><div class="uav U4">A</div><div class="ui"><div class="un">Ana Pereira</div><div class="us">7 livros · 5 resenhas</div></div><div class="mcs"><div class="mcc c4"></div><div class="mcc c7"></div><div class="mcc c8"></div></div><div style="width:8px"></div><button class="follow-btn following" onclick="event.stopPropagation();toggleFollow(this)">✓ Seguindo</button></div>
+    </div>
+    <div id="pessoasE" style="display:none">
+      <div class="slb">Descobrir pessoas</div>
+      <div class="uc"><div class="uav U5">L</div><div class="ui"><div class="un">Lucas Mendes</div><div class="us">31 livros · 22 resenhas</div></div><div class="mcs"><div class="mcc c1"></div><div class="mcc c6"></div><div class="mcc c9"></div></div><div style="width:8px"></div><button class="follow-btn" onclick="event.stopPropagation();toggleFollow(this)">+ Seguir</button></div>
+      <div class="uc"><div class="uav U6">C</div><div class="ui"><div class="un">Carla Fonseca</div><div class="us">18 livros · 14 resenhas</div></div><div class="mcs"><div class="mcc c3"></div><div class="mcc c5"></div><div class="mcc c7"></div></div><div style="width:8px"></div><button class="follow-btn" onclick="event.stopPropagation();toggleFollow(this)">+ Seguir</button></div>
+      <div class="uc"><div class="uav U1">P</div><div class="ui"><div class="un">Pedro Alves</div><div class="us">9 livros · 6 resenhas</div></div><div class="mcs"><div class="mcc c2"></div><div class="mcc c4"></div><div class="mcc c8"></div></div><div style="width:8px"></div><button class="follow-btn" onclick="event.stopPropagation();toggleFollow(this)">+ Seguir</button></div>
+      <div class="uc"><div class="uav U2">B</div><div class="ui"><div class="un">Beatriz Costa</div><div class="us">45 livros · 38 resenhas</div></div><div class="mcs"><div class="mcc c5"></div><div class="mcc c9"></div><div class="mcc f2"></div></div><div style="width:8px"></div><button class="follow-btn" onclick="event.stopPropagation();toggleFollow(this)">+ Seguir</button></div>
+    </div>
+  </div>
+
+  <!-- ABA POSTS PÚBLICOS -->
+  <div class="sc" id="s5Fc" style="display:none">
+    <div class="post-btn-wrap">
+      <button class="post-community-btn" onclick="go('SP')">
+        <div class="shine"></div>
+        <div class="post-btn-inner">
+          <div class="post-btn-icon">✏️</div>
+          <div class="post-btn-text">
+            <div class="post-btn-title">Faça um post na comunidade</div>
+            <div class="post-btn-sub">Compartilhe uma ideia, reflexão ou descoberta</div>
+          </div>
+          <div class="post-btn-arrow">›</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- POST 1 — SEU PRÓPRIO (tem editar/excluir) -->
+    <div class="post-feed-card" id="post1">
+      <div class="post-feed-top">
+        <div class="post-feed-head">
+          <div class="post-feed-av U1">J</div>
+          <div><div class="post-feed-name">Jetro p. <span style="font-size:9px;background:rgba(196,168,240,.2);border:1px solid rgba(196,168,240,.3);color:var(--accent);border-radius:20px;padding:2px 7px;margin-left:4px;font-weight:700;">Seu post</span></div><div class="post-feed-handle">@jetro</div></div>
+          <div class="post-feed-time">há 30 min</div>
+        </div>
+        <div class="post-feed-title">O silêncio entre as páginas é onde a leitura realmente acontece</div>
+      </div>
+      <div class="post-feed-body">
+        <div class="post-feed-text collapsed" id="pt1">Quando terminamos um capítulo e ficamos olhando para o teto, não estamos perdendo tempo — estamos processando. A leitura não acontece só nos olhos, ela acontece nas pausas. O problema é que nunca mais nos permitimos ter pausas. Sempre tem uma notificação, uma série, um podcast para preencher o silêncio que é justamente onde o livro continua agindo.</div>
+        <span class="post-feed-expand" onclick="expandPost('pt1',this)">Ver mais ↓</span>
+        <div class="post-actions">
+          <button class="cma-btn" onclick="toggleLike(this)"><span class="heart">🤍</span> <span class="lc">18</span></button>
+          <div class="cma-sep"></div>
+          <button class="cma-btn" onclick="toggleComments('cmts1')">💬 <span id="cc1">3 comentários</span></button>
+          <div class="owner-actions">
+            <button class="edit-btn" onclick="go('SE')">✏️ Editar</button>
+            <button class="del-btn" onclick="openModal('post1')">🗑 Excluir</button>
+          </div>
+        </div>
+      </div>
+      <div class="comments-section" id="cmts1">
+        <div class="cmt-item">
+          <div class="cmt-av A2">M</div>
+          <div class="cmt-body">
+            <div class="cmt-name">Maria Silva</div>
+            <div class="cmt-text">Perfeito! Exatamente o que sinto depois de cada capítulo de Dostoiévski.</div>
+            <div class="cmt-meta">
+              <span class="cmt-time">há 20 min</span>
+              <button class="cmt-like" onclick="toggleCmtLike(this)"><span>🤍</span> 4</button>
+              <button class="cmt-reply-btn" onclick="showReplyInput(this)">↩ Responder</button>
+            </div>
+            <div class="replies" id="rep-1"></div>
+          </div>
+        </div>
+        <div class="cmt-item">
+          <div class="cmt-av A3">R</div>
+          <div class="cmt-body">
+            <div class="cmt-name">Rafael Torres</div>
+            <div class="cmt-text">Esse "ficar olhando pro teto" tem nome: é elaboração cognitiva. Neurociência comprova.</div>
+            <div class="cmt-meta">
+              <span class="cmt-time">há 15 min</span>
+              <button class="cmt-like" onclick="toggleCmtLike(this)"><span>🤍</span> 7</button>
+              <button class="cmt-reply-btn" onclick="showReplyInput(this)">↩ Responder</button>
+            </div>
+            <div class="replies" id="rep-2"></div>
+          </div>
+        </div>
+        <div class="cmt-input-row">
+          <textarea class="cmt-inp" placeholder="Comentar..." rows="1" oninput="autoResize(this)"></textarea>
+          <button class="cmt-send" onclick="addComment('cmts1','cc1')">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST 2 — DE OUTRO usuário -->
+    <div class="post-feed-card" id="post2">
+      <div class="post-feed-top">
+        <div class="post-feed-head">
+          <div class="post-feed-av U2">M</div>
+          <div><div class="post-feed-name">Maria Silva</div><div class="post-feed-handle">@mariasilva</div></div>
+          <div class="post-feed-time">há 1 hora</div>
+        </div>
+        <div class="post-feed-title">O que Dostoiévski entendeu sobre culpa que nenhum psicólogo conseguiu explicar melhor</div>
+      </div>
+      <div class="post-feed-body">
+        <div class="post-feed-text collapsed" id="pt2">A culpa em Crime e Castigo não é punição externa — ela é a própria consciência se alimentando de si mesma. Raskolnikov não precisa ser preso para sofrer. Ele já está preso dentro da própria mente. O que Dostoiévski fez foi mostrar que nós somos nosso próprio tribunal, e esse é o tribunal mais cruel que existe.</div>
+        <span class="post-feed-expand" onclick="expandPost('pt2',this)">Ver mais ↓</span>
+        <div class="post-actions">
+          <button class="cma-btn" onclick="toggleLike(this)"><span class="heart">🤍</span> <span class="lc">42</span></button>
+          <div class="cma-sep"></div>
+          <button class="cma-btn" onclick="toggleComments('cmts2')">💬 <span id="cc2">12 comentários</span></button>
+        </div>
+      </div>
+      <div class="comments-section" id="cmts2">
+        <div class="cmt-item">
+          <div class="cmt-av A4">R</div>
+          <div class="cmt-body">
+            <div class="cmt-name">Rafael Torres</div>
+            <div class="cmt-text">Li duas vezes e essa percepção só veio na segunda leitura. Incrível.</div>
+            <div class="cmt-meta">
+              <span class="cmt-time">há 40 min</span>
+              <button class="cmt-like" onclick="toggleCmtLike(this)"><span>🤍</span> 9</button>
+              <button class="cmt-reply-btn" onclick="showReplyInput(this)">↩ Responder</button>
+            </div>
+            <div class="replies" id="rep-3">
+              <div class="reply-item">
+                <div class="reply-av A2">M</div>
+                <div class="reply-body">
+                  <div class="reply-name">Maria Silva</div>
+                  <div class="reply-text">Exatamente! A segunda leitura muda tudo.</div>
+                  <div class="reply-meta">
+                    <span class="cmt-time">há 35 min</span>
+                    <button class="cmt-like" onclick="toggleCmtLike(this)"><span>🤍</span> 3</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cmt-input-row">
+          <textarea class="cmt-inp" placeholder="Comentar..." rows="1" oninput="autoResize(this)"></textarea>
+          <button class="cmt-send" onclick="addComment('cmts2','cc2')">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST 3 -->
+    <div class="post-feed-card" id="post3">
+      <div class="post-feed-top">
+        <div class="post-feed-head">
+          <div class="post-feed-av U3">R</div>
+          <div><div class="post-feed-name">Rafael Torres</div><div class="post-feed-handle">@rafaelt</div></div>
+          <div class="post-feed-time">há 3 horas</div>
+        </div>
+        <div class="post-feed-title">Interestelar me fez chorar de formas que não consigo explicar racionalmente</div>
+      </div>
+      <div class="post-feed-body">
+        <div class="post-feed-text collapsed" id="pt3">Tem uma diferença entre chorar porque algo é triste e chorar porque algo é verdadeiro. Interestelar me fez chorar do segundo jeito. A cena dos vídeos acumulados não é só emocionante — ela é perturbadora porque você sente que o tempo passou de verdade. Nolan conseguiu fazer o tempo ser um personagem.</div>
+        <span class="post-feed-expand" onclick="expandPost('pt3',this)">Ver mais ↓</span>
+        <div class="post-actions">
+          <button class="cma-btn" onclick="toggleLike(this)"><span class="heart">🤍</span> <span class="lc">67</span></button>
+          <div class="cma-sep"></div>
+          <button class="cma-btn" onclick="toggleComments('cmts3')">💬 <span id="cc3">28 comentários</span></button>
+        </div>
+      </div>
+      <div class="comments-section" id="cmts3">
+        <div class="cmt-item">
+          <div class="cmt-av A1">A</div>
+          <div class="cmt-body">
+            <div class="cmt-name">Ana Pereira</div>
+            <div class="cmt-text">A cena do dock me parte o coração toda vez que assisto.</div>
+            <div class="cmt-meta">
+              <span class="cmt-time">há 2h</span>
+              <button class="cmt-like" onclick="toggleCmtLike(this)"><span>🤍</span> 14</button>
+              <button class="cmt-reply-btn" onclick="showReplyInput(this)">↩ Responder</button>
+            </div>
+            <div class="replies" id="rep-4"></div>
+          </div>
+        </div>
+        <div class="cmt-input-row">
+          <textarea class="cmt-inp" placeholder="Comentar..." rows="1" oninput="autoResize(this)"></textarea>
+          <button class="cmt-send" onclick="addComment('cmts3','cc3')">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST 4 -->
+    <div class="post-feed-card" id="post4">
+      <div class="post-feed-top">
+        <div class="post-feed-head">
+          <div class="post-feed-av U4">A</div>
+          <div><div class="post-feed-name">Ana Pereira</div><div class="post-feed-handle">@anapereira</div></div>
+          <div class="post-feed-time">há 6 horas</div>
+        </div>
+        <div class="post-feed-title">Livros que mudam como você vê o mundo — a minha lista</div>
+      </div>
+      <div class="post-feed-body">
+        <div class="post-feed-text collapsed" id="pt4">1. Sapiens — Harari. Depois desse você nunca mais olha para a história da mesma forma. 2. Crime e Castigo — Dostoiévski. Não é um thriller, é um espelho. 3. O Processo — Kafka. Se você já se sentiu culpado sem saber por quê, vai entender cada página. 4. Duna — Herbert. Política, religião e ecologia numa ficção científica perfeita.</div>
+        <span class="post-feed-expand" onclick="expandPost('pt4',this)">Ver mais ↓</span>
+        <div class="post-actions">
+          <button class="cma-btn" onclick="toggleLike(this)"><span class="heart">🤍</span> <span class="lc">31</span></button>
+          <div class="cma-sep"></div>
+          <button class="cma-btn" onclick="toggleComments('cmts4')">💬 <span id="cc4">9 comentários</span></button>
+        </div>
+      </div>
+      <div class="comments-section" id="cmts4">
+        <div class="cmt-input-row">
+          <textarea class="cmt-inp" placeholder="Comentar..." rows="1" oninput="autoResize(this)"></textarea>
+          <button class="cmt-send" onclick="addComment('cmts4','cc4')">➤</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- fim s5Fc -->
+
+  <div class="bnav">
+    <div class="ni"><span class="nic">📚</span><span class="nla">Biblioteca</span></div>
+    <div class="ni on"><span class="nic">👥</span><span class="nla">Comunidade</span></div>
+    <div class="ni"><span class="nic">🔍</span><span class="nla">Buscar</span></div>
+    <div class="ni"><span class="nic">👤</span><span class="nla">Perfil</span></div>
+  </div>
+</div></div>
+
+<!-- ===== SP CRIAR POST ===== -->
+<div class="screen" id="SP"><div class="z">
+  <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+  <div class="ph"><div class="bk" onclick="back()">←</div><div class="ph-t">Novo post</div></div>
+  <div class="gl"></div>
+  <div class="sc">
+    <div class="post-card-form">
+      <div class="post-form-header">
+        <div class="post-form-av">J</div>
+        <div>
+          <div><span class="post-form-name">Jetro p.</span><span class="post-form-badge">✦ post público</span></div>
+          <div class="post-form-sub">Visível para toda a comunidade</div>
+        </div>
+      </div>
+      <div class="post-field-label">
+        <span class="post-field-lbl">Título</span>
+        <span class="post-char-count" id="titleCount">0 / 50</span>
+      </div>
+      <input class="post-title-input" id="newTitle" placeholder="Uma frase que chame atenção..." maxlength="50" oninput="countChars(this,'titleCount',50)">
+      <div class="post-field-label">
+        <span class="post-field-lbl">Conteúdo</span>
+        <span class="post-char-count" id="contentCount">0 / 2000</span>
+      </div>
+      <textarea class="post-content-area" id="newContent" placeholder="Compartilhe sua reflexão, descoberta ou pensamento sobre livros e filmes..." maxlength="2000" oninput="countChars(this,'contentCount',2000)"></textarea>
+      <div class="post-divider"></div>
+      <div class="post-form-btns">
+        <button class="post-cancel-btn" onclick="back()">Cancelar</button>
+        <button class="post-publish-btn" onclick="back()">✦ Publicar</button>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<!-- ===== SE EDITAR POST ===== -->
+<div class="screen" id="SE"><div class="z">
+  <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-i">▲ ◼ ▐▐</span></div>
+  <div class="ph"><div class="bk" onclick="back()">←</div><div class="ph-t">Editar post</div></div>
+  <div class="gl"></div>
+  <div class="sc">
+    <div class="post-card-form">
+      <div class="post-form-header">
+        <div class="post-form-av">J</div>
+        <div>
+          <div><span class="post-form-name">Jetro p.</span><span class="post-form-badge">✦ post público</span></div>
+          <div class="post-form-sub">Editando — visível para toda a comunidade</div>
+        </div>
+      </div>
+      <div class="post-field-label">
+        <span class="post-field-lbl">Título</span>
+        <span class="post-char-count" id="editTitleCount">46 / 50</span>
+      </div>
+      <input class="post-title-input" value="O silêncio entre as páginas é onde a leitura realmente acontece" maxlength="50" oninput="countChars(this,'editTitleCount',50)">
+      <div class="post-field-label">
+        <span class="post-field-lbl">Conteúdo</span>
+        <span class="post-char-count" id="editContentCount">312 / 2000</span>
+      </div>
+      <textarea class="post-content-area" maxlength="2000" oninput="countChars(this,'editContentCount',2000)">Quando terminamos um capítulo e ficamos olhando para o teto, não estamos perdendo tempo — estamos processando. A leitura não acontece só nos olhos, ela acontece nas pausas. O problema é que nunca mais nos permitimos ter pausas. Sempre tem uma notificação, uma série, um podcast para preencher o silêncio que é justamente onde o livro continua agindo.</textarea>
+      <div class="post-divider"></div>
+      <div class="post-form-btns">
+        <button class="post-cancel-btn" onclick="back()">Cancelar</button>
+        <button class="post-publish-btn" onclick="back()">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+</div></div><!-- fim phone/z -->
+
+<script>
+let hist=['S5'];
+let pendingDeleteId=null;
+
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  const sc=document.getElementById(id).querySelector('.sc');
+  if(sc)sc.scrollTop=0;
+  if(hist[hist.length-1]!==id)hist.push(id);
+}
+function back(){
+  if(hist.length>1){hist.pop();go(hist[hist.length-1]);}
+}
+function setT(t){
+  document.body.className=t;
+  document.getElementById('tL').className='tb'+(t==='L'?' on':'');
+  document.getElementById('tD').className='tb'+(t==='D'?' on':'');
+}
+
+// ABAS S5
+function swS5(t){
+  document.getElementById('s5Pc').style.display=t==='P'?'block':'none';
+  document.getElementById('s5Fc').style.display=t==='F'?'block':'none';
+  document.getElementById('tabP').className='mt'+(t==='P'?' on':'');
+  document.getElementById('tabF').className='mt'+(t==='F'?' on':'');
+}
+
+// AMIGOS / EXPLORAR
+function swPessoas(t,el){
+  document.getElementById('pessoasA').style.display=t==='A'?'block':'none';
+  document.getElementById('pessoasE').style.display=t==='E'?'block':'none';
+  el.closest('.itabs2').querySelectorAll('.it2').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// SEGUIR
+function toggleFollow(btn){
+  const f=btn.classList.contains('following');
+  btn.classList.toggle('following',!f);
+  btn.textContent=f?'+ Seguir':'✓ Seguindo';
+}
+
+// CURTIR POST
+function toggleLike(btn){
+  const liked=btn.classList.contains('liked');
+  const h=btn.querySelector('.heart');
+  const c=btn.querySelector('.lc');
+  btn.classList.toggle('liked',!liked);
+  h.textContent=liked?'🤍':'❤️';
+  c.textContent=parseInt(c.textContent)+(liked?-1:1);
+}
+
+// CURTIR COMENTÁRIO
+function toggleCmtLike(btn){
+  const liked=btn.classList.contains('liked');
+  const h=btn.querySelector('span');
+  const parts=btn.textContent.trim().split(' ');
+  const n=parseInt(parts[parts.length-1])||0;
+  btn.classList.toggle('liked',!liked);
+  h.textContent=liked?'🤍':'❤️';
+  btn.lastChild.textContent=' '+(liked?n-1:n+1);
+}
+
+// EXPANDIR POST
+function expandPost(id,btn){
+  const el=document.getElementById(id);
+  const col=el.classList.contains('collapsed');
+  el.classList.toggle('collapsed',!col);
+  btn.textContent=col?'Ver menos ↑':'Ver mais ↓';
+}
+
+// ABRIR/FECHAR COMENTÁRIOS
+function toggleComments(id){
+  const sec=document.getElementById(id);
+  sec.classList.toggle('open');
+  if(sec.classList.contains('open')){
+    const inp=sec.querySelector('.cmt-inp');
+    if(inp)setTimeout(()=>inp.focus(),100);
+  }
+}
+
+// ADICIONAR COMENTÁRIO
+function addComment(secId,countId){
+  const sec=document.getElementById(secId);
+  const inp=sec.querySelector('.cmt-inp');
+  const text=inp.value.trim();
+  if(!text)return;
+  const item=document.createElement('div');
+  item.className='cmt-item';
+  item.innerHTML=`<div class="cmt-av A1">J</div><div class="cmt-body"><div class="cmt-name">Jetro p.</div><div class="cmt-text">${text}</div><div class="cmt-meta"><span class="cmt-time">agora</span><button class="cmt-like" onclick="toggleCmtLike(this)"><span>🤍</span> 0</button><button class="cmt-reply-btn" onclick="showReplyInput(this)">↩ Responder</button></div><div class="replies" id="rep-new-${Date.now()}"></div></div>`;
+  const inputRow=sec.querySelector('.cmt-input-row');
+  sec.insertBefore(item,inputRow);
+  inp.value='';
+  inp.style.height='auto';
+  // atualiza contador
+  const countEl=document.getElementById(countId);
+  if(countEl){
+    const cur=parseInt(countEl.textContent)||0;
+    countEl.textContent=(cur+1)+' comentário'+(cur+1!==1?'s':'');
+  }
+}
+
+// RESPONDER COMENTÁRIO
+function showReplyInput(btn){
+  const cmtBody=btn.closest('.cmt-body');
+  if(cmtBody.querySelector('.reply-input-row'))return;
+  const row=document.createElement('div');
+  row.className='cmt-input-row reply-input-row';
+  row.style.marginTop='8px';
+  row.innerHTML=`<textarea class="cmt-inp" placeholder="Responder..." rows="1" oninput="autoResize(this)" style="font-size:11px;"></textarea><button class="cmt-send" style="width:28px;height:28px;font-size:12px;" onclick="addReply(this)">➤</button>`;
+  cmtBody.appendChild(row);
+  row.querySelector('.cmt-inp').focus();
+}
+
+function addReply(btn){
+  const row=btn.parentElement;
+  const inp=row.querySelector('.cmt-inp');
+  const text=inp.value.trim();
+  if(!text)return;
+  const cmtBody=row.closest('.cmt-body');
+  let repliesDiv=cmtBody.querySelector('.replies');
+  if(!repliesDiv){repliesDiv=document.createElement('div');repliesDiv.className='replies';cmtBody.insertBefore(repliesDiv,row);}
+  const reply=document.createElement('div');
+  reply.className='reply-item';
+  reply.innerHTML=`<div class="reply-av A1">J</div><div class="reply-body"><div class="reply-name">Jetro p.</div><div class="reply-text">${text}</div><div class="reply-meta"><span class="cmt-time">agora</span><button class="cmt-like" onclick="toggleCmtLike(this)"><span>🤍</span> 0</button></div></div>`;
+  repliesDiv.appendChild(reply);
+  row.remove();
+}
+
+// EXCLUIR POST
+function openModal(postId){
+  pendingDeleteId=postId;
+  document.getElementById('modalDel').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('modalDel').classList.remove('open');
+  pendingDeleteId=null;
+}
+function confirmDelete(){
+  if(pendingDeleteId){
+    const el=document.getElementById(pendingDeleteId);
+    if(el){
+      el.style.transition='all .3s';
+      el.style.opacity='0';
+      el.style.transform='translateX(-20px)';
+      setTimeout(()=>el.remove(),300);
+    }
+  }
+  closeModal();
+}
+// Fechar modal clicando fora
+document.getElementById('modalDel').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+// AUTO RESIZE TEXTAREA
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,80)+'px';}
+
+// CONTADOR CHARS
+function countChars(el,id,max){
+  const n=el.value.length;
+  const c=document.getElementById(id);
+  if(c){c.textContent=n+' / '+max;c.classList.toggle('warn',n>max*0.8);}
+}
+</script>
+</body>
+</html>

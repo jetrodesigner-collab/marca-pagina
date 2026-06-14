@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useCommunity } from '../hooks/useCommunity'
+import { useFollows } from '../hooks/useFollows'
+import { usePosts } from '../hooks/usePosts'
+import PostCard from '../components/community/PostCard'
 
 const BLOBS = [
   { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
@@ -48,11 +51,33 @@ function MiniCover({ item }) {
   return <div className={`mcc ${cls}`} />
 }
 
+function PostCTAButton({ onClick }) {
+  return (
+    <div className="post-btn-wrap">
+      <button className="post-community-btn" onClick={onClick}>
+        <div className="shine" />
+        <div className="post-btn-inner">
+          <div className="post-btn-icon">✏️</div>
+          <div className="post-btn-text">
+            <div className="post-btn-title">Faça um post na comunidade</div>
+            <div className="post-btn-sub">Compartilhe uma ideia, reflexão ou descoberta</div>
+          </div>
+          <div className="post-btn-arrow">›</div>
+        </div>
+      </button>
+    </div>
+  )
+}
+
 export default function Community({ session, onNavigate }) {
   const [theme]   = useState(() => localStorage.getItem('tema') || 'D')
   const [profile, setProfile] = useState(null)
   const [search, setSearch]   = useState('')
+  const [mainTab, setMainTab] = useState('P')
+  const [peopleTab, setPeopleTab] = useState('A')
   const { users, loading } = useCommunity(session.user.id)
+  const { following, toggleFollow } = useFollows(session.user.id)
+  const { posts, loading: postsLoading, toggleLike, deletePost } = usePosts(session.user.id)
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
 
@@ -74,6 +99,14 @@ export default function Community({ session, onNavigate }) {
         (u.username || '').toLowerCase().includes(query)
       )
     : users
+
+  const friends = filteredUsers.filter(u => following.has(u.id))
+  const explore = filteredUsers.filter(u => !following.has(u.id))
+  const peopleList = peopleTab === 'A' ? friends : explore
+
+  function handleNewPost() {
+    onNavigate('postForm', { post: null })
+  }
 
   return (
     <div
@@ -102,48 +135,99 @@ export default function Community({ session, onNavigate }) {
 
         <div className="gl" />
 
-        <div className="sc">
-          <div className="srch">
-            <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
-            <input
-              placeholder="Buscar pessoa..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-
-          <div className="slb">Ativos recentemente</div>
-
-          {loading && (
-            <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
-              Carregando...
-            </div>
-          )}
-
-          {!loading && filteredUsers.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
-              {query ? 'Nenhuma pessoa encontrada.' : 'Nenhuma outra pessoa por aqui ainda.'}
-            </div>
-          )}
-
-          {!loading && filteredUsers.map(user => (
-            <div key={user.id} className="uc" onClick={() => onNavigate('publicProfile', { userId: user.id })}>
-              <UserAvatar user={user} />
-              <div className="ui">
-                <div className="un">{user.full_name || user.username || 'Usuário'}</div>
-                <div className="us">
-                  {user.books} livro{user.books === 1 ? '' : 's'} · {user.reviews} resenha{user.reviews === 1 ? '' : 's'}
-                </div>
-              </div>
-              <div className="mcs">
-                {user.recentCovers.map((item, i) => (
-                  <MiniCover key={i} item={item} />
-                ))}
-              </div>
-              <div className={user.online ? 'on-d' : 'off-d'} />
-            </div>
-          ))}
+        <div className="mtabs">
+          <div className={`mt${mainTab === 'P' ? ' on' : ''}`} onClick={() => setMainTab('P')}>👥 Pessoas</div>
+          <div className={`mt${mainTab === 'F' ? ' on' : ''}`} onClick={() => setMainTab('F')}>📢 Posts públicos</div>
         </div>
+
+        {mainTab === 'P' ? (
+          <div className="sc">
+            <PostCTAButton onClick={handleNewPost} />
+
+            <div className="srch">
+              <span style={{ fontSize: 14, color: 'var(--muted)' }}>🔍</span>
+              <input
+                placeholder="Buscar pessoa..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="itabs2">
+              <div className={`it2${peopleTab === 'A' ? ' on' : ''}`} onClick={() => setPeopleTab('A')}>Amigos</div>
+              <div className={`it2${peopleTab === 'E' ? ' on' : ''}`} onClick={() => setPeopleTab('E')}>Explorar</div>
+            </div>
+
+            <div className="slb">{peopleTab === 'A' ? 'Seguindo' : 'Descobrir pessoas'}</div>
+
+            {loading && (
+              <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
+                Carregando...
+              </div>
+            )}
+
+            {!loading && peopleList.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
+                {query
+                  ? 'Nenhuma pessoa encontrada.'
+                  : peopleTab === 'A'
+                    ? 'Você ainda não segue ninguém. Explore e siga novas pessoas!'
+                    : 'Nenhuma pessoa nova para descobrir agora.'}
+              </div>
+            )}
+
+            {!loading && peopleList.map(user => (
+              <div key={user.id} className="uc" onClick={() => onNavigate('publicProfile', { userId: user.id })}>
+                <UserAvatar user={user} />
+                <div className="ui">
+                  <div className="un">{user.full_name || user.username || 'Usuário'}</div>
+                  <div className="us">
+                    {user.books} livro{user.books === 1 ? '' : 's'} · {user.reviews} resenha{user.reviews === 1 ? '' : 's'}
+                  </div>
+                </div>
+                <div className="mcs">
+                  {user.recentCovers.map((item, i) => (
+                    <MiniCover key={i} item={item} />
+                  ))}
+                </div>
+                <div style={{ width: 8 }} />
+                <button
+                  className={`follow-btn${following.has(user.id) ? ' following' : ''}`}
+                  onClick={e => { e.stopPropagation(); toggleFollow(user.id) }}
+                >
+                  {following.has(user.id) ? '✓ Seguindo' : '+ Seguir'}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="sc">
+            <PostCTAButton onClick={handleNewPost} />
+
+            {postsLoading && (
+              <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
+                Carregando...
+              </div>
+            )}
+
+            {!postsLoading && posts.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
+                Nenhum post ainda. Seja o primeiro a compartilhar!
+              </div>
+            )}
+
+            {!postsLoading && posts.map(post => (
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUserId={session.user.id}
+                onNavigate={onNavigate}
+                onToggleLike={toggleLike}
+                onDelete={deletePost}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Bottom navigation */}
         <div className="bnav">

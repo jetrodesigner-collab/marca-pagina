@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import ReadingProgress from '../components/books/ReadingProgress'
-import { useComments } from '../hooks/useComments'
-import CommentList from '../components/comments/CommentList'
-import CommentInput from '../components/comments/CommentInput'
+import CommentThread from '../components/comments/CommentThread'
 
 const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
 const FILM_COLORS  = ['f1','f2','f3','f4','f5','f6']
@@ -116,8 +114,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [expandedExcerptId, setExpandedExcerptId] = useState(null)
   const synRef = useRef(null)
   const reviewRef = useRef(null)
-
-  const { comments, loading: commentsLoading, addComment, deleteComment } = useComments(localItem.id, session.user.id)
 
   const isBook       = localItem.type === 'book'
   const themeClass   = theme === 'L' ? 'light' : 'dark'
@@ -439,15 +435,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     }
   }
 
-  async function handleSendComment(content) {
-    return addComment(content, session.user.id)
-  }
-
-  async function handleDeleteComment(commentId) {
-    const { error } = await deleteComment(commentId)
-    if (error) setToast('Erro ao excluir comentário.')
-  }
-
   async function removeFromLibrary() {
     if (!localItem.id || removing) return
     setRemoving(true)
@@ -520,7 +507,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
         <div className="gl" />
 
         {/* Scroll area */}
-        <div className="sc" style={activeTab === 'C' && isInLibrary ? { paddingBottom: 84 } : undefined}>
+        <div className="sc">
 
           {/* Hero */}
           <div className="hero">
@@ -684,7 +671,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                     <textarea
                       ref={reviewRef}
                       className="rtxt"
-                      style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden', height: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6 }}
+                      style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', overflowY: 'auto', height: 144, fontSize: 16, fontFamily: "'Figtree', sans-serif", lineHeight: 1.6 }}
                       placeholder={`Escreva o que esse ${isBook ? 'livro' : 'filme'} representou para você...`}
                       value={review}
                       onChange={e => setReview(e.target.value)}
@@ -866,12 +853,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
 
               {/* Comunidade */}
               {activeTab === 'C' && (
-                <CommentList
-                  comments={comments}
-                  loading={commentsLoading}
-                  currentUserId={session.user.id}
-                  onDelete={handleDeleteComment}
-                />
+                <CommentThread target={{ itemId: localItem.id }} currentUserId={session.user.id} />
               )}
             </>
           )}
@@ -1005,13 +987,6 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
             </div>
           </div>
         </div>
-      )}
-
-      {activeTab === 'C' && isInLibrary && (
-        <CommentInput
-          onSend={handleSendComment}
-          onError={() => setToast('Erro ao enviar comentário. Tente novamente.')}
-        />
       )}
 
       {toast && <div className="toast">{toast}</div>}

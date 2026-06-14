@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { usePublicProfile } from '../hooks/usePublicProfile'
-import { formatCommentDate } from '../components/comments/CommentCard'
+import { formatCommentDate } from '../utils/formatDate'
+import ExpandableText from '../components/ExpandableText'
+import CommentThread from '../components/comments/CommentThread'
+import PostCard from '../components/community/PostCard'
 
 const BLOBS = [
   { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
@@ -52,9 +55,52 @@ function ReviewCover({ item }) {
   )
 }
 
-export default function PublicProfile({ userId, onNavigate, onBack }) {
+function ReviewCard({ review, currentUserId, onToggleLike }) {
+  const [commentsOpen, setCommentsOpen] = useState(false)
+  const threadRef = useRef(null)
+
+  function handleCommentClick() {
+    setCommentsOpen(o => {
+      const next = !o
+      if (next) setTimeout(() => threadRef.current?.focusInput(), 50)
+      return next
+    })
+  }
+
+  return (
+    <div className="prc">
+      <ReviewCover item={review.items} />
+      <div className="prcb">
+        <div className="prcbk">
+          {review.items?.title}{(review.items?.author || review.items?.director) ? ` · ${review.items.author || review.items.director}` : ''}
+        </div>
+        <ExpandableText text={review.body} />
+        <div className="prcd">{formatCommentDate(review.created_at)} · 🌐 Pública</div>
+        <div className="post-actions">
+          <button className={`cma-btn${review.likedByMe ? ' liked' : ''}`} onClick={() => onToggleLike(review.id)}>
+            <span className="heart">{review.likedByMe ? '❤️' : '🤍'}</span> <span>{review.likeCount}</span>
+          </button>
+          <div className="cma-sep" />
+          <button className="cma-btn" onClick={handleCommentClick}>
+            💬 <span>{review.commentCount} comentário{review.commentCount === 1 ? '' : 's'}</span>
+          </button>
+        </div>
+        {commentsOpen && (
+          <CommentThread ref={threadRef} target={{ reviewId: review.id }} currentUserId={currentUserId} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function PublicProfile({ session, userId, onNavigate, onBack }) {
   const [theme] = useState(() => localStorage.getItem('tema') || 'D')
-  const { profile, stats, recentItems, publicReviews, privateReviews, loading } = usePublicProfile(userId)
+  const [recentTab, setRecentTab] = useState('books')
+  const [contentTab, setContentTab] = useState('reviews')
+  const {
+    profile, stats, recentBooks, recentMovies, publicReviews, privateReviews, posts, loading,
+    toggleReviewLike, togglePostLike,
+  } = usePublicProfile(userId, session.user.id)
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
 
@@ -73,6 +119,10 @@ export default function PublicProfile({ userId, onNavigate, onBack }) {
   const name = profile?.full_name || profile?.username || 'Usuário'
   const initial = name.charAt(0).toUpperCase()
   const avatarCls = AVATAR_GRADIENTS[hashToIndex(userId, AVATAR_GRADIENTS.length)]
+
+  const recentList = recentTab === 'books' ? recentBooks : recentMovies
+  const hasRecent = recentBooks.length > 0 || recentMovies.length > 0
+  const hasContent = publicReviews.length > 0 || posts.length > 0
 
   return (
     <div
@@ -134,7 +184,7 @@ export default function PublicProfile({ userId, onNavigate, onBack }) {
                 </div>
               </div>
 
-              {recentItems.length === 0 && publicReviews.length === 0 && privateReviews.length === 0 ? (
+              {!hasRecent && !hasContent && privateReviews.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '28px 0 24px', color: 'var(--muted)' }}>
                   <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text2)', marginBottom: 4 }}>Nada por aqui ainda</div>
@@ -142,36 +192,60 @@ export default function PublicProfile({ userId, onNavigate, onBack }) {
                 </div>
               ) : (
                 <>
-                  {recentItems.length > 0 && (
+                  {hasRecent && (
                     <>
-                      <div className="slb">Lidos recentemente</div>
-                      <div className="mnr">
-                        {recentItems.map(ui => (
-                          <div key={ui.items.id} className="mnc" onClick={() => goToItem(ui.items)}>
-                            <RecentCover item={ui.items} />
-                            <div className="mnt">{ui.items.title}</div>
-                            <div className="mna">{ui.items.author || ui.items.director || ''}</div>
-                          </div>
-                        ))}
+                      <div className="itabs2">
+                        <div className={`it2${recentTab === 'books' ? ' on' : ''}`} onClick={() => setRecentTab('books')}>📚 Lidos recentes</div>
+                        <div className={`it2${recentTab === 'movies' ? ' on' : ''}`} onClick={() => setRecentTab('movies')}>🎬 Filmes recentes</div>
                       </div>
+                      {recentList.length > 0 ? (
+                        <div className="mnr">
+                          {recentList.map(ui => (
+                            <div key={ui.items.id} className="mnc" onClick={() => goToItem(ui.items)}>
+                              <RecentCover item={ui.items} />
+                              <div className="mnt">{ui.items.title}</div>
+                              <div className="mna">{ui.items.author || ui.items.director || ''}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 11, color: 'var(--muted)', padding: '4px 0 16px' }}>
+                          {recentTab === 'books' ? 'Nenhum livro lido ainda.' : 'Nenhum filme assistido ainda.'}
+                        </div>
+                      )}
                     </>
                   )}
 
-                  {publicReviews.length > 0 && (
+                  {hasContent && (
                     <>
-                      <div className="slb">Resenhas públicas</div>
-                      {publicReviews.map(r => (
-                        <div key={r.id} className="prc">
-                          <ReviewCover item={r.items} />
-                          <div className="prcb">
-                            <div className="prcbk">
-                              {r.items?.title}{(r.items?.author || r.items?.director) ? ` · ${r.items.author || r.items.director}` : ''}
-                            </div>
-                            <div className="prct">{r.body}</div>
-                            <div className="prcd">{formatCommentDate(r.created_at)} · 🌐 Pública</div>
-                          </div>
-                        </div>
-                      ))}
+                      <div className="itabs2">
+                        <div className={`it2${contentTab === 'reviews' ? ' on' : ''}`} onClick={() => setContentTab('reviews')}>✍️ Resenhas públicas</div>
+                        <div className={`it2${contentTab === 'posts' ? ' on' : ''}`} onClick={() => setContentTab('posts')}>📢 Posts públicos</div>
+                      </div>
+                      {contentTab === 'reviews' ? (
+                        publicReviews.length > 0 ? (
+                          publicReviews.map(r => (
+                            <ReviewCard key={r.id} review={r} currentUserId={session.user.id} onToggleLike={toggleReviewLike} />
+                          ))
+                        ) : (
+                          <div style={{ fontSize: 11, color: 'var(--muted)', padding: '4px 0 16px' }}>Nenhuma resenha pública ainda.</div>
+                        )
+                      ) : (
+                        posts.length > 0 ? (
+                          posts.map(post => (
+                            <PostCard
+                              key={post.id}
+                              post={post}
+                              currentUserId={session.user.id}
+                              onNavigate={onNavigate}
+                              onToggleLike={togglePostLike}
+                              onDelete={() => {}}
+                            />
+                          ))
+                        ) : (
+                          <div style={{ fontSize: 11, color: 'var(--muted)', padding: '4px 0 16px' }}>Nenhum post público ainda.</div>
+                        )
+                      )}
                     </>
                   )}
 
