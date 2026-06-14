@@ -80,6 +80,38 @@ function formatExcerptDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function extractYouTubeId(url) {
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+  return match ? match[1] : null
+}
+
+function findYouTubeTrailer(data) {
+  const trailer = (data?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube')
+  return trailer?.key || null
+}
+
+// Filme ou série do TMDB: tenta /movie e /tv, com fallback pt-BR → en-US
+async function fetchTmdbTrailerKey(tmdbId) {
+  const key = import.meta.env.VITE_TMDB_API_KEY
+  const urls = [
+    `https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${key}&language=pt-BR`,
+    `https://api.themoviedb.org/3/tv/${tmdbId}/videos?api_key=${key}&language=pt-BR`,
+    `https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${key}`,
+    `https://api.themoviedb.org/3/tv/${tmdbId}/videos?api_key=${key}`,
+  ]
+  for (const url of urls) {
+    try {
+      const res = await fetch(url)
+      const data = await res.json()
+      const trailerKey = findYouTubeTrailer(data)
+      if (trailerKey) return trailerKey
+    } catch {
+      // tenta a próxima URL
+    }
+  }
+  return null
+}
+
 export default function ItemDetail({ session, item: itemProp, userItem: userItemProp, isOwner = true, onBack, onUserItemUpdate, onNavigate, initialTab = 'R' }) {
   const [theme]        = useState(() => localStorage.getItem('tema') || 'D')
   const [activeTab,    setActiveTab]    = useState(initialTab)
@@ -112,6 +144,11 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [savingExcerpt, setSavingExcerpt] = useState(false)
   const [editingExcerptId, setEditingExcerptId] = useState(null)
   const [expandedExcerptId, setExpandedExcerptId] = useState(null)
+  const [trailerKey,      setTrailerKey]      = useState(null)
+  const [manualTrailerUrl, setManualTrailerUrl] = useState(() => itemProp.trailer_url || null)
+  const [showTrailerInput, setShowTrailerInput] = useState(false)
+  const [trailerInputValue, setTrailerInputValue] = useState('')
+  const [savingTrailer,   setSavingTrailer]   = useState(false)
   const synRef = useRef(null)
   const reviewRef = useRef(null)
 
@@ -195,6 +232,17 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     if (!synopsis || !synRef.current || synExpanded) return
     setSynNeedsBtn(synRef.current.scrollHeight > synRef.current.clientHeight + 1)
   }, [synopsis, synExpanded])
+
+  // Busca trailer no TMDB (filmes/séries não manuais)
+  useEffect(() => {
+    if (isBook || localItem.is_manual || !localItem.api_id) return
+    let cancelled = false
+    fetchTmdbTrailerKey(localItem.api_id).then(key => {
+      if (!cancelled && key) setTrailerKey(key)
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function addToLibrary(chosenStatus) {
     if (adding) return
@@ -435,6 +483,57 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     }
   }
 
+  function openTrailerInput() {
+    setTrailerInputValue(manualTrailerUrl || '')
+    setShowTrailerInput(true)
+  }
+
+  function cancelTrailerInput() {
+    setShowTrailerInput(false)
+    setTrailerInputValue('')
+  }
+
+  async function saveTrailerUrl() {
+    if (savingTrailer) return
+    const url = trailerInputValue.trim()
+    if (!extractYouTubeId(url)) {
+      setToast('Link do YouTube inválido')
+      return
+    }
+    setSavingTrailer(true)
+    const { error } = await supabase
+      .from('items')
+      .update({ trailer_url: url })
+      .eq('id', localItem.id)
+    setSavingTrailer(false)
+    if (!error) {
+      setManualTrailerUrl(url)
+      setLocalItem(prev => ({ ...prev, trailer_url: url }))
+      setShowTrailerInput(false)
+      setTrailerInputValue('')
+    } else {
+      setToast('Erro ao salvar trailer')
+    }
+  }
+
+  async function removeTrailerUrl() {
+    if (savingTrailer) return
+    setSavingTrailer(true)
+    const { error } = await supabase
+      .from('items')
+      .update({ trailer_url: null })
+      .eq('id', localItem.id)
+    setSavingTrailer(false)
+    if (!error) {
+      setManualTrailerUrl(null)
+      setLocalItem(prev => ({ ...prev, trailer_url: null }))
+      setShowTrailerInput(false)
+      setTrailerInputValue('')
+    } else {
+      setToast('Erro ao remover trailer')
+    }
+  }
+
   async function removeFromLibrary() {
     if (!localItem.id || removing) return
     setRemoving(true)
@@ -507,7 +606,100 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
         <div className="gl" />
 
         {/* Scroll area */}
-        <div className="sc">
+        <div className="sc" style={{ paddingBottom: 32 }}>
+
+          {/* Trailer (Netflix-style, topo da tela) */}
+          {!isBook && !localItem.is_manual && trailerKey && (
+            <div style={{ position: 'relative', marginLeft: -22, marginRight: -22, marginTop: -16, marginBottom: 16 }}>
+              <iframe
+                title="Trailer"
+                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=1&rel=0&playsinline=1`}
+                style={{ display: 'block', width: '100%', height: 220, border: 'none', borderRadius: 0 }}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+              <div style={{ height: 60, marginTop: -60, background: 'linear-gradient(to bottom, transparent, var(--fade))', pointerEvents: 'none' }} />
+            </div>
+          )}
+
+          {/* Trailer manual (cadastro do usuário) */}
+          {!isBook && localItem.is_manual && (
+            <>
+              {manualTrailerUrl && !showTrailerInput && (
+                <div style={{ position: 'relative', marginLeft: -22, marginRight: -22, marginTop: -16, marginBottom: 16 }}>
+                  <iframe
+                    title="Trailer"
+                    src={`https://www.youtube.com/embed/${extractYouTubeId(manualTrailerUrl)}?autoplay=1&mute=1&controls=1&rel=0&playsinline=1`}
+                    style={{ display: 'block', width: '100%', height: 220, border: 'none', borderRadius: 0 }}
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                  />
+                  <div style={{ height: 60, marginTop: -60, background: 'linear-gradient(to bottom, transparent, var(--fade))', pointerEvents: 'none' }} />
+                  {localItem.created_by === session.user.id && (
+                    <div
+                      onClick={openTrailerInput}
+                      title="Editar trailer"
+                      style={{
+                        position: 'absolute', top: 10, right: 10,
+                        width: 30, height: 30, borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span style={{ filter: 'invert(1)', display: 'flex' }}><PencilIcon /></span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!manualTrailerUrl && !showTrailerInput && localItem.created_by === session.user.id && (
+                <button className="addt" onClick={openTrailerInput}>＋ Adicionar trailer</button>
+              )}
+
+              {showTrailerInput && (
+                <div className="rbox">
+                  <input
+                    type="text"
+                    className="finp"
+                    placeholder="Cole o link do YouTube (youtube.com/watch?v=... ou youtu.be/...)"
+                    value={trailerInputValue}
+                    onChange={e => setTrailerInputValue(e.target.value)}
+                  />
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      onClick={cancelTrailerInput}
+                      style={{
+                        flex: 1, padding: '12px 0', borderRadius: 14,
+                        border: '1px solid var(--bor2)', background: 'var(--sur)',
+                        color: 'var(--text)', fontFamily: "'Figtree', sans-serif",
+                        fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    {manualTrailerUrl && (
+                      <button
+                        onClick={removeTrailerUrl}
+                        disabled={savingTrailer}
+                        style={{
+                          flex: 1, padding: '12px 0', borderRadius: 14,
+                          border: '1px solid rgba(229,115,115,0.35)', background: 'rgba(229,115,115,0.12)',
+                          color: 'var(--red)', fontFamily: "'Figtree', sans-serif",
+                          fontSize: 13, fontWeight: 700, cursor: savingTrailer ? 'default' : 'pointer',
+                        }}
+                      >
+                        Remover
+                      </button>
+                    )}
+                    <button className="savebtn" style={{ flex: 1 }} onClick={saveTrailerUrl} disabled={savingTrailer || !trailerInputValue.trim()}>
+                      {savingTrailer ? 'Salvando...' : 'Salvar'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Hero */}
           <div className="hero">
