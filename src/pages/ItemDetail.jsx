@@ -85,6 +85,8 @@ function extractYouTubeId(url) {
   return match ? match[1] : null
 }
 
+const YT_EMBED_PARAMS = 'autoplay=1&mute=1&controls=1&rel=0&playsinline=1&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&cc_load_policy=0'
+
 function findYouTubeTrailer(data) {
   const trailer = (data?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube')
   return trailer?.key || null
@@ -576,7 +578,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   return (
     <div
       className={themeClass}
-      style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}
+      style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative' }}
     >
       {BLOBS.map((b, i) => (
         <div key={i} style={{ position: 'fixed', borderRadius: '50%', filter: 'blur(55px)', pointerEvents: 'none', zIndex: 0, ...b }} />
@@ -606,19 +608,22 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
         <div className="gl" />
 
         {/* Scroll area */}
-        <div className="sc" style={{ paddingBottom: 32 }}>
+        <div className="sc" style={{ paddingBottom: 120 }}>
 
           {/* Trailer (Netflix-style, topo da tela) */}
           {!isBook && !localItem.is_manual && trailerKey && (
             <div style={{ position: 'relative', marginLeft: -22, marginRight: -22, marginTop: -16, marginBottom: 16 }}>
               <iframe
                 title="Trailer"
-                src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=1&rel=0&playsinline=1`}
+                src={`https://www.youtube.com/embed/${trailerKey}?${YT_EMBED_PARAMS}`}
                 style={{ display: 'block', width: '100%', height: 220, border: 'none', borderRadius: 0 }}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
               />
-              <div style={{ height: 60, marginTop: -60, background: 'linear-gradient(to bottom, transparent, var(--fade))', pointerEvents: 'none' }} />
+              {/* bloqueia a barra inferior do player (progresso/título) */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 40, background: 'transparent', pointerEvents: 'all' }} />
+              {/* degradê de transição estilo Netflix */}
+              <div style={{ position: 'relative', zIndex: 2, height: 80, marginTop: -80, background: 'linear-gradient(to bottom, transparent, var(--fade))', pointerEvents: 'none' }} />
             </div>
           )}
 
@@ -629,12 +634,15 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                 <div style={{ position: 'relative', marginLeft: -22, marginRight: -22, marginTop: -16, marginBottom: 16 }}>
                   <iframe
                     title="Trailer"
-                    src={`https://www.youtube.com/embed/${extractYouTubeId(manualTrailerUrl)}?autoplay=1&mute=1&controls=1&rel=0&playsinline=1`}
+                    src={`https://www.youtube.com/embed/${extractYouTubeId(manualTrailerUrl)}?${YT_EMBED_PARAMS}`}
                     style={{ display: 'block', width: '100%', height: 220, border: 'none', borderRadius: 0 }}
                     allow="autoplay; encrypted-media; picture-in-picture"
                     allowFullScreen
                   />
-                  <div style={{ height: 60, marginTop: -60, background: 'linear-gradient(to bottom, transparent, var(--fade))', pointerEvents: 'none' }} />
+                  {/* bloqueia a barra inferior do player (progresso/título) */}
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 40, background: 'transparent', pointerEvents: 'all' }} />
+                  {/* degradê de transição estilo Netflix */}
+                  <div style={{ position: 'relative', zIndex: 2, height: 80, marginTop: -80, background: 'linear-gradient(to bottom, transparent, var(--fade))', pointerEvents: 'none' }} />
                   {localItem.created_by === session.user.id && (
                     <div
                       onClick={openTrailerInput}
@@ -1052,26 +1060,26 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
 
         </div>
 
-        {/* Bottom navigation */}
-        <div className="bnav">
-          <div className="ni" onClick={() => onNavigate('library')}>
-            <span className="nic">📚</span>
-            <span className="nla">Biblioteca</span>
-          </div>
-          <div className="ni" onClick={() => onNavigate('community')}>
-            <span className="nic">👥</span>
-            <span className="nla">Comunidade</span>
-          </div>
-          <div className="ni" onClick={() => onNavigate('search')}>
-            <span className="nic">🔍</span>
-            <span className="nla">Buscar</span>
-          </div>
-          <div className="ni" onClick={() => onNavigate('profile')}>
-            <span className="nic">👤</span>
-            <span className="nla">Perfil</span>
-          </div>
-        </div>
+      </div>
 
+      {/* Bottom navigation — sempre fixa no rodapé da tela, fora da área com scroll */}
+      <div className="bnav" style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 5 }}>
+        <div className="ni" onClick={() => onNavigate('library')}>
+          <span className="nic">📚</span>
+          <span className="nla">Biblioteca</span>
+        </div>
+        <div className="ni" onClick={() => onNavigate('community')}>
+          <span className="nic">👥</span>
+          <span className="nla">Comunidade</span>
+        </div>
+        <div className="ni" onClick={() => onNavigate('search')}>
+          <span className="nic">🔍</span>
+          <span className="nla">Buscar</span>
+        </div>
+        <div className="ni" onClick={() => onNavigate('profile')}>
+          <span className="nic">👤</span>
+          <span className="nla">Perfil</span>
+        </div>
       </div>
 
       {/* Modal de confirmação de remoção */}
