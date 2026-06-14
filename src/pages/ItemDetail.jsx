@@ -80,9 +80,9 @@ function formatExcerptDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-export default function ItemDetail({ session, item: itemProp, userItem: userItemProp, isOwner = true, onBack, onUserItemUpdate }) {
+export default function ItemDetail({ session, item: itemProp, userItem: userItemProp, isOwner = true, onBack, onUserItemUpdate, onNavigate, initialTab = 'R' }) {
   const [theme]        = useState(() => localStorage.getItem('tema') || 'D')
-  const [activeTab,    setActiveTab]    = useState('R')
+  const [activeTab,    setActiveTab]    = useState(initialTab)
   const [localItem,    setLocalItem]    = useState(itemProp)
   const [localUserItem, setLocalUserItem] = useState(userItemProp)
   const [status,       setStatus]       = useState(userItemProp?.status ?? null)
@@ -859,6 +859,27 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
           )}
 
         </div>
+
+        {/* Bottom navigation */}
+        <div className="bnav">
+          <div className="ni" onClick={() => onNavigate('library')}>
+            <span className="nic">📚</span>
+            <span className="nla">Biblioteca</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('community')}>
+            <span className="nic">👥</span>
+            <span className="nla">Comunidade</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('search')}>
+            <span className="nic">🔍</span>
+            <span className="nla">Buscar</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('profile')}>
+            <span className="nic">👤</span>
+            <span className="nla">Perfil</span>
+          </div>
+        </div>
+
       </div>
 
       {/* Modal de confirmação de remoção */}

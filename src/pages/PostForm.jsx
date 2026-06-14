@@ -54,7 +54,7 @@ export default function PostForm({ session, onNavigate, post }) {
       if (err) { setError('Erro ao publicar: ' + err.message); return }
     }
 
-    onNavigate('community')
+    window.history.back()
   }
 
   const initial = (profile?.full_name || profile?.username || session.user.email || '?')[0].toUpperCase()
@@ -70,7 +70,7 @@ export default function PostForm({ session, onNavigate, post }) {
 
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <div className="ph">
-          <div className="bk" onClick={() => onNavigate('community')}>←</div>
+          <div className="bk" onClick={() => window.history.back()}>←</div>
           <div className="ph-t">{isEdit ? 'Editar post' : 'Novo post'}</div>
         </div>
 
@@ -124,7 +124,7 @@ export default function PostForm({ session, onNavigate, post }) {
 
             <div className="post-divider" />
             <div className="post-form-btns">
-              <button className="post-cancel-btn" onClick={() => onNavigate('community')} disabled={saving}>
+              <button className="post-cancel-btn" onClick={() => window.history.back()} disabled={saving}>
                 Cancelar
               </button>
               <button className="post-publish-btn" onClick={handleSubmit} disabled={saving}>

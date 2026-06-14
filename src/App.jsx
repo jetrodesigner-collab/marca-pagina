@@ -11,6 +11,7 @@ import Profile from './pages/Profile'
 import Community from './pages/Community'
 import PublicProfile from './pages/PublicProfile'
 import PostForm from './pages/PostForm'
+import MyComments from './pages/MyComments'
 import ManualBookEntry from './pages/ManualBookEntry'
 import ManualMovieEntry from './pages/ManualMovieEntry'
 import AdminPanel from './pages/AdminPanel'
@@ -113,6 +114,7 @@ export default function App() {
         item={itemContext.item}
         userItem={itemContext.userItem}
         isOwner={itemContext.isOwner ?? true}
+        initialTab={itemContext.initialTab}
         onBack={() => {
           if (itemContext.origin?.collectionId) {
             setLibraryReopen({ category: itemContext.origin.category, collectionId: itemContext.origin.collectionId })
@@ -120,6 +122,7 @@ export default function App() {
           navigate('library')
         }}
         onUserItemUpdate={updated => setItemContext(c => ({ ...c, userItem: updated }))}
+        onNavigate={navigate}
       />
     )
   }
@@ -141,6 +144,7 @@ export default function App() {
       <PublicProfile
         session={session}
         userId={profileContext.userId}
+        initialContentTab={profileContext.initialContentTab}
         onNavigate={navigate}
         onBack={() => navigate('community')}
       />
@@ -149,6 +153,10 @@ export default function App() {
 
   if (screen === 'postForm') {
     return <PostForm session={session} onNavigate={navigate} post={postContext?.post ?? null} />
+  }
+
+  if (screen === 'myComments') {
+    return <MyComments session={session} onNavigate={navigate} />
   }
 
   if (screen === 's9') {

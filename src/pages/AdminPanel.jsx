@@ -94,6 +94,28 @@ function EmptyState({ icon, text }) {
   )
 }
 
+function ReportRow({ report, reportedUsername, reporterUsername, children }) {
+  return (
+    <div className="tcrd">
+      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+        Denunciado: @{reportedUsername || 'desconhecido'}
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2 }}>
+        Por @{reporterUsername || 'desconhecido'} · {formatDate(report.created_at)}
+      </div>
+      <div style={{
+        fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', marginTop: 4,
+        color: report.status === 'pendente' ? 'var(--accent)' : 'var(--muted)',
+      }}>
+        {report.status}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminPanel({ session, onNavigate }) {
   const [theme] = useState(() => localStorage.getItem('tema') || 'D')
   const themeClass = theme === 'L' ? 'light' : 'dark'
@@ -104,10 +126,13 @@ export default function AdminPanel({ session, onNavigate }) {
   const [pending,  setPending]  = useState([])
   const [approved, setApproved] = useState([])
   const [rejected, setRejected] = useState([])
+  const [reports,  setReports]  = useState([])
   const [usernames, setUsernames] = useState({})
   const [toast, setToast] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [confirmReportAccount, setConfirmReportAccount] = useState(null)
+  const [processingReport, setProcessingReport] = useState(false)
 
   useEffect(() => {
     if (!toast) return
@@ -134,16 +159,20 @@ export default function AdminPanel({ session, onNavigate }) {
 
   async function loadAll() {
     setLoading(true)
-    const [{ data: p }, { data: a }, { data: r }] = await Promise.all([
+    const [{ data: p }, { data: a }, { data: r }, { data: rep }] = await Promise.all([
       supabase.from('items').select('*').eq('is_manual', true).eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('items').select('*').eq('is_manual', true).eq('status', 'approved').order('created_at', { ascending: false }),
       supabase.from('items').select('*').eq('is_manual', true).eq('status', 'rejected').order('created_at', { ascending: false }),
+      supabase.from('reports').select('*').order('created_at', { ascending: false }),
     ])
     setPending(p || [])
     setApproved(a || [])
     setRejected(r || [])
+    setReports(rep || [])
 
-    const ids = [...new Set([...(p || []), ...(a || []), ...(r || [])].map(i => i.created_by).filter(Boolean))]
+    const itemIds = [...(p || []), ...(a || []), ...(r || [])].map(i => i.created_by).filter(Boolean)
+    const reportIds = (rep || []).flatMap(x => [x.reporter_id, x.reported_id])
+    const ids = [...new Set([...itemIds, ...reportIds])]
     if (ids.length > 0) {
       const { data: profiles } = await supabase.from('profiles').select('id, username').in('id', ids)
       const map = {}
@@ -188,6 +217,50 @@ export default function AdminPanel({ session, onNavigate }) {
       loadAll()
     } else {
       setToast('Erro ao excluir livro')
+    }
+  }
+
+  async function deleteReportedPosts(report) {
+    const { error } = await supabase.from('posts').delete().eq('user_id', report.reported_id)
+    if (!error) {
+      setToast('Posts excluídos')
+      loadAll()
+    } else {
+      setToast('Erro ao excluir posts')
+    }
+  }
+
+  async function deleteReportedComments(report) {
+    const { error } = await supabase.from('comments').delete().eq('user_id', report.reported_id)
+    if (!error) {
+      setToast('Comentários excluídos')
+      loadAll()
+    } else {
+      setToast('Erro ao excluir comentários')
+    }
+  }
+
+  async function ignoreReport(report) {
+    const { error } = await supabase.from('reports').update({ status: 'resolvida' }).eq('id', report.id)
+    if (!error) {
+      setToast('Denúncia marcada como resolvida')
+      loadAll()
+    } else {
+      setToast('Erro ao atualizar denúncia')
+    }
+  }
+
+  async function confirmDeleteAccount() {
+    if (!confirmReportAccount || processingReport) return
+    setProcessingReport(true)
+    const { error } = await supabase.rpc('admin_delete_account', { target_id: confirmReportAccount.reported_id })
+    setProcessingReport(false)
+    setConfirmReportAccount(null)
+    if (!error) {
+      setToast('Conta excluída')
+      loadAll()
+    } else {
+      setToast('Erro ao excluir conta')
     }
   }
 
@@ -250,8 +323,45 @@ export default function AdminPanel({ session, onNavigate }) {
                   </ItemRow>
                 ))
               )}
+
+              <div className="sec-t" style={{ marginTop: 22 }}>Denúncias</div>
+              {reports.length === 0 ? (
+                <EmptyState icon="🛡️" text="Nenhuma denúncia registrada" />
+              ) : (
+                reports.map(r => (
+                  <ReportRow key={r.id} report={r} reportedUsername={usernames[r.reported_id]} reporterUsername={usernames[r.reporter_id]}>
+                    <ActionBtn onClick={() => onNavigate('publicProfile', { userId: r.reported_id })}>👁 Ver perfil</ActionBtn>
+                    <ActionBtn onClick={() => deleteReportedPosts(r)} danger>🗑 Excluir posts</ActionBtn>
+                    <ActionBtn onClick={() => deleteReportedComments(r)} danger>🗑 Excluir comentários</ActionBtn>
+                    <ActionBtn onClick={() => setConfirmReportAccount(r)} danger>⛔ Excluir conta</ActionBtn>
+                    {r.status === 'pendente' && (
+                      <ActionBtn onClick={() => ignoreReport(r)}>✓ Ignorar denúncia</ActionBtn>
+                    )}
+                  </ReportRow>
+                ))
+              )}
             </>
           )}
+        </div>
+
+        {/* Bottom navigation */}
+        <div className="bnav">
+          <div className="ni" onClick={() => onNavigate('library')}>
+            <span className="nic">📚</span>
+            <span className="nla">Biblioteca</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('community')}>
+            <span className="nic">👥</span>
+            <span className="nla">Comunidade</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('search')}>
+            <span className="nic">🔍</span>
+            <span className="nla">Buscar</span>
+          </div>
+          <div className="ni on" onClick={() => onNavigate('profile')}>
+            <span className="nic">👤</span>
+            <span className="nla">Perfil</span>
+          </div>
         </div>
       </div>
 
@@ -304,6 +414,61 @@ export default function AdminPanel({ session, onNavigate }) {
                 }}
               >
                 {deleting ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmReportAccount && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)',
+            padding: '0 20px',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setConfirmReportAccount(null) }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 360,
+            background: 'var(--bg)', backgroundImage: 'var(--bg)',
+            border: '1px solid var(--bor)',
+            borderRadius: 22, padding: '24px 20px',
+            backdropFilter: 'blur(24px)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', textAlign: 'center', marginBottom: 8 }}>
+              Excluir conta de @{usernames[confirmReportAccount.reported_id] || 'usuário'}?
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'center', lineHeight: 1.55, marginBottom: 22 }}>
+              Esta conta e todos os seus dados (posts, comentários, resenhas, biblioteca) serão excluídos permanentemente.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setConfirmReportAccount(null)}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 14,
+                  border: '1px solid var(--bor2)', background: 'var(--sur)',
+                  color: 'var(--text)', fontFamily: "'Figtree', sans-serif",
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDeleteAccount}
+                disabled={processingReport}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 14,
+                  border: 'none', background: '#E57373',
+                  color: '#fff', fontFamily: "'Figtree', sans-serif",
+                  fontSize: 13, fontWeight: 700, cursor: processingReport ? 'default' : 'pointer',
+                  opacity: processingReport ? 0.7 : 1,
+                }}
+              >
+                {processingReport ? 'Excluindo...' : 'Excluir'}
               </button>
             </div>
           </div>

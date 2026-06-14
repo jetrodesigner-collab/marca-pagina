@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 import { usePublicProfile } from '../hooks/usePublicProfile'
 import { formatCommentDate } from '../utils/formatDate'
 import ExpandableText from '../components/ExpandableText'
@@ -93,16 +94,34 @@ function ReviewCard({ review, currentUserId, onToggleLike }) {
   )
 }
 
-export default function PublicProfile({ session, userId, onNavigate, onBack }) {
+export default function PublicProfile({ session, userId, onNavigate, onBack, initialContentTab = 'reviews' }) {
   const [theme] = useState(() => localStorage.getItem('tema') || 'D')
   const [recentTab, setRecentTab] = useState('books')
-  const [contentTab, setContentTab] = useState('reviews')
+  const [contentTab, setContentTab] = useState(initialContentTab)
+  const [reportModalOpen, setReportModalOpen] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  const [toast, setToast] = useState(null)
   const {
     profile, stats, recentBooks, recentMovies, publicReviews, privateReviews, posts, loading,
     toggleReviewLike, togglePostLike,
   } = usePublicProfile(userId, session.user.id)
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 2400)
+    return () => clearTimeout(t)
+  }, [toast])
+
+  async function handleReport() {
+    if (reporting) return
+    setReporting(true)
+    const { error } = await supabase.from('reports').insert({ reporter_id: session.user.id, reported_id: userId })
+    setReporting(false)
+    setReportModalOpen(false)
+    setToast(error ? 'Erro ao enviar denúncia' : 'Denúncia enviada')
+  }
 
   function formatLink(url) {
     return url.replace(/^https?:\/\//, '').replace(/\/$/, '').split('/')[0]
@@ -265,11 +284,94 @@ export default function PublicProfile({ session, userId, onNavigate, onBack }) {
                   )}
                 </>
               )}
+
+              {userId !== session.user.id && (
+                <div className="report-link" onClick={() => setReportModalOpen(true)}>Denunciar conta</div>
+              )}
             </>
           )}
         </div>
 
+        {/* Bottom navigation */}
+        <div className="bnav">
+          <div className="ni" onClick={() => onNavigate('library')}>
+            <span className="nic">📚</span>
+            <span className="nla">Biblioteca</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('community')}>
+            <span className="nic">👥</span>
+            <span className="nla">Comunidade</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('search')}>
+            <span className="nic">🔍</span>
+            <span className="nla">Buscar</span>
+          </div>
+          <div className="ni" onClick={() => onNavigate('profile')}>
+            <span className="nic">👤</span>
+            <span className="nla">Perfil</span>
+          </div>
+        </div>
+
       </div>
+
+      {/* Modal de confirmação de denúncia */}
+      {reportModalOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)',
+            padding: '0 20px',
+          }}
+          onClick={e => { if (e.target === e.currentTarget && !reporting) setReportModalOpen(false) }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 360,
+            background: 'var(--bg)', backgroundImage: 'var(--bg)',
+            border: '1px solid var(--bor)',
+            borderRadius: 22, padding: '24px 20px',
+            backdropFilter: 'blur(24px)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', textAlign: 'center', marginBottom: 8 }}>
+              Denunciar conta?
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'center', lineHeight: 1.55, marginBottom: 22 }}>
+              Deseja denunciar esta conta? Esta ação será revisada pela equipe do marca·página.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setReportModalOpen(false)}
+                disabled={reporting}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 14,
+                  border: '1px solid var(--bor2)', background: 'var(--sur)',
+                  color: 'var(--text)', fontFamily: "'Figtree', sans-serif",
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleReport}
+                disabled={reporting}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 14,
+                  border: 'none', background: '#E57373',
+                  color: '#fff', fontFamily: "'Figtree', sans-serif",
+                  fontSize: 13, fontWeight: 700, cursor: reporting ? 'default' : 'pointer',
+                  opacity: reporting ? 0.7 : 1,
+                }}
+              >
+                {reporting ? 'Enviando...' : 'Sim, denunciar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <div className="toast">{toast}</div>}
     </div>
   )
 }
