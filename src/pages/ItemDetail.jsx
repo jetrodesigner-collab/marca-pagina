@@ -76,6 +76,43 @@ function PencilIcon() {
   )
 }
 
+function PlayIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff">
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
+}
+
+function PauseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff">
+      <rect x="6" y="5" width="4" height="14" />
+      <rect x="14" y="5" width="4" height="14" />
+    </svg>
+  )
+}
+
+function MuteIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="3 9 7 9 11 5 11 19 7 15 3 15" fill="#fff" stroke="none" />
+      <line x1="16" y1="9" x2="22" y2="15" />
+      <line x1="22" y1="9" x2="16" y2="15" />
+    </svg>
+  )
+}
+
+function UnmuteIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="3 9 7 9 11 5 11 19 7 15 3 15" fill="#fff" stroke="none" />
+      <path d="M15.5 8.5a4.5 4.5 0 0 1 0 7" />
+      <path d="M18 6a8 8 0 0 1 0 12" />
+    </svg>
+  )
+}
+
 function formatExcerptDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
@@ -85,7 +122,9 @@ function extractYouTubeId(url) {
   return match ? match[1] : null
 }
 
-const YT_EMBED_PARAMS = 'autoplay=1&mute=1&controls=1&rel=0&playsinline=1&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&cc_load_policy=0'
+// controls=0 esconde toda a barra do YouTube; play/pause e mute ficam por conta dos
+// botões próprios (via postMessage para o player, exige enablejsapi=1)
+const YT_EMBED_PARAMS = 'autoplay=1&mute=1&controls=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1'
 
 function findYouTubeTrailer(data) {
   const trailer = (data?.results || []).find(v => v.type === 'Trailer' && v.site === 'YouTube')
@@ -151,8 +190,11 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [showTrailerInput, setShowTrailerInput] = useState(false)
   const [trailerInputValue, setTrailerInputValue] = useState('')
   const [savingTrailer,   setSavingTrailer]   = useState(false)
+  const [trailerMuted,    setTrailerMuted]    = useState(true)
+  const [trailerPlaying,  setTrailerPlaying]  = useState(true)
   const synRef = useRef(null)
   const reviewRef = useRef(null)
+  const trailerIframeRef = useRef(null)
 
   const isBook       = localItem.type === 'book'
   const themeClass   = theme === 'L' ? 'light' : 'dark'
@@ -485,6 +527,41 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     }
   }
 
+  function sendTrailerCommand(func) {
+    trailerIframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func, args: [] }),
+      'https://www.youtube.com'
+    )
+  }
+
+  function toggleTrailerMute() {
+    sendTrailerCommand(trailerMuted ? 'unMute' : 'mute')
+    setTrailerMuted(m => !m)
+  }
+
+  function toggleTrailerPlay() {
+    sendTrailerCommand(trailerPlaying ? 'pauseVideo' : 'playVideo')
+    setTrailerPlaying(p => !p)
+  }
+
+  const trailerCtrlBtnStyle = {
+    width: 32, height: 32, borderRadius: '50%', border: 'none',
+    background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', padding: 0,
+  }
+
+  const trailerControls = (
+    <div style={{ position: 'absolute', bottom: 10, left: 10, zIndex: 3, display: 'flex', gap: 8 }}>
+      <button type="button" onClick={toggleTrailerPlay} style={trailerCtrlBtnStyle} aria-label={trailerPlaying ? 'Pausar trailer' : 'Reproduzir trailer'}>
+        {trailerPlaying ? <PauseIcon /> : <PlayIcon />}
+      </button>
+      <button type="button" onClick={toggleTrailerMute} style={trailerCtrlBtnStyle} aria-label={trailerMuted ? 'Ativar som' : 'Mutar trailer'}>
+        {trailerMuted ? <MuteIcon /> : <UnmuteIcon />}
+      </button>
+    </div>
+  )
+
   function openTrailerInput() {
     setTrailerInputValue(manualTrailerUrl || '')
     setShowTrailerInput(true)
@@ -614,16 +691,16 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
           {!isBook && !localItem.is_manual && trailerKey && (
             <div style={{ position: 'relative', marginLeft: -22, marginRight: -22, marginTop: -16, marginBottom: 16 }}>
               <iframe
+                ref={trailerIframeRef}
                 title="Trailer"
                 src={`https://www.youtube.com/embed/${trailerKey}?${YT_EMBED_PARAMS}`}
                 style={{ display: 'block', width: '100%', height: 220, border: 'none', borderRadius: 0 }}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
               />
-              {/* bloqueia a barra inferior do player (progresso/título) */}
-              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 40, background: 'transparent', pointerEvents: 'all' }} />
               {/* degradê de transição estilo Netflix */}
               <div style={{ position: 'relative', zIndex: 2, height: 80, marginTop: -80, background: 'linear-gradient(to bottom, transparent, var(--fade))', pointerEvents: 'none' }} />
+              {trailerControls}
             </div>
           )}
 
@@ -633,16 +710,16 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
               {manualTrailerUrl && !showTrailerInput && (
                 <div style={{ position: 'relative', marginLeft: -22, marginRight: -22, marginTop: -16, marginBottom: 16 }}>
                   <iframe
+                    ref={trailerIframeRef}
                     title="Trailer"
                     src={`https://www.youtube.com/embed/${extractYouTubeId(manualTrailerUrl)}?${YT_EMBED_PARAMS}`}
                     style={{ display: 'block', width: '100%', height: 220, border: 'none', borderRadius: 0 }}
                     allow="autoplay; encrypted-media; picture-in-picture"
                     allowFullScreen
                   />
-                  {/* bloqueia a barra inferior do player (progresso/título) */}
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 40, background: 'transparent', pointerEvents: 'all' }} />
                   {/* degradê de transição estilo Netflix */}
                   <div style={{ position: 'relative', zIndex: 2, height: 80, marginTop: -80, background: 'linear-gradient(to bottom, transparent, var(--fade))', pointerEvents: 'none' }} />
+                  {trailerControls}
                   {localItem.created_by === session.user.id && (
                     <div
                       onClick={openTrailerInput}
