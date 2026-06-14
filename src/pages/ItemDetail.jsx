@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import ReadingProgress from '../components/books/ReadingProgress'
-import CommentThread from '../components/comments/CommentThread'
+import CommentThread, { Avatar } from '../components/comments/CommentThread'
+import { useComments } from '../hooks/useComments'
+import { formatCommentDate } from '../utils/formatDate'
 
 const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
 const FILM_COLORS  = ['f1','f2','f3','f4','f5','f6']
@@ -164,6 +166,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [isPublic,     setIsPublic]     = useState(false)
   const [saving,       setSaving]       = useState(false)
   const [savedReview,  setSavedReview]  = useState(null)
+  const [reviewLikeCount, setReviewLikeCount] = useState(0)
   const [reviewExpanded, setReviewExpanded] = useState(false)
   const [deleteReviewConfirm, setDeleteReviewConfirm] = useState(false)
   const [toast,        setToast]        = useState(null)
@@ -210,7 +213,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     if (!localItem.id || !localUserItem) return
     supabase
       .from('reviews')
-      .select('body, is_public')
+      .select('id, body, is_public')
       .eq('user_id', session.user.id)
       .eq('item_id', localItem.id)
       .maybeSingle()
@@ -222,6 +225,24 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
         }
       })
   }, [localItem.id, localUserItem?.id, session.user.id])
+
+  // Curtidas e comentários recebidos na resenha pessoal
+  const { comments: reviewComments, count: reviewCommentCount } = useComments(
+    savedReview?.id ? { reviewId: savedReview.id } : {},
+    session.user.id
+  )
+
+  useEffect(() => {
+    if (!savedReview?.id) {
+      setReviewLikeCount(0)
+      return
+    }
+    supabase
+      .from('review_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('review_id', savedReview.id)
+      .then(({ count }) => setReviewLikeCount(count || 0))
+  }, [savedReview?.id])
 
   // Some o toast automaticamente após alguns segundos
   useEffect(() => {
@@ -988,6 +1009,34 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
                     <button className={`pb${!isPublic ? ' on' : ''}`} onClick={() => handlePrivacyClick(false)}>🔒 Privado</button>
                     <button className={`pb${isPublic  ? ' on' : ''}`} onClick={() => handlePrivacyClick(true)}>🌐 Público</button>
                   </div>
+
+                  {savedReview?.id && (
+                    <div style={{ marginTop: 18 }}>
+                      <div className="bl">Comentários ({reviewCommentCount})</div>
+                      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 12 }}>
+                        ❤️ {reviewLikeCount} curtida{reviewLikeCount === 1 ? '' : 's'}
+                      </div>
+
+                      {reviewComments.length === 0 ? (
+                        <div style={{ fontSize: 11, color: 'var(--muted)' }}>Ninguém comentou ainda.</div>
+                      ) : (
+                        <div className="comments-section">
+                          {reviewComments.map(c => (
+                            <div className="cmt-item" key={c.id}>
+                              <Avatar profile={c.profiles} userId={c.user_id} />
+                              <div className="cmt-body">
+                                <div className="cmt-name">{c.profiles?.username || c.profiles?.full_name || 'Usuário'}</div>
+                                <div className="cmt-text">{c.content}</div>
+                                <div className="cmt-meta">
+                                  <span className="cmt-time">{formatCommentDate(c.created_at)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

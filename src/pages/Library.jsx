@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { CURATED_BOOKS, CURATED_MOVIES } from '../data/curatedList'
 import ShelvesSection from '../components/books/ShelvesSection'
+import NotificationBell from '../components/NotificationBell'
 
 const TMDB_KEY = import.meta.env.VITE_TMDB_API_KEY
 const GB_KEY   = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY
@@ -914,14 +915,17 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
         {/* Topbar */}
         <div className="topbar">
           <div className="logo">marca<em>·página</em></div>
-          <div
-            className="av"
-            style={profile?.avatar_url ? { padding: 0, overflow: 'hidden' } : {}}
-            onClick={() => onNavigate('profile')}
-          >
-            {profile?.avatar_url
-              ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : initial}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <NotificationBell session={session} />
+            <div
+              className="av"
+              style={profile?.avatar_url ? { padding: 0, overflow: 'hidden' } : {}}
+              onClick={() => onNavigate('profile')}
+            >
+              {profile?.avatar_url
+                ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : initial}
+            </div>
           </div>
         </div>
 

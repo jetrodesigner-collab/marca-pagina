@@ -10,7 +10,7 @@ function hashToIndex(str, mod) {
   return Math.abs(hash) % mod
 }
 
-function Avatar({ profile, userId, size = 28 }) {
+export function Avatar({ profile, userId, size = 28 }) {
   const [err, setErr] = useState(false)
   const name = profile?.username || profile?.full_name || '?'
   const initial = name.charAt(0).toUpperCase()

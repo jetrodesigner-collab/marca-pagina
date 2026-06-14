@@ -24,12 +24,6 @@ export default function Login({ onShowSignup }) {
     if (error) setError(error.message)
   }
 
-  async function handleGoogle() {
-    resetMessages()
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' })
-    if (error) setError(error.message)
-  }
-
   async function handleRecover(e) {
     e.preventDefault()
     resetMessages()
@@ -61,10 +55,6 @@ export default function Login({ onShowSignup }) {
             {error && <p className="ferr">{error}</p>}
             <button className="savebtn" type="submit" disabled={loading}>
               {loading ? 'Entrando…' : 'Entrar →'}
-            </button>
-            <div className="dor"><span>ou</span></div>
-            <button className="gbtn" type="button" onClick={handleGoogle}>
-              <span style={{ fontSize: 16, fontWeight: 800 }}>G</span> Continuar com Google
             </button>
           </form>
         ) : (
