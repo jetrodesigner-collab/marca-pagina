@@ -28,7 +28,9 @@ export default function Login({ onShowSignup }) {
     e.preventDefault()
     resetMessages()
     setLoading(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://marca-pagina.vercel.app',
+    })
     setLoading(false)
     if (error) setError(error.message)
     else setInfo('Enviamos um link de recuperação para o seu e-mail.')

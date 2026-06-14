@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import { useLastSeen } from './hooks/useLastSeen'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import ResetPassword from './pages/ResetPassword'
 import CompleteProfile from './pages/CompleteProfile'
 import Library from './pages/Library'
 import Search from './pages/Search'
@@ -21,6 +22,7 @@ export default function App() {
   const [profileExists, setProfileExists] = useState(false)
   const [loading, setLoading] = useState(true)
   const [authView, setAuthView] = useState('login')
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
   const [screen, setScreen] = useState('library')
   const [itemContext, setItemContext] = useState(null) // { item, userItem }
   const [profileContext, setProfileContext] = useState(null) // { userId }
@@ -82,8 +84,10 @@ export default function App() {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
+      if (_event === 'PASSWORD_RECOVERY') setPasswordRecovery(true)
       if (!newSession) {
         setProfileExists(false)
+        setPasswordRecovery(false)
         navStackRef.current = ['library']
         window.history.replaceState({ screen: 'library' }, '')
         setScreen('library')
@@ -96,6 +100,10 @@ export default function App() {
   }, [])
 
   if (loading) return null
+
+  if (passwordRecovery && session) {
+    return <ResetPassword />
+  }
 
   if (!session) {
     return authView === 'login'
