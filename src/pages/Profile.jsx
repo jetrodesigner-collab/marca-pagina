@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { moderateImage } from '../utils/moderateImage'
-import { usePosts } from '../hooks/usePosts'
-import PostCard from '../components/community/PostCard'
 
 const BLOBS = [
   { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
@@ -26,8 +24,6 @@ export default function Profile({ session, onNavigate }) {
   const [deleting,  setDeleting] = useState(false)
   const [isAdmin,   setIsAdmin]  = useState(false)
   const avatarInputRef = useRef(null)
-
-  const { posts: myPosts, loading: postsLoading, toggleLike: toggleMyPostLike, deletePost } = usePosts(session.user.id, session.user.id)
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
 
@@ -337,28 +333,6 @@ export default function Profile({ session, onNavigate }) {
               </>
             )}
           </div>
-
-          <div className="sec-t" style={{ marginTop: 24 }}>Meus posts na comunidade</div>
-          {postsLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
-              <div className="spin" />
-            </div>
-          ) : myPosts.length === 0 ? (
-            <div style={{ fontSize: 11, color: 'var(--muted)', padding: '4px 0 16px' }}>
-              Você ainda não fez nenhum post na comunidade.
-            </div>
-          ) : (
-            myPosts.map(post => (
-              <PostCard
-                key={post.id}
-                post={post}
-                currentUserId={session.user.id}
-                onNavigate={onNavigate}
-                onToggleLike={toggleMyPostLike}
-                onDelete={deletePost}
-              />
-            ))
-          )}
 
           <button className="signout-btn" onClick={handleSignOut}>
             Sair da conta
