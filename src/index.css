@@ -639,6 +639,18 @@ select.finp { appearance: none; cursor: pointer; }
 .mycmt-text { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; overflow-wrap: break-word; }
 .mycmt-meta { font-size: 10px; color: var(--muted); }
 
+/* ── Minhas resenhas ── */
+.myrev-item { background: var(--sur); border: 1px solid var(--bor); border-radius: 16px; padding: 13px 14px; margin-bottom: 10px; display: flex; gap: 10px; backdrop-filter: blur(16px); }
+.myrev-cov { width: 46px; height: 66px; border-radius: 7px; flex-shrink: 0; object-fit: cover; }
+.myrev-body { flex: 1; min-width: 0; }
+.myrev-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; word-break: break-word; overflow-wrap: break-word; }
+.myrev-stars { gap: 3px; margin-bottom: 6px; }
+.myrev-stars .star { font-size: 13px; cursor: default; }
+.myrev-stars .star:hover { transform: none; }
+.myrev-text { font-size: 12px; color: var(--text2); line-height: 1.55; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; overflow-wrap: break-word; }
+.myrev-meta { font-size: 10px; color: var(--muted); margin-bottom: 8px; }
+.myrev-actions { display: flex; gap: 8px; }
+
 /* ── Responsive breakpoints ── */
 @media (min-width: 640px) {
   .bc   { width: 118px; }

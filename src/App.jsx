@@ -13,6 +13,7 @@ import Community from './pages/Community'
 import PublicProfile from './pages/PublicProfile'
 import PostForm from './pages/PostForm'
 import MyComments from './pages/MyComments'
+import MyReviews from './pages/MyReviews'
 import ManualBookEntry from './pages/ManualBookEntry'
 import ManualMovieEntry from './pages/ManualMovieEntry'
 import AdminPanel from './pages/AdminPanel'
@@ -123,6 +124,7 @@ export default function App() {
         userItem={itemContext.userItem}
         isOwner={itemContext.isOwner ?? true}
         initialTab={itemContext.initialTab}
+        initialReviewEdit={itemContext.initialReviewEdit}
         onBack={() => {
           if (itemContext.origin?.collectionId) {
             setLibraryReopen({ category: itemContext.origin.category, collectionId: itemContext.origin.collectionId })
@@ -165,6 +167,10 @@ export default function App() {
 
   if (screen === 'myComments') {
     return <MyComments session={session} onNavigate={navigate} />
+  }
+
+  if (screen === 'myReviews') {
+    return <MyReviews session={session} onNavigate={navigate} />
   }
 
   if (screen === 's9') {

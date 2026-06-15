@@ -331,6 +331,10 @@ export default function Profile({ session, onNavigate }) {
             Ver todos os comentários que fiz
           </button>
 
+          <button className="viewall-btn" onClick={() => onNavigate('myReviews')}>
+            ✍️ Ver todas as resenhas que fiz
+          </button>
+
           <button className="signout-btn" onClick={handleSignOut}>
             Sair da conta
           </button>

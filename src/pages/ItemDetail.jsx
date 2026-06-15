@@ -155,7 +155,7 @@ async function fetchTmdbTrailerKey(tmdbId) {
   return null
 }
 
-export default function ItemDetail({ session, item: itemProp, userItem: userItemProp, isOwner = true, onBack, onUserItemUpdate, onNavigate, initialTab = 'R' }) {
+export default function ItemDetail({ session, item: itemProp, userItem: userItemProp, isOwner = true, onBack, onUserItemUpdate, onNavigate, initialTab = 'R', initialReviewEdit = false }) {
   const [theme]        = useState(() => localStorage.getItem('tema') || 'D')
   const [activeTab,    setActiveTab]    = useState(initialTab)
   const [localItem,    setLocalItem]    = useState(itemProp)
@@ -250,6 +250,14 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
     const t = setTimeout(() => setToast(null), 2400)
     return () => clearTimeout(t)
   }, [toast])
+
+  // Abre a resenha já em modo de edição (vindo de "Minhas Resenhas")
+  useEffect(() => {
+    if (!initialReviewEdit) return
+    setReviewExpanded(true)
+    setTimeout(() => reviewRef.current?.focus(), 100)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Expande/recolhe a caixa de resenha
   useEffect(() => {
