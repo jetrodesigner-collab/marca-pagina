@@ -253,7 +253,7 @@ select.finp { appearance: none; cursor: pointer; }
 .mt.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
 
 /* ── Área de scroll ── */
-.sc { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 22px 28px; scrollbar-width: none; }
+.sc { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 22px 96px; scrollbar-width: none; }
 .sc::-webkit-scrollbar { display: none; }
 .sc-top { padding-top: var(--top-pad); }
 
@@ -443,7 +443,7 @@ select.finp { appearance: none; cursor: pointer; }
 .sts-btn.on { border-color: rgba(139,111,174,.45); color: var(--accent); background: rgba(196,184,232,.15); }
 
 /* ── Bottom navigation ── */
-.bnav { display: flex; padding: 10px 0 30px; flex-shrink: 0; background: var(--nav); backdrop-filter: blur(20px); border-top: 1px solid var(--bor); }
+.bnav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; padding: 10px 0; padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); background: var(--nav); backdrop-filter: blur(20px); border-top: 1px solid var(--bor); }
 .ni { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 5px 0; transition: all .15s; }
 .nic { font-size: 20px; line-height: 1; }
 .nla { font-size: 9px; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; transition: color .2s; }
@@ -672,7 +672,6 @@ select.finp { appearance: none; cursor: pointer; }
   .sc   { padding-left: 28px; padding-right: 28px; }
   .qbox { margin-left: 28px; margin-right: 28px; }
   .mtabs { padding: 0 28px; }
-  .bnav  { padding-bottom: 20px; }
 }
 
 /* ── Largura máxima em telas maiores (tablet/desktop) ── */

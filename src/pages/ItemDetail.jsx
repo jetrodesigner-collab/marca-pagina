@@ -1197,7 +1197,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       </div>
 
       {/* Bottom navigation — sempre fixa no rodapé da tela, fora da área com scroll */}
-      <div className="bnav" style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 5 }}>
+      <div className="bnav">
         <div className="ni" onClick={() => onNavigate('library')}>
           <span className="nic">📚</span>
           <span className="nla">Biblioteca</span>
