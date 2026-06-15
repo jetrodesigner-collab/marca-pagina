@@ -273,7 +273,7 @@ export default function Profile({ session, onNavigate }) {
             </div>
             <div className="pstat pstat-click" onClick={() => onNavigate('followers', { userId: session.user.id })}>
               <div className="pstat-n">{stats.followers}</div>
-              <div className="pstat-l">👥 Seguidores</div>
+              <div className="pstat-l">Seguidores</div>
             </div>
           </div>
 
