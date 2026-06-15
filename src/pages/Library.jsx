@@ -129,8 +129,20 @@ function ItemCard({ item, onClick }) {
   const initials = item.title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
   const colors = item.type === 'movie' ? FILM_COLORS : COVER_COLORS
   const cls = colors[item.title.charCodeAt(0) % colors.length]
+  const touch = useRef({ moved: false, x: 0, y: 0 })
 
+  function handleTouchStart(e) {
+    const t = e.touches[0]
+    touch.current = { moved: false, x: t.clientX, y: t.clientY }
+  }
+  function handleTouchMove(e) {
+    const t = e.touches[0]
+    if (Math.abs(t.clientX - touch.current.x) > 10 || Math.abs(t.clientY - touch.current.y) > 10) {
+      touch.current.moved = true
+    }
+  }
   function handleTouchEnd(e) {
+    if (touch.current.moved) return
     e.preventDefault()
     onClick()
   }
@@ -141,6 +153,8 @@ function ItemCard({ item, onClick }) {
       role="button"
       tabIndex={0}
       onClick={onClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
     >
@@ -162,8 +176,20 @@ function GridCard({ item, onClick, inLibrary }) {
   const initials = item.title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
   const colors = item.type === 'movie' ? FILM_COLORS : COVER_COLORS
   const cls = colors[item.title.charCodeAt(0) % colors.length]
+  const touch = useRef({ moved: false, x: 0, y: 0 })
 
+  function handleTouchStart(e) {
+    const t = e.touches[0]
+    touch.current = { moved: false, x: t.clientX, y: t.clientY }
+  }
+  function handleTouchMove(e) {
+    const t = e.touches[0]
+    if (Math.abs(t.clientX - touch.current.x) > 10 || Math.abs(t.clientY - touch.current.y) > 10) {
+      touch.current.moved = true
+    }
+  }
   function handleTouchEnd(e) {
+    if (touch.current.moved) return
     e.preventDefault()
     onClick()
   }
@@ -174,6 +200,8 @@ function GridCard({ item, onClick, inLibrary }) {
       role="button"
       tabIndex={0}
       onClick={onClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
       style={{ position: 'relative' }}

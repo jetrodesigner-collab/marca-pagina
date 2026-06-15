@@ -124,13 +124,9 @@ export default function AdminPanel({ session, onNavigate }) {
   const [isAdmin,  setIsAdmin]  = useState(false)
   const [loading,  setLoading]  = useState(true)
   const [pending,  setPending]  = useState([])
-  const [approved, setApproved] = useState([])
-  const [rejected, setRejected] = useState([])
   const [reports,  setReports]  = useState([])
   const [usernames, setUsernames] = useState({})
   const [toast, setToast] = useState(null)
-  const [confirmDelete, setConfirmDelete] = useState(null)
-  const [deleting, setDeleting] = useState(false)
   const [confirmReportAccount, setConfirmReportAccount] = useState(null)
   const [processingReport, setProcessingReport] = useState(false)
 
@@ -159,18 +155,14 @@ export default function AdminPanel({ session, onNavigate }) {
 
   async function loadAll() {
     setLoading(true)
-    const [{ data: p }, { data: a }, { data: r }, { data: rep }] = await Promise.all([
+    const [{ data: p }, { data: rep }] = await Promise.all([
       supabase.from('items').select('*').eq('is_manual', true).eq('status', 'pending').order('created_at', { ascending: false }),
-      supabase.from('items').select('*').eq('is_manual', true).eq('status', 'approved').order('created_at', { ascending: false }),
-      supabase.from('items').select('*').eq('is_manual', true).eq('status', 'rejected').order('created_at', { ascending: false }),
       supabase.from('reports').select('*').order('created_at', { ascending: false }),
     ])
     setPending(p || [])
-    setApproved(a || [])
-    setRejected(r || [])
     setReports(rep || [])
 
-    const itemIds = [...(p || []), ...(a || []), ...(r || [])].map(i => i.created_by).filter(Boolean)
+    const itemIds = (p || []).map(i => i.created_by).filter(Boolean)
     const reportIds = (rep || []).flatMap(x => [x.reporter_id, x.reported_id])
     const ids = [...new Set([...itemIds, ...reportIds])]
     if (ids.length > 0) {
@@ -187,36 +179,24 @@ export default function AdminPanel({ session, onNavigate }) {
   }, [isAdmin])
 
   async function approveItem(item) {
+    setPending(prev => prev.filter(i => i.id !== item.id))
     const { error } = await supabase.from('items').update({ status: 'approved' }).eq('id', item.id)
     if (!error) {
       setToast('Livro aprovado')
-      loadAll()
     } else {
       setToast('Erro ao aprovar livro')
+      loadAll()
     }
   }
 
   async function rejectItem(item) {
+    setPending(prev => prev.filter(i => i.id !== item.id))
     const { error } = await supabase.from('items').update({ status: 'rejected' }).eq('id', item.id)
     if (!error) {
       setToast('Livro rejeitado')
-      loadAll()
     } else {
       setToast('Erro ao rejeitar livro')
-    }
-  }
-
-  async function confirmDeleteItem() {
-    if (!confirmDelete || deleting) return
-    setDeleting(true)
-    const { error } = await supabase.from('items').delete().eq('id', confirmDelete.id)
-    setDeleting(false)
-    setConfirmDelete(null)
-    if (!error) {
-      setToast('Livro excluído')
       loadAll()
-    } else {
-      setToast('Erro ao excluir livro')
     }
   }
 
@@ -302,28 +282,6 @@ export default function AdminPanel({ session, onNavigate }) {
                 ))
               )}
 
-              <div className="sec-t" style={{ marginTop: 22 }}>Manuais aprovados</div>
-              {approved.length === 0 ? (
-                <EmptyState icon="📚" text="Nenhum livro manual aprovado ainda" />
-              ) : (
-                approved.map(item => (
-                  <ItemRow key={item.id} item={item} username={usernames[item.created_by]}>
-                    <ActionBtn onClick={() => setConfirmDelete(item)} danger>🗑 Deletar</ActionBtn>
-                  </ItemRow>
-                ))
-              )}
-
-              <div className="sec-t" style={{ marginTop: 22 }}>Rejeitados</div>
-              {rejected.length === 0 ? (
-                <EmptyState icon="🗂" text="Nenhum livro rejeitado" />
-              ) : (
-                rejected.map(item => (
-                  <ItemRow key={item.id} item={item} username={usernames[item.created_by]}>
-                    <ActionBtn onClick={() => setConfirmDelete(item)} danger>🗑 Deletar definitivamente</ActionBtn>
-                  </ItemRow>
-                ))
-              )}
-
               <div className="sec-t" style={{ marginTop: 22 }}>Denúncias</div>
               {reports.length === 0 ? (
                 <EmptyState icon="🛡️" text="Nenhuma denúncia registrada" />
@@ -364,61 +322,6 @@ export default function AdminPanel({ session, onNavigate }) {
           </div>
         </div>
       </div>
-
-      {confirmDelete && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 200,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(4px)',
-            padding: '0 20px',
-          }}
-          onClick={e => { if (e.target === e.currentTarget) setConfirmDelete(null) }}
-        >
-          <div style={{
-            width: '100%', maxWidth: 360,
-            background: 'var(--bg)', backgroundImage: 'var(--bg)',
-            border: '1px solid var(--bor)',
-            borderRadius: 22, padding: '24px 20px',
-            backdropFilter: 'blur(24px)',
-            boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
-          }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', textAlign: 'center', marginBottom: 8 }}>
-              Excluir "{confirmDelete.title}"?
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text2)', textAlign: 'center', lineHeight: 1.55, marginBottom: 22 }}>
-              Esse livro e todas as anotações relacionadas serão excluídos permanentemente.
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => setConfirmDelete(null)}
-                style={{
-                  flex: 1, padding: '12px 0', borderRadius: 14,
-                  border: '1px solid var(--bor2)', background: 'var(--sur)',
-                  color: 'var(--text)', fontFamily: "'Figtree', sans-serif",
-                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmDeleteItem}
-                disabled={deleting}
-                style={{
-                  flex: 1, padding: '12px 0', borderRadius: 14,
-                  border: 'none', background: '#E57373',
-                  color: '#fff', fontFamily: "'Figtree', sans-serif",
-                  fontSize: 13, fontWeight: 700, cursor: deleting ? 'default' : 'pointer',
-                  opacity: deleting ? 0.7 : 1,
-                }}
-              >
-                {deleting ? 'Excluindo...' : 'Excluir'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {confirmReportAccount && (
         <div

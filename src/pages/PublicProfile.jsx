@@ -75,6 +75,13 @@ function ReviewCard({ review, currentUserId, onToggleLike }) {
         <div className="prcbk">
           {review.items?.title}{(review.items?.author || review.items?.director) ? ` · ${review.items.author || review.items.director}` : ''}
         </div>
+        {review.rating > 0 && (
+          <div className="stars myrev-stars">
+            {[1, 2, 3, 4, 5].map(n => (
+              <span key={n} className={`star${review.rating >= n ? ' on' : ''}`}>★</span>
+            ))}
+          </div>
+        )}
         <ExpandableText text={review.body} />
         <div className="prcd">{formatCommentDate(review.created_at)} · 🌐 Pública</div>
         <div className="post-actions">
