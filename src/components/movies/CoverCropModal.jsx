@@ -168,7 +168,7 @@ export default function CoverCropModal({ file, onCancel, onConfirm }) {
       if (!blob) return
       const webpFile = new File([blob], file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' })
       onConfirm(webpFile)
-    }, 'image/webp', 0.85)
+    }, 'image/webp', 0.82)
   }
 
   return (
