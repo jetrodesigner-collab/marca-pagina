@@ -138,7 +138,7 @@ function normalizeTitleForCurated(s) {
 const CURATED_BOOK_TITLES  = new Set(CURATED_BOOKS.map(b => normalizeTitleForCurated(b.title)))
 const CURATED_MOVIE_TITLES = new Set(CURATED_MOVIES.map(m => normalizeTitleForCurated(m.title)))
 
-export default function Search({ session, onNavigate }) {
+export default function Search({ session, onNavigate, searchContext }) {
   const [profile, setProfile]           = useState(null)
   const [activeTab, setActiveTab]       = useState(() => sessionStorage.getItem('lib_active_tab') || 'L')
   const [theme]                         = useState(() => localStorage.getItem('tema') || 'D')
@@ -470,7 +470,7 @@ export default function Search({ session, onNavigate }) {
 
       const { error: uiErr } = await supabase
         .from('user_items')
-        .insert({ user_id: session.user.id, item_id: itemId, status: 'want_to_watch' })
+        .insert({ user_id: session.user.id, item_id: itemId, status: searchContext?.fromStatus || 'want_to_watch' })
       if (uiErr) throw uiErr
 
       setItemStatus(s => ({ ...s, [key]: 'added' }))

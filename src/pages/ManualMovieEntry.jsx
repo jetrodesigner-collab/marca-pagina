@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { moderateImage } from '../utils/moderateImage'
+import CoverCropModal from '../components/movies/CoverCropModal'
 
 const BLOBS = [
   { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
@@ -32,6 +33,7 @@ export default function ManualMovieEntry({ session, onNavigate }) {
   const [status,   setStatus]   = useState('want_to_watch')
   const [coverFile,    setCoverFile]    = useState(null)
   const [coverPreview, setCoverPreview] = useState(null)
+  const [cropFile,     setCropFile]     = useState(null)
   const [saving,  setSaving]  = useState(false)
   const [error,   setError]   = useState(null)
   const [toast,   setToast]   = useState(null)
@@ -53,8 +55,13 @@ export default function ManualMovieEntry({ session, onNavigate }) {
       setToast(result.reason || 'Imagem não permitida')
       return
     }
-    setCoverFile(file)
-    setCoverPreview(URL.createObjectURL(file))
+    setCropFile(file)
+  }
+
+  function handleCropConfirm(webpFile) {
+    setCoverFile(webpFile)
+    setCoverPreview(URL.createObjectURL(webpFile))
+    setCropFile(null)
   }
 
   async function handleSubmit() {
@@ -198,6 +205,14 @@ export default function ManualMovieEntry({ session, onNavigate }) {
       </div>
 
       {toast && <div className="toast">{toast}</div>}
+
+      {cropFile && (
+        <CoverCropModal
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   )
 }

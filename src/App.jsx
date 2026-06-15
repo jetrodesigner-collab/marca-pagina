@@ -29,6 +29,7 @@ export default function App() {
   const [screen, setScreen] = useState('library')
   const [itemContext, setItemContext] = useState(null) // { item, userItem }
   const [profileContext, setProfileContext] = useState(null) // { userId }
+  const [searchContext, setSearchContext] = useState(null) // { fromStatus }
   const [postContext, setPostContext] = useState(null) // { post }
   const [libraryReopen, setLibraryReopen] = useState(null) // { category, collectionId }
   const navStackRef = useRef(['library'])
@@ -41,6 +42,7 @@ export default function App() {
     if (target === 'item' && payload) setItemContext(payload)
     if (target === 'publicProfile' && payload) setProfileContext(payload)
     if (target === 'followers' && payload) setProfileContext(payload)
+    if (target === 'search') setSearchContext(payload)
     if (target === 'postForm') setPostContext(payload)
   }
 
@@ -141,7 +143,7 @@ export default function App() {
   }
 
   if (screen === 'search') {
-    return <Search session={session} onNavigate={navigate} />
+    return <Search session={session} onNavigate={navigate} searchContext={searchContext} />
   }
 
   if (screen === 'profile') {

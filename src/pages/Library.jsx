@@ -130,8 +130,20 @@ function ItemCard({ item, onClick }) {
   const colors = item.type === 'movie' ? FILM_COLORS : COVER_COLORS
   const cls = colors[item.title.charCodeAt(0) % colors.length]
 
+  function handleTouchEnd(e) {
+    e.preventDefault()
+    onClick()
+  }
+
   return (
-    <div className="bc" onClick={onClick}>
+    <div
+      className="bc"
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onTouchEnd={handleTouchEnd}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
+    >
       {item.cover_url && !imgErr ? (
         <img className="cov" src={item.cover_url} alt="" style={{ objectFit: 'cover' }} onError={() => setImgErr(true)} />
       ) : (
@@ -151,8 +163,21 @@ function GridCard({ item, onClick, inLibrary }) {
   const colors = item.type === 'movie' ? FILM_COLORS : COVER_COLORS
   const cls = colors[item.title.charCodeAt(0) % colors.length]
 
+  function handleTouchEnd(e) {
+    e.preventDefault()
+    onClick()
+  }
+
   return (
-    <div className="gc" onClick={onClick} style={{ position: 'relative' }}>
+    <div
+      className="gc"
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onTouchEnd={handleTouchEnd}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
+      style={{ position: 'relative' }}
+    >
       {item.cover_url && !imgErr ? (
         <img className="gcov" src={item.cover_url} alt="" style={{ objectFit: 'cover' }} onError={() => setImgErr(true)} />
       ) : (
@@ -897,8 +922,8 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
     onNavigate('item', { item, userItem, isOwner: true, origin })
   }
 
-  function goToSearch() {
-    onNavigate('search')
+  function goToSearch(fromStatus) {
+    onNavigate('search', fromStatus ? { fromStatus } : null)
   }
 
   return (
@@ -960,9 +985,9 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
 
         {/* Filmes */}
         <div className="sc" style={{ display: activeTab === 'F' ? undefined : 'none' }}>
-          <StatusSection label="Assistindo" badgeClass="BL" dotClass="DL" userItems={watching}    onItemClick={goToItem} onAddClick={goToSearch} />
-          <StatusSection label="Quero Ver"  badgeClass="BQ" dotClass="DQ" userItems={wantToWatch} onItemClick={goToItem} onAddClick={goToSearch} />
-          <StatusSection label="Assistidos" badgeClass="BD" dotClass="DD" userItems={watched}     onItemClick={goToItem} onAddClick={goToSearch} />
+          <StatusSection label="Assistindo" badgeClass="BL" dotClass="DL" userItems={watching}    onItemClick={goToItem} onAddClick={() => goToSearch('watching')} />
+          <StatusSection label="Quero Ver"  badgeClass="BQ" dotClass="DQ" userItems={wantToWatch} onItemClick={goToItem} onAddClick={() => goToSearch('want_to_watch')} />
+          <StatusSection label="Assistidos" badgeClass="BD" dotClass="DD" userItems={watched}     onItemClick={goToItem} onAddClick={() => goToSearch('watched')} />
           <LibrarySection tipo="F" userLibrary={allItems} onItemClick={goToItem} onManualAdd={() => onNavigate('s10')} />
         </div>
 
@@ -976,7 +1001,7 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
             <span className="nic">👥</span>
             <span className="nla">Comunidade</span>
           </div>
-          <div className="ni" onClick={goToSearch}>
+          <div className="ni" onClick={() => goToSearch()}>
             <span className="nic">🔍</span>
             <span className="nla">Buscar</span>
           </div>
