@@ -653,6 +653,9 @@ select.finp { appearance: none; cursor: pointer; }
 .myrev-stars { gap: 3px; margin-bottom: 6px; }
 .myrev-stars .star { font-size: 13px; cursor: default; }
 .myrev-stars .star:hover { transform: none; }
+.mnc-stars { gap: 2px; }
+.mnc-stars .star { font-size: 10px; cursor: default; }
+.mnc-stars .star:hover { transform: none; }
 .myrev-text { font-size: 12px; color: var(--text2); line-height: 1.55; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; overflow-wrap: break-word; }
 .myrev-meta { font-size: 10px; color: var(--muted); margin-bottom: 8px; }
 .myrev-actions { display: flex; gap: 8px; }

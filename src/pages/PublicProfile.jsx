@@ -148,6 +148,7 @@ export default function PublicProfile({ session, userId, onNavigate, onBack, ini
 
   const recentList = recentTab === 'books' ? recentBooks : recentMovies
   const hasRecent = recentBooks.length > 0 || recentMovies.length > 0
+  const reviewedItemIds = new Set(publicReviews.map(r => r.item_id))
   const hasContent = publicReviews.length > 0 || posts.length > 0
 
   return (
@@ -232,6 +233,13 @@ export default function PublicProfile({ session, userId, onNavigate, onBack, ini
                               <RecentCover item={ui.items} />
                               <div className="mnt">{ui.items.title}</div>
                               <div className="mna">{ui.items.author || ui.items.director || ''}</div>
+                              {ui.rating > 0 && !reviewedItemIds.has(ui.item_id) && (
+                                <div className="stars mnc-stars">
+                                  {[1, 2, 3, 4, 5].map(n => (
+                                    <span key={n} className={`star${ui.rating >= n ? ' on' : ''}`}>★</span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>

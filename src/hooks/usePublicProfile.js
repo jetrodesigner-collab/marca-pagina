@@ -22,7 +22,7 @@ export function usePublicProfile(userId, currentUserId) {
         .maybeSingle(),
       supabase
         .from('user_items')
-        .select('status, created_at, items(*)')
+        .select('status, created_at, rating, item_id, items(*)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false }),
       supabase
@@ -46,6 +46,9 @@ export function usePublicProfile(userId, currentUserId) {
     const movies = items.filter(ui => ui.items?.type === 'movie').length
     const recentBooksList  = items.filter(ui => ui.status === 'read' && ui.items?.type === 'book')
     const recentMoviesList = items.filter(ui => ui.status === 'watched' && ui.items?.type === 'movie')
+
+    const ratingByItemId = {}
+    items.forEach(ui => { if (ui.rating) ratingByItemId[ui.item_id] = ui.rating })
 
     const allReviews = reviewsData || []
     const publicR  = allReviews.filter(r => r.is_public)
@@ -73,6 +76,7 @@ export function usePublicProfile(userId, currentUserId) {
 
       publicReviewsWithMeta = publicR.map(r => ({
         ...r,
+        rating: ratingByItemId[r.item_id] || 0,
         likeCount: likeCounts[r.id] || 0,
         likedByMe: likedByMe.has(r.id),
         commentCount: commentCounts[r.id] || 0,
