@@ -271,7 +271,7 @@ export default function Profile({ session, onNavigate }) {
               <div className="pstat-n">{stats.reviews}</div>
               <div className="pstat-l">Resenhas</div>
             </div>
-            <div className="pstat pstat-click" onClick={() => onNavigate('followers', { userId: session.user.id })}>
+            <div className="pstat">
               <div className="pstat-n">{stats.followers}</div>
               <div className="pstat-l">Seguidores</div>
             </div>
@@ -300,6 +300,30 @@ export default function Profile({ session, onNavigate }) {
             <div className="pmitem" onClick={() => { window.location.href = 'mailto:jetrodesigner@gmail.com' }}>
               <span className="pmicon">❓</span>
               <span className="pmlab">Ajuda e suporte</span>
+              <span className="pmchev">›</span>
+            </div>
+            <div className="pmdiv" />
+            <div className="pmitem" onClick={() => onNavigate('myComments')}>
+              <span className="pmicon">💬</span>
+              <span className="pmlab">Ver todos os meus comentários</span>
+              <span className="pmchev">›</span>
+            </div>
+            <div className="pmdiv" />
+            <div className="pmitem" onClick={() => onNavigate('myReviews')}>
+              <span className="pmicon">📝</span>
+              <span className="pmlab">Ver todas as minhas resenhas</span>
+              <span className="pmchev">›</span>
+            </div>
+            <div className="pmdiv" />
+            <div className="pmitem" onClick={() => onNavigate('myPosts')}>
+              <span className="pmicon">📌</span>
+              <span className="pmlab">Ver todos os meus posts</span>
+              <span className="pmchev">›</span>
+            </div>
+            <div className="pmdiv" />
+            <div className="pmitem" onClick={() => onNavigate('followers', { userId: session.user.id })}>
+              <span className="pmicon">👥</span>
+              <span className="pmlab">Ver seguidores</span>
               <span className="pmchev">›</span>
             </div>
             {isAdmin && (
@@ -335,14 +359,6 @@ export default function Profile({ session, onNavigate }) {
               />
             ))
           )}
-
-          <button className="viewall-btn" onClick={() => onNavigate('myComments')}>
-            Ver todos os comentários que fiz
-          </button>
-
-          <button className="viewall-btn" onClick={() => onNavigate('myReviews')}>
-            ✍️ Ver todas as resenhas que fiz
-          </button>
 
           <button className="signout-btn" onClick={handleSignOut}>
             Sair da conta

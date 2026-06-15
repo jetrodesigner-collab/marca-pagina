@@ -463,7 +463,6 @@ select.finp { appearance: none; cursor: pointer; }
 .pstat:not(:last-child) { border-right: 1px solid var(--bor); }
 .pstat-n { font-size: 24px; font-weight: 800; color: var(--accent); line-height: 1; }
 .pstat-l { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
-.pstat-click { cursor: pointer; }
 .prof-menu { background: var(--sur); border: 1px solid var(--bor); border-radius: 18px; margin-bottom: 14px; backdrop-filter: blur(16px); overflow: hidden; box-shadow: 0 4px 16px var(--shad); }
 .pmitem { display: flex; align-items: center; gap: 12px; padding: 15px 16px; cursor: pointer; transition: background .15s; }
 .pmitem:hover { background: var(--sur2); }
@@ -473,9 +472,6 @@ select.finp { appearance: none; cursor: pointer; }
 .pmdiv { height: 1px; background: var(--bor); margin: 0 16px; }
 .signout-btn { width: 100%; padding: 13px; background: rgba(192,80,80,.12); border: 1.5px solid rgba(192,80,80,.35); border-radius: 14px; color: var(--red); font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 4px; margin-bottom: 28px; transition: all .2s; }
 .signout-btn:hover { background: rgba(192,80,80,.22); }
-
-.viewall-btn { width: 100%; padding: 13px; background: rgba(196,168,240,.1); border: 1.5px solid rgba(196,168,240,.35); border-radius: 14px; color: var(--accent); font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; margin: 4px 0 28px; transition: all .2s; }
-.viewall-btn:hover { background: rgba(196,168,240,.2); }
 
 .report-link { text-align: center; font-size: 11px; color: var(--red); text-decoration: underline; cursor: pointer; margin: 4px 0 24px; opacity: .75; transition: opacity .2s; }
 .report-link:hover { opacity: 1; }

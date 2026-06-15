@@ -14,6 +14,7 @@ import PublicProfile from './pages/PublicProfile'
 import PostForm from './pages/PostForm'
 import MyComments from './pages/MyComments'
 import MyReviews from './pages/MyReviews'
+import MyPosts from './pages/MyPosts'
 import ManualBookEntry from './pages/ManualBookEntry'
 import ManualMovieEntry from './pages/ManualMovieEntry'
 import AdminPanel from './pages/AdminPanel'
@@ -183,6 +184,10 @@ export default function App() {
 
   if (screen === 'myReviews') {
     return <MyReviews session={session} onNavigate={navigate} />
+  }
+
+  if (screen === 'myPosts') {
+    return <MyPosts session={session} onNavigate={navigate} />
   }
 
   if (screen === 's9') {
