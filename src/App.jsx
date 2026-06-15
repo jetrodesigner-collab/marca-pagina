@@ -17,6 +17,7 @@ import MyReviews from './pages/MyReviews'
 import ManualBookEntry from './pages/ManualBookEntry'
 import ManualMovieEntry from './pages/ManualMovieEntry'
 import AdminPanel from './pages/AdminPanel'
+import FollowersList from './pages/FollowersList'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -38,6 +39,7 @@ export default function App() {
     setScreen(target)
     if (target === 'item' && payload) setItemContext(payload)
     if (target === 'publicProfile' && payload) setProfileContext(payload)
+    if (target === 'followers' && payload) setProfileContext(payload)
     if (target === 'postForm') setPostContext(payload)
   }
 
@@ -157,6 +159,16 @@ export default function App() {
         initialContentTab={profileContext.initialContentTab}
         onNavigate={navigate}
         onBack={() => navigate('community')}
+      />
+    )
+  }
+
+  if (screen === 'followers' && profileContext) {
+    return (
+      <FollowersList
+        userId={profileContext.userId}
+        onNavigate={navigate}
+        onBack={() => window.history.back()}
       />
     )
   }

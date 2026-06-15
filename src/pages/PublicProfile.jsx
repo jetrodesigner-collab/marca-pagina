@@ -200,6 +200,7 @@ export default function PublicProfile({ session, userId, onNavigate, onBack, ini
                   <div className="pst"><span className="pstn">{stats.books}</span><span className="pstl">Livros</span></div>
                   <div className="pst"><span className="pstn">{stats.movies}</span><span className="pstl">Filmes</span></div>
                   <div className="pst"><span className="pstn">{stats.reviews}</span><span className="pstl">Resenhas</span></div>
+                  <div className="pst pst-click" onClick={() => onNavigate('followers', { userId })}><span className="pstn">{stats.followers}</span><span className="pstl">👥 Seguidores</span></div>
                 </div>
               </div>
 

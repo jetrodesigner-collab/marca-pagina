@@ -15,7 +15,7 @@ export default function Profile({ session, onNavigate }) {
   const [theme,     setTheme]    = useState(() => localStorage.getItem('tema') || 'D')
   const [apOpen,    setApOpen]   = useState(false)
   const [profile,   setProfile]  = useState(null)
-  const [stats,     setStats]    = useState({ books: 0, movies: 0, reviews: 0 })
+  const [stats,     setStats]    = useState({ books: 0, movies: 0, reviews: 0, followers: 0 })
   const [editOpen,  setEditOpen] = useState(false)
   const [editData,  setEditData] = useState({ full_name: '', bio: '', link_1: '', link_2: '' })
   const [saving,    setSaving]   = useState(false)
@@ -82,7 +82,12 @@ export default function Profile({ session, onNavigate }) {
         .select('id', { count: 'exact', head: true })
         .eq('user_id', session.user.id)
 
-      setStats({ books, movies, reviews: reviewCount || 0 })
+      const { count: followersCount } = await supabase
+        .from('follows')
+        .select('follower_id', { count: 'exact', head: true })
+        .eq('following_id', session.user.id)
+
+      setStats({ books, movies, reviews: reviewCount || 0, followers: followersCount || 0 })
     }
     loadStats()
   }, [session.user.id])
@@ -265,6 +270,10 @@ export default function Profile({ session, onNavigate }) {
             <div className="pstat">
               <div className="pstat-n">{stats.reviews}</div>
               <div className="pstat-l">Resenhas</div>
+            </div>
+            <div className="pstat pstat-click" onClick={() => onNavigate('followers', { userId: session.user.id })}>
+              <div className="pstat-n">{stats.followers}</div>
+              <div className="pstat-l">👥 Seguidores</div>
             </div>
           </div>
 

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 
 export function usePublicProfile(userId, currentUserId) {
   const [profile, setProfile] = useState(null)
-  const [stats, setStats] = useState({ books: 0, movies: 0, reviews: 0 })
+  const [stats, setStats] = useState({ books: 0, movies: 0, reviews: 0, followers: 0 })
   const [recentBooks, setRecentBooks] = useState([])
   const [recentMovies, setRecentMovies] = useState([])
   const [publicReviews, setPublicReviews] = useState([])
@@ -14,7 +14,7 @@ export function usePublicProfile(userId, currentUserId) {
   const load = useCallback(async () => {
     setLoading(true)
 
-    const [{ data: profileData }, { data: userItems }, { data: reviewsData }, { data: postsData }] = await Promise.all([
+    const [{ data: profileData }, { data: userItems }, { data: reviewsData }, { data: postsData }, { count: followersCount }] = await Promise.all([
       supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url, bio, link_1, link_2')
@@ -35,6 +35,10 @@ export function usePublicProfile(userId, currentUserId) {
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false }),
+      supabase
+        .from('follows')
+        .select('follower_id', { count: 'exact', head: true })
+        .eq('following_id', userId),
     ])
 
     const items = userItems || []
@@ -106,7 +110,7 @@ export function usePublicProfile(userId, currentUserId) {
     }
 
     setProfile(profileData)
-    setStats({ books, movies, reviews: publicReviewsWithMeta.length })
+    setStats({ books, movies, reviews: publicReviewsWithMeta.length, followers: followersCount || 0 })
     setRecentBooks(recentBooksList)
     setRecentMovies(recentMoviesList)
     setPublicReviews(publicReviewsWithMeta)
