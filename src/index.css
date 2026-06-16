@@ -671,6 +671,83 @@ select.finp { appearance: none; cursor: pointer; }
 .flw-user { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .flw-visit { flex-shrink: 0; padding: 7px 14px; border-radius: 20px; border: 1px solid rgba(196,168,240,.4); background: rgba(196,168,240,.1); color: var(--accent); font-family: 'Figtree', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 
+/* ── Nav SVG icon (Clubes) ── */
+.ni-svg { display: flex; align-items: center; justify-content: center; color: var(--muted); transition: color .2s; }
+.ni.on .ni-svg { color: var(--accent); }
+
+/* ── Clubes: hero / streak ── */
+.cl-hero { background: linear-gradient(145deg, rgba(196,168,240,.13), rgba(196,168,240,.04)); border: 1px solid rgba(196,168,240,.18); border-radius: 14px; padding: 22px; margin-bottom: 26px; position: relative; overflow: hidden; }
+.cl-hero::after { content: ''; position: absolute; top: -40px; right: -40px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(196,168,240,.18), transparent 70%); pointer-events: none; }
+.cl-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.cl-book-row { display: flex; gap: 16px; margin-bottom: 18px; }
+.cl-cover { width: 56px; height: 78px; border-radius: 6px; flex-shrink: 0; object-fit: cover; }
+.cl-cover-ph { width: 56px; height: 78px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; background: rgba(196,168,240,.1); }
+.cl-streak { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,107,53,.15); border: 1px solid rgba(255,107,53,.30); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 700; color: #FF6B35; }
+.cl-meta-pill { display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(90deg, rgba(196,168,240,.22), rgba(158,120,240,.12)); border: 1px solid rgba(196,168,240,.18); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; }
+.cl-card { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 20px; margin-bottom: 14px; display: flex; gap: 11px; align-items: center; cursor: pointer; transition: background .15s; }
+.cl-card:active { background: var(--sur2, rgba(255,255,255,.04)); }
+.cl-card-cover { width: 44px; height: 60px; border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden; }
+
+/* ── Clubes: banner detalhe ── */
+.cl-banner { height: 156px; flex-shrink: 0; position: relative; overflow: hidden; }
+.cl-banner-bg { position: absolute; inset: 0; background: linear-gradient(170deg, rgba(196,168,240,.20) 0%, var(--fade) 100%); }
+.cl-back { position: absolute; top: calc(var(--top-pad)); left: 14px; width: 32px; height: 32px; background: rgba(26,23,32,.72); backdrop-filter: blur(12px); border: 1px solid rgba(196,168,240,.15); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
+.cl-settings { position: absolute; top: calc(var(--top-pad)); right: 14px; width: 32px; height: 32px; background: rgba(26,23,32,.72); backdrop-filter: blur(12px); border: 1px solid rgba(196,168,240,.15); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
+.cl-banner-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 0 14px 12px; display: flex; gap: 11px; align-items: flex-end; }
+.cl-banner-cover { width: 58px; height: 80px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 8px 24px rgba(0,0,0,.45); flex-shrink: 0; overflow: hidden; }
+.cl-meta-strip { background: linear-gradient(90deg, rgba(196,168,240,.16), rgba(158,120,240,.08)); border-bottom: 1px solid rgba(196,168,240,.1); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+
+/* ── Clubes: abas internas ── */
+.cl-inner-tabs { display: flex; border-bottom: 1px solid rgba(196,168,240,.1); flex-shrink: 0; }
+.cl-inner-tab { flex: 1; padding: 10px 0; font: 500 11px 'Figtree', sans-serif; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; transition: all .18s; text-align: center; }
+.cl-inner-tab.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+
+/* ── Clubes: feed ── */
+.cl-mood { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+.cl-mood-pill { flex: 1; text-align: center; background: rgba(255,255,255,.04); border-radius: 10px; padding: 12px 8px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--bor); font-family: 'Figtree', sans-serif; transition: all .15s; }
+.cl-goal { background: var(--sur); border: 1px solid rgba(196,168,240,.18); border-radius: 14px; padding: 20px; margin-bottom: 18px; position: relative; overflow: hidden; }
+.cl-goal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), #7EDFA8, #F0C97A); }
+.cl-goal-bar { height: 8px; background: rgba(255,255,255,.06); border-radius: 4px; overflow: hidden; margin: 10px 0; position: relative; }
+.cl-goal-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), #7EDFA8); transition: width .4s; }
+.cl-goal-milestone { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.2); }
+.cl-ava-stack { display: flex; }
+.cl-ava { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #1A1720; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-left: -5px; flex-shrink: 0; overflow: hidden; }
+.cl-ava:first-child { margin-left: 0; }
+.cl-composer { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 18px; margin-bottom: 16px; display: flex; gap: 9px; }
+.cl-comp-ava { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+.cl-comp-inp { width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--bor); border-radius: 8px; padding: 8px 10px; font: 400 12px 'Figtree', sans-serif; color: var(--muted); resize: none; outline: none; }
+.cl-comp-btn { display: flex; align-items: center; gap: 4px; font: 500 11px 'Figtree', sans-serif; color: var(--muted); background: none; border: 1px solid var(--bor); border-radius: 14px; padding: 4px 9px; cursor: pointer; font-family: 'Figtree', sans-serif; transition: all .15s; }
+.cl-comp-send { font: 600 11px 'Figtree', sans-serif; color: #1A1720; background: var(--accent); border: none; border-radius: 14px; padding: 4px 13px; cursor: pointer; }
+
+/* ── Clubes: posts ── */
+.cl-fi { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 20px; margin-bottom: 0; }
+.cl-cited { background: rgba(196,168,240,.07); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 12px 14px; margin-bottom: 14px; }
+.cl-spoiler { background: rgba(240,122,122,.08); border-left: 3px solid #F07A7A; border-radius: 0 6px 6px 0; padding: 12px 14px; margin-bottom: 14px; position: relative; overflow: hidden; cursor: pointer; }
+.cl-spoiler-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(30,25,40,.82); }
+.cl-reply { margin: 12px 0 0 16px; background: rgba(255,255,255,.03); border-left: 2px solid rgba(196,168,240,.18); border-radius: 0 8px 8px 0; padding: 14px; }
+.cl-prog-post { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; }
+.cl-prog-bar-mini { height: 3px; background: rgba(255,255,255,.06); border-radius: 2px; margin-top: 7px; overflow: hidden; }
+
+/* ── Clubes: membros ── */
+.cl-mem-card { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+.cl-mem-ava { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+.cl-mem-prog { height: 5px; background: rgba(255,255,255,.06); border-radius: 3px; overflow: hidden; }
+
+/* ── Clubes: trechos ── */
+.cl-exc-card { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+.cl-exc-body { background: rgba(196,168,240,.07); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 12px; color: rgba(240,235,248,.62); line-height: 1.6; font-style: italic; }
+
+/* ── Clubes: almanaque ── */
+.cl-alma-card { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+
+/* ── Clubes: badge popup ── */
+.cl-badge-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(.8); background: var(--sur); border: 1px solid rgba(196,168,240,.18); border-radius: 20px; padding: 28px 24px; text-align: center; z-index: 1000; opacity: 0; transition: all .3s; pointer-events: none; box-shadow: 0 20px 60px rgba(0,0,0,.6); width: 260px; max-width: calc(100% - 40px); }
+.cl-badge-popup.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: all; }
+.cl-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 999; opacity: 0; transition: .3s; pointer-events: none; }
+.cl-overlay.show { opacity: 1; pointer-events: all; }
+
+@keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
+
 /* ── Responsive breakpoints ── */
 @media (min-width: 640px) {
   .bc   { width: 118px; }

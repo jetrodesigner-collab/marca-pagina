@@ -19,6 +19,9 @@ import ManualBookEntry from './pages/ManualBookEntry'
 import ManualMovieEntry from './pages/ManualMovieEntry'
 import AdminPanel from './pages/AdminPanel'
 import FollowersList from './pages/FollowersList'
+import Clubes from './pages/Clubes'
+import ClubeDetalhe from './pages/ClubeDetalhe'
+import PreviewConvite from './components/clubs/PreviewConvite'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -32,7 +35,15 @@ export default function App() {
   const [searchContext, setSearchContext] = useState(null) // { fromStatus }
   const [postContext, setPostContext] = useState(null) // { post }
   const [libraryReopen, setLibraryReopen] = useState(null) // { category, collectionId }
+  const [clubeContext, setClubeContext] = useState(null) // { club }
   const navStackRef = useRef(['library'])
+
+  // Detectar link de convite na URL
+  const conviteCode = (() => {
+    const path = window.location.pathname
+    const m = path.match(/^\/convite\/([^/]+)/)
+    return m ? m[1] : null
+  })()
 
   useLastSeen(session?.user?.id)
 
@@ -44,6 +55,7 @@ export default function App() {
     if (target === 'followers' && payload) setProfileContext(payload)
     if (target === 'search') setSearchContext(payload)
     if (target === 'postForm') setPostContext(payload)
+    if (target === 'clubeDetalhe' && payload) setClubeContext(payload)
   }
 
   // Navegação que mantém o histórico do navegador sincronizado, para que o
@@ -106,6 +118,17 @@ export default function App() {
   }, [])
 
   if (loading) return null
+
+  // Link de convite — acessível antes e após login
+  if (conviteCode) {
+    return (
+      <PreviewConvite
+        code={conviteCode}
+        session={session}
+        onNavigate={navigate}
+      />
+    )
+  }
 
   if (passwordRecovery && session) {
     return <ResetPassword />
@@ -202,6 +225,21 @@ export default function App() {
 
   if (screen === 'admin') {
     return <AdminPanel session={session} onNavigate={navigate} />
+  }
+
+  if (screen === 'clubes') {
+    return <Clubes session={session} onNavigate={navigate} />
+  }
+
+  if (screen === 'clubeDetalhe' && clubeContext) {
+    return (
+      <ClubeDetalhe
+        session={session}
+        club={clubeContext.club}
+        onBack={() => navigate('clubes')}
+        onNavigate={navigate}
+      />
+    )
   }
 
   return (
