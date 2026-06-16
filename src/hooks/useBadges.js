@@ -72,5 +72,21 @@ export async function checkBadges(userId, clubId, context = {}) {
     }
   }
 
+  // Pioneiro: primeiro membro a concluir a meta no clube
+  if (context.meta && member) {
+    const { pagina_fim } = context.meta
+    if ((member.pagina_atual || 0) >= pagina_fim) {
+      const { data: otherPioneers } = await supabase
+        .from('club_badges')
+        .select('user_id')
+        .eq('club_id', clubId)
+        .eq('tipo', 'pioneiro')
+        .neq('user_id', userId)
+      if (!otherPioneers || otherPioneers.length === 0) {
+        await grant('pioneiro', 'Pioneiro', '🏆')
+      }
+    }
+  }
+
   return newBadges
 }

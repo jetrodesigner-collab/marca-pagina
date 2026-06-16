@@ -111,9 +111,14 @@ export default function NotificationBell({ session }) {
                 <ActorAvatar profile={n.profiles} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5 }}>
-                    <strong style={{ color: 'var(--text)' }}>{n.profiles?.username || 'Alguém'}</strong>
-                    {' comentou no seu item '}
-                    <strong style={{ color: 'var(--text)' }}>{n.items?.title || 'item'}</strong>
+                    {n.type === 'cutucar'
+                      ? (n.message || `${n.profiles?.username || 'Alguém'} te cutucou! Hora de voltar à leitura 📚`)
+                      : <>
+                          <strong style={{ color: 'var(--text)' }}>{n.profiles?.username || 'Alguém'}</strong>
+                          {' comentou no seu item '}
+                          <strong style={{ color: 'var(--text)' }}>{n.items?.title || 'item'}</strong>
+                        </>
+                    }
                   </div>
                   <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>{formatCommentDate(n.created_at)}</div>
                 </div>
