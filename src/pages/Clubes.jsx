@@ -118,7 +118,7 @@ export default function Clubes({ session, onNavigate }) {
 
         {/* Header */}
         <div style={{ padding: 'var(--top-pad) 22px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.3px' }}>
+          <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.3px', color: 'var(--text)' }}>
             Clubes<span style={{ color: 'var(--accent)' }}>·</span>do<span style={{ color: 'var(--accent)' }}>·</span>Livro
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

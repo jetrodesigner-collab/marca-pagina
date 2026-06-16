@@ -18,7 +18,7 @@ export function useClubs(userId) {
           club_id, role, pagina_atual, streak_atual, status,
           clubs (
             id, nome, descricao, livro_titulo, livro_autor, livro_capa,
-            livro_id, privacidade, codigo_convite, convite_ativo, max_membros, criado_em, criador_id
+            livro_id, privacidade, codigo_convite, convite_ativo, max_membros, criado_em, criador_id, foto_url
           )
         `)
         .eq('user_id', userId),
@@ -66,7 +66,7 @@ export function useClubs(userId) {
 
   useEffect(() => { load() }, [load])
 
-  async function createClub({ nome, descricao, livro, privacidade, max_membros }) {
+  async function createClub({ nome, descricao, livro, privacidade, max_membros, foto_url }) {
     const { data: club, error } = await supabase
       .from('clubs')
       .insert({
@@ -79,6 +79,7 @@ export function useClubs(userId) {
         criador_id: userId,
         privacidade,
         max_membros,
+        foto_url: foto_url || null,
       })
       .select()
       .single()
