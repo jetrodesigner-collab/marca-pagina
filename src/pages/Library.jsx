@@ -171,12 +171,24 @@ function ItemCard({ item, onClick }) {
   )
 }
 
-function GridCard({ item, onClick, inLibrary }) {
+function GridCard({ item, onClick, inLibrary, cardIndex }) {
   const [imgErr, setImgErr] = useState(false)
   const initials = item.title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
   const colors = item.type === 'movie' ? FILM_COLORS : COVER_COLORS
   const cls = colors[item.title.charCodeAt(0) % colors.length]
   const touch = useRef({ moved: false, x: 0, y: 0 })
+  const cardRef = useRef(null)
+
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add('vis'); obs.unobserve(el) } },
+      { threshold: 0.05 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   function handleTouchStart(e) {
     const t = e.touches[0]
@@ -194,8 +206,11 @@ function GridCard({ item, onClick, inLibrary }) {
     onClick()
   }
 
+  const delay = Math.min(cardIndex, 10) * 40
+
   return (
     <div
+      ref={cardRef}
       className="gc"
       role="button"
       tabIndex={0}
@@ -204,7 +219,7 @@ function GridCard({ item, onClick, inLibrary }) {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick() }}
-      style={{ position: 'relative' }}
+      style={{ position: 'relative', animationDelay: `${delay}ms` }}
     >
       {item.cover_url && !imgErr ? (
         <img className="gcov" src={item.cover_url} alt="" style={{ objectFit: 'cover' }} onError={() => setImgErr(true)} />
@@ -814,13 +829,14 @@ function LibrarySection({ tipo, userLibrary, onItemClick, onManualAdd }) {
           ) : (
             <div {...gridProps}>
               <div className="grid-h">
-                {displayItems.map(item => {
+                {displayItems.map((item, idx) => {
                   const inLib = userLibrary.some(ui => ui.items?.api_id === item.api_id && ui.items?.type === item.type)
                   return (
                     <GridCard
                       key={`${item.type}_${item.api_id}`}
                       item={item}
                       inLibrary={inLib}
+                      cardIndex={idx}
                       onClick={() => handleItemClick(item)}
                     />
                   )

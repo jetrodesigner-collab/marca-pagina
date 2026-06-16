@@ -299,7 +299,9 @@ select.finp { appearance: none; cursor: pointer; }
 .grid-sw { margin-bottom: 12px; user-select: none; cursor: grab; }
 .grid-sw:active { cursor: grabbing; }
 .grid-h { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.gc { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 8px; cursor: pointer; transition: all .25s; backdrop-filter: blur(16px); box-shadow: 0 4px 14px var(--shad); position: relative; display: flex; flex-direction: column; gap: 6px; }
+.gc { background: var(--sur); border: 1px solid var(--bor); border-radius: 14px; padding: 8px; cursor: pointer; transition: all .25s; backdrop-filter: blur(16px); box-shadow: 0 4px 14px var(--shad); position: relative; display: flex; flex-direction: column; gap: 6px; opacity: 0; }
+.gc.vis { opacity: 1; animation: card-in 350ms ease-out backwards; }
+@keyframes card-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 .gc:hover { transform: translateY(-2px); }
 .gcov { width: 100%; aspect-ratio: 2/3; border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,.2); }
 .gtit { font-size: 10px; font-weight: 700; color: var(--text); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
