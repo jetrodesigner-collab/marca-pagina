@@ -32,6 +32,16 @@ export default function MetaColetivaCard({ members, activeMeta, clubId, onBadgeU
   const displayMembers = members.slice(0, 4)
   const extra = members.length - displayMembers.length
 
+  const daysLeft = activeMeta?.data_limite
+    ? Math.max(0, Math.ceil((new Date(activeMeta.data_limite) - new Date()) / (1000 * 60 * 60 * 24)))
+    : null
+
+  const motivacional = unlocked
+    ? 'Todos concluíram! 🎉'
+    : daysLeft !== null
+      ? `Todos chegando juntos em ${daysLeft} dia${daysLeft !== 1 ? 's' : ''}`
+      : 'Todos chegando juntos'
+
   async function simularMeta() {
     if (simulating || !onBadgeUnlock) return
     setSimulating(true)
@@ -50,10 +60,8 @@ export default function MetaColetivaCard({ members, activeMeta, clubId, onBadgeU
     <div className="cl-goal">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700 }}>🏅 Meta coletiva do grupo</div>
-          <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
-            {unlocked ? 'Todos concluíram! 🎉' : `Todos chegando juntos`}
-          </div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>🏆 Meta coletiva do grupo</div>
+          <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{motivacional}</div>
         </div>
         <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent)' }}>
           {avgPct}%
@@ -67,7 +75,7 @@ export default function MetaColetivaCard({ members, activeMeta, clubId, onBadgeU
         <div className="cl-goal-milestone" style={{ left: '75%' }} />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <div className="cl-ava-stack">
           {displayMembers.map(m => {
             const c = colorFor(m.user_id)
@@ -103,6 +111,28 @@ export default function MetaColetivaCard({ members, activeMeta, clubId, onBadgeU
           </div>
         )}
       </div>
+
+      {!unlocked && (
+        <button
+          onClick={simularMeta}
+          disabled={simulating}
+          style={{
+            width: '100%',
+            padding: '10px 0',
+            background: 'rgba(196,168,240,.1)',
+            border: '1px solid rgba(196,168,240,.22)',
+            borderRadius: 10,
+            fontFamily: 'Figtree, sans-serif',
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'var(--accent)',
+            cursor: simulating ? 'default' : 'pointer',
+            opacity: simulating ? .6 : 1,
+          }}
+        >
+          {simulating ? '...' : '✨ Simular grupo chegando a 100%'}
+        </button>
+      )}
     </div>
   )
 }

@@ -59,6 +59,7 @@
 
 /* Dark mode */
 .dark {
+  color: var(--text);
   --bg: linear-gradient(160deg, #1A1720, #161420, #1C1828);
   --text: #F0ECF8;
   --text2: #C0B4D0;

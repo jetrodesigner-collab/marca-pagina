@@ -24,6 +24,11 @@ async function toWebP400(file) {
   })
 }
 
+function FieldError({ msg }) {
+  if (!msg) return null
+  return <div style={{ fontSize: 11, color: '#F07A7A', marginTop: -8, marginBottom: 10 }}>{msg}</div>
+}
+
 export default function ModalCriarClube({ userId, onClose, onCreate }) {
   const [nome, setNome] = useState('')
   const [descricao, setDescricao] = useState('')
@@ -34,8 +39,15 @@ export default function ModalCriarClube({ userId, onClose, onCreate }) {
   const [livroTexto, setLivroTexto] = useState('')
   const [fotoFile, setFotoFile] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
+
+  // Metas da semana
+  const [capInicio, setCapInicio] = useState('')
+  const [capFim, setCapFim] = useState('')
+  const [totalPaginas, setTotalPaginas] = useState('')
+  const [prazoDias, setPrazoDias] = useState('')
+
+  const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
-  const [err, setErr] = useState('')
   const fileRef = useRef(null)
 
   async function handleFotoChange(e) {
@@ -48,10 +60,15 @@ export default function ModalCriarClube({ userId, onClose, onCreate }) {
   }
 
   async function handleCreate() {
-    if (!nome.trim()) { setErr('Dê um nome ao clube.'); return }
+    const errs = {}
+    if (!nome.trim()) errs.nome = 'Nome do clube é obrigatório.'
+    if (!descricao.trim()) errs.descricao = 'Descrição é obrigatória.'
+    if (!livroTexto.trim()) errs.livro = 'Informe o livro da leitura.'
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+
     const membros = isCustom ? (parseInt(customMembros) || 20) : maxMembros
     setSaving(true)
-    setErr('')
+    setErrors({})
     try {
       let foto_url = null
       if (fotoFile) {
@@ -62,21 +79,31 @@ export default function ModalCriarClube({ userId, onClose, onCreate }) {
         foto_url = publicUrl
       }
 
+      const meta = (capFim || totalPaginas) ? {
+        capInicio: capInicio ? parseInt(capInicio) : null,
+        capFim: capFim ? parseInt(capFim) : null,
+        paginaFim: totalPaginas ? parseInt(totalPaginas) : null,
+        prazoDias: prazoDias ? parseInt(prazoDias) : null,
+      } : null
+
       const club = await onCreate({
         nome: nome.trim(),
-        descricao: descricao.trim() || null,
-        livro: livroTexto.trim() ? { titulo: livroTexto.trim(), autor: null, capa: null, id: null } : null,
+        descricao: descricao.trim(),
+        livro: { titulo: livroTexto.trim(), autor: null, capa: null, id: null },
         privacidade,
         max_membros: membros,
         foto_url,
+        meta,
       })
       onClose(club)
     } catch (e) {
-      setErr(e.message || 'Erro ao criar clube.')
+      setErrors({ geral: e.message || 'Erro ao criar clube.' })
     } finally {
       setSaving(false)
     }
   }
+
+  const labelStyle = { fontSize: 10, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.1em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose(null)}>
@@ -89,18 +116,11 @@ export default function ModalCriarClube({ userId, onClose, onCreate }) {
           <div
             onClick={() => fileRef.current?.click()}
             style={{
-              width: 80,
-              height: 80,
-              borderRadius: 16,
+              width: 80, height: 80, borderRadius: 16,
               border: `2px dashed ${fotoPreview ? 'transparent' : 'rgba(196,168,240,.35)'}`,
               background: fotoPreview ? 'transparent' : 'rgba(196,168,240,.06)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              overflow: 'hidden',
-              position: 'relative',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', overflow: 'hidden',
             }}
           >
             {fotoPreview
@@ -114,53 +134,45 @@ export default function ModalCriarClube({ userId, onClose, onCreate }) {
                 </>
             }
           </div>
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            style={{ marginTop: 6, fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Figtree, sans-serif', fontWeight: 600 }}
-          >
+          <button type="button" onClick={() => fileRef.current?.click()}
+            style={{ marginTop: 6, fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Figtree, sans-serif', fontWeight: 600 }}>
             {fotoPreview ? 'Trocar foto' : 'Adicionar foto'}
           </button>
           <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFotoChange} />
         </div>
 
-        <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.1em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-          Nome do clube *
-        </label>
+        <label style={labelStyle}>Nome do clube *</label>
         <input
           className="finp"
           placeholder="Ex: Os Leitores de Elite"
           value={nome}
-          onChange={e => setNome(e.target.value)}
-          style={{ marginBottom: 14 }}
+          onChange={e => { setNome(e.target.value); setErrors(p => ({ ...p, nome: '' })) }}
+          style={{ marginBottom: errors.nome ? 6 : 14, borderColor: errors.nome ? 'rgba(240,122,122,.5)' : undefined }}
         />
+        <FieldError msg={errors.nome} />
 
-        <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.1em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-          Descrição (opcional)
-        </label>
+        <label style={labelStyle}>Descrição *</label>
         <textarea
           className="finp"
           placeholder="Sobre o clube..."
           value={descricao}
-          onChange={e => setDescricao(e.target.value)}
+          onChange={e => { setDescricao(e.target.value); setErrors(p => ({ ...p, descricao: '' })) }}
           rows={2}
-          style={{ resize: 'none', marginBottom: 14 }}
+          style={{ resize: 'none', marginBottom: errors.descricao ? 6 : 14, borderColor: errors.descricao ? 'rgba(240,122,122,.5)' : undefined }}
         />
+        <FieldError msg={errors.descricao} />
 
-        <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.1em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-          Livro da leitura
-        </label>
+        <label style={labelStyle}>Livro da leitura *</label>
         <input
           className="finp"
-          placeholder="Nome do livro (opcional)"
+          placeholder="Nome do livro"
           value={livroTexto}
-          onChange={e => setLivroTexto(e.target.value)}
-          style={{ marginBottom: 14 }}
+          onChange={e => { setLivroTexto(e.target.value); setErrors(p => ({ ...p, livro: '' })) }}
+          style={{ marginBottom: errors.livro ? 6 : 14, borderColor: errors.livro ? 'rgba(240,122,122,.5)' : undefined }}
         />
+        <FieldError msg={errors.livro} />
 
-        <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.1em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
-          Privacidade
-        </label>
+        <label style={labelStyle}>Privacidade</label>
         <div className="priv" style={{ marginBottom: 14 }}>
           <button className={`pb${privacidade === 'publico' ? ' on' : ''}`} onClick={() => setPrivacidade('publico')}>
             🌍 Público
@@ -170,25 +182,18 @@ export default function ModalCriarClube({ userId, onClose, onCreate }) {
           </button>
         </div>
 
-        <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.1em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
-          Limite de membros
-        </label>
-        <div style={{ display: 'flex', gap: 6, marginBottom: isCustom ? 8 : 20 }}>
+        <label style={labelStyle}>Limite de membros</label>
+        <div style={{ display: 'flex', gap: 6, marginBottom: isCustom ? 8 : 14 }}>
           {MAX_OPTIONS.map(n => (
             <button
               key={n}
               onClick={() => { setMaxMembros(n); setIsCustom(false) }}
               style={{
-                flex: 1,
-                padding: '10px 0',
-                borderRadius: 12,
+                flex: 1, padding: '10px 0', borderRadius: 12,
                 border: `1px solid ${!isCustom && maxMembros === n ? 'rgba(196,168,240,.45)' : 'var(--bor2)'}`,
                 background: !isCustom && maxMembros === n ? 'rgba(196,184,232,.15)' : 'var(--sur)',
                 color: !isCustom && maxMembros === n ? 'var(--accent)' : 'var(--muted)',
-                fontFamily: 'Figtree, sans-serif',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
+                fontFamily: 'Figtree, sans-serif', fontSize: 13, fontWeight: 700, cursor: 'pointer',
               }}
             >
               {n}
@@ -197,18 +202,12 @@ export default function ModalCriarClube({ userId, onClose, onCreate }) {
           <button
             onClick={() => setIsCustom(true)}
             style={{
-              flex: 1.4,
-              padding: '10px 4px',
-              borderRadius: 12,
+              flex: 1.4, padding: '10px 4px', borderRadius: 12,
               border: `1px solid ${isCustom ? 'rgba(196,168,240,.45)' : 'var(--bor2)'}`,
               background: isCustom ? 'rgba(196,184,232,.15)' : 'var(--sur)',
               color: isCustom ? 'var(--accent)' : 'var(--muted)',
-              fontFamily: 'Figtree, sans-serif',
-              fontSize: 10,
-              fontWeight: 700,
-              cursor: 'pointer',
-              textAlign: 'center',
-              lineHeight: 1.2,
+              fontFamily: 'Figtree, sans-serif', fontSize: 10, fontWeight: 700, cursor: 'pointer',
+              textAlign: 'center', lineHeight: 1.2,
             }}
           >
             Personalizado
@@ -218,16 +217,71 @@ export default function ModalCriarClube({ userId, onClose, onCreate }) {
           <input
             className="finp"
             type="number"
-            placeholder="Quantidade personalizada (ex: 30, 50, 100)"
+            placeholder="Quantidade (ex: 30, 50, 100)"
             value={customMembros}
             onChange={e => setCustomMembros(e.target.value)}
-            min={2}
-            max={500}
-            style={{ marginBottom: 20 }}
+            min={2} max={500}
+            style={{ marginBottom: 14 }}
           />
         )}
 
-        {err && <div style={{ color: 'var(--red)', fontSize: 12, marginBottom: 12 }}>{err}</div>}
+        {/* Metas da semana */}
+        <div style={{ marginTop: 4, marginBottom: 16, padding: '16px', background: 'rgba(196,168,240,.06)', borderRadius: 12, border: '1px solid rgba(196,168,240,.12)' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 14 }}>
+            🎯 Metas da semana
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ ...labelStyle, marginBottom: 4 }}>Cap. inicial</label>
+              <input
+                className="finp"
+                type="number"
+                placeholder="Ex: 10"
+                value={capInicio}
+                onChange={e => setCapInicio(e.target.value)}
+                min={1}
+                style={{ marginBottom: 0 }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ ...labelStyle, marginBottom: 4 }}>Cap. final</label>
+              <input
+                className="finp"
+                type="number"
+                placeholder="Ex: 15"
+                value={capFim}
+                onChange={e => setCapFim(e.target.value)}
+                min={1}
+                style={{ marginBottom: 0 }}
+              />
+            </div>
+          </div>
+
+          <label style={{ ...labelStyle, marginBottom: 4 }}>Total de páginas</label>
+          <input
+            className="finp"
+            type="number"
+            placeholder="Ex: 250"
+            value={totalPaginas}
+            onChange={e => setTotalPaginas(e.target.value)}
+            min={1}
+            style={{ marginBottom: 10 }}
+          />
+
+          <label style={{ ...labelStyle, marginBottom: 4 }}>Prazo (em dias)</label>
+          <input
+            className="finp"
+            type="number"
+            placeholder="Ex: 7"
+            value={prazoDias}
+            onChange={e => setPrazoDias(e.target.value)}
+            min={1} max={365}
+            style={{ marginBottom: 0 }}
+          />
+        </div>
+
+        {errors.geral && <div style={{ color: '#F07A7A', fontSize: 12, marginBottom: 12 }}>{errors.geral}</div>}
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="post-cancel-btn" onClick={() => onClose(null)} disabled={saving}>

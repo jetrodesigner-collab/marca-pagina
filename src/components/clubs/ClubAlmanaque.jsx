@@ -59,7 +59,7 @@ export default function ClubAlmanaque({ club, clubId }) {
       {/* Info do livro via Open Library */}
       {club.livro_titulo && (
         <div className="cl-alma-card">
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9, color: 'var(--text)' }}>
             📚 Sobre o livro
           </div>
           <div style={{ fontSize: 12, color: 'rgba(240,235,248,.62)', lineHeight: 1.58 }}>
@@ -79,7 +79,7 @@ export default function ClubAlmanaque({ club, clubId }) {
 
       {club.livro_autor && (
         <div className="cl-alma-card">
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9, color: 'var(--text)' }}>
             ✍️ Autor
           </div>
           <div style={{ fontSize: 12, color: 'rgba(240,235,248,.62)', lineHeight: 1.58 }}>
@@ -94,7 +94,7 @@ export default function ClubAlmanaque({ club, clubId }) {
       {/* Histórico de metas */}
       {oldMetas.length > 0 && (
         <div className="cl-alma-card">
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9 }}>📌 Metas anteriores</div>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9, color: 'var(--text)' }}>📌 Metas anteriores</div>
           <div style={{ fontSize: 12, color: 'rgba(240,235,248,.62)', lineHeight: 1.68 }}>
             {oldMetas.map((m, i) => (
               <div key={i} style={{ marginBottom: 4 }}>

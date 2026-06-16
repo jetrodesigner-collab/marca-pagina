@@ -66,7 +66,7 @@ export function useClubs(userId) {
 
   useEffect(() => { load() }, [load])
 
-  async function createClub({ nome, descricao, livro, privacidade, max_membros, foto_url }) {
+  async function createClub({ nome, descricao, livro, privacidade, max_membros, foto_url, meta }) {
     const { data: club, error } = await supabase
       .from('clubs')
       .insert({
@@ -91,6 +91,26 @@ export function useClubs(userId) {
       role: 'admin',
       status: 'ativo',
     })
+
+    if (meta && (meta.capFim || meta.paginaFim)) {
+      const parts = []
+      if (meta.capInicio && meta.capFim) parts.push(`Caps. ${meta.capInicio}–${meta.capFim}`)
+      else if (meta.capFim) parts.push(`até cap. ${meta.capFim}`)
+      if (meta.paginaFim) parts.push(`até pág. ${meta.paginaFim}`)
+      const titulo = parts.join(' · ') || 'Meta inicial'
+      const data_limite = meta.prazoDias
+        ? new Date(Date.now() + meta.prazoDias * 86400000).toISOString().slice(0, 10)
+        : null
+      await supabase.from('club_metas').insert({
+        club_id: club.id,
+        titulo,
+        cap_inicio: meta.capInicio || null,
+        cap_fim: meta.capFim || null,
+        pagina_fim: meta.paginaFim || null,
+        data_limite,
+        ativa: true,
+      })
+    }
 
     await load()
     return club

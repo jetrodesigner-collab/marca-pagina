@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
 import { useClubPosts } from '../../hooks/useClubPosts'
 import { useStreak } from '../../hooks/useStreak'
 import { checkBadges } from '../../hooks/useBadges'
@@ -25,21 +26,73 @@ function colorFor(id) {
   return MEMBER_COLORS[Math.abs(h) % MEMBER_COLORS.length]
 }
 
-export default function ClubFeed({ club, activeMeta, members, currentUserId, onBadgeUnlock, onToast, profile }) {
+export default function ClubFeed({ club, activeMeta, members, currentUserId, isAdmin, onBadgeUnlock, onToast, profile }) {
   const { posts, loading, addPost, toggleLike, deletePost, refresh } = useClubPosts(club.id, currentUserId)
   const { updateStreak } = useStreak()
   const [composerText, setComposerText] = useState('')
-  const [composerMode, setComposerMode] = useState('comentario') // 'comentario' | 'trecho' | 'progresso'
+  const [composerMode, setComposerMode] = useState('comentario')
   const [trechoText, setTrechoText] = useState('')
   const [trechoPagina, setTrechoPagina] = useState('')
   const [trechoCapitulo, setTrechoCapitulo] = useState('')
   const [isSpoiler, setIsSpoiler] = useState(false)
   const [novaPagina, setNovaPagina] = useState('')
-  const [selectedMood, setSelectedMood] = useState(null)
   const [posting, setPosting] = useState(false)
+
+  // Humor do grupo
+  const [myMood, setMyMood] = useState(null)
+  const [moodTotals, setMoodTotals] = useState({})
+  const [moodLoading, setMoodLoading] = useState(false)
 
   const initialUser = (profile?.full_name || profile?.username || '?').charAt(0).toUpperCase()
   const userColor = colorFor(currentUserId)
+  const totalVotos = Object.values(moodTotals).reduce((s, v) => s + v, 0)
+
+  useEffect(() => {
+    loadMoods()
+  }, [club.id, activeMeta?.id])
+
+  async function loadMoods() {
+    try {
+      const { data } = await supabase
+        .from('club_moods')
+        .select('user_id, mood')
+        .eq('club_id', club.id)
+      if (!data) return
+      const my = data.find(d => d.user_id === currentUserId)
+      setMyMood(my?.mood || null)
+      const totals = {}
+      data.forEach(d => { totals[d.mood] = (totals[d.mood] || 0) + 1 })
+      setMoodTotals(totals)
+    } catch {
+      // tabela pode não existir ainda — silencioso
+    }
+  }
+
+  async function handleMoodSelect(label) {
+    if (moodLoading) return
+    const newMood = myMood === label ? null : label
+    setMyMood(newMood)
+    setMoodLoading(true)
+    try {
+      if (newMood) {
+        await supabase.from('club_moods').upsert({
+          club_id: club.id,
+          meta_id: activeMeta?.id || null,
+          user_id: currentUserId,
+          mood: newMood,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'club_id,user_id' })
+      } else {
+        await supabase.from('club_moods').delete()
+          .eq('club_id', club.id).eq('user_id', currentUserId)
+      }
+      await loadMoods()
+    } catch {
+      // silencioso se tabela não existe
+    } finally {
+      setMoodLoading(false)
+    }
+  }
 
   async function publish() {
     if (posting) return
@@ -53,15 +106,8 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, onB
         const pg = parseInt(novaPagina)
         if (!pg) return
         const newStreak = await updateStreak(currentUserId, club.id, pg)
-        await addPost({
-          tipo: 'progresso',
-          conteudo: conteudo || null,
-          trecho_pagina: pg,
-        })
-        const newBadges = await checkBadges(currentUserId, club.id, {
-          postHour: hour,
-          meta: activeMeta,
-        })
+        await addPost({ tipo: 'progresso', conteudo: conteudo || null, trecho_pagina: pg })
+        const newBadges = await checkBadges(currentUserId, club.id, { postHour: hour, meta: activeMeta })
         newBadges.forEach(b => onBadgeUnlock && onBadgeUnlock(b))
         if (newStreak) onToast && onToast(`🔥 Streak: ${newStreak} dias!`)
         setNovaPagina('')
@@ -77,10 +123,7 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, onB
         })
         const newBadges = await checkBadges(currentUserId, club.id, { postHour: hour })
         newBadges.forEach(b => onBadgeUnlock && onBadgeUnlock(b))
-        setTrechoText('')
-        setTrechoPagina('')
-        setTrechoCapitulo('')
-        setIsSpoiler(false)
+        setTrechoText(''); setTrechoPagina(''); setTrechoCapitulo(''); setIsSpoiler(false)
       } else {
         await addPost({ tipo: 'comentario', conteudo })
         const newBadges = await checkBadges(currentUserId, club.id, { postHour: hour })
@@ -89,7 +132,7 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, onB
       setComposerText('')
       setComposerMode('comentario')
       onToast && onToast('✓ Publicado!')
-    } catch (e) {
+    } catch {
       onToast && onToast('Erro ao publicar.')
     } finally {
       setPosting(false)
@@ -99,7 +142,7 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, onB
   async function handleReply(parentId, text) {
     try {
       await addPost({ tipo: 'comentario', conteudo: text, parent_id: parentId })
-    } catch (e) {
+    } catch {
       onToast && onToast('Erro ao responder.')
     }
   }
@@ -113,17 +156,25 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, onB
           Humor do grupo nesta meta
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {MOODS.map(m => (
-            <button
-              key={m.label}
-              onClick={() => setSelectedMood(selectedMood === m.label ? null : m.label)}
-              className="cl-mood-pill"
-              style={selectedMood === m.label ? { borderColor: 'rgba(196,168,240,.35)', background: 'rgba(196,168,240,.08)' } : {}}
-            >
-              {m.emoji}
-              <span style={{ display: 'block', fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>{m.label}</span>
-            </button>
-          ))}
+          {MOODS.map(m => {
+            const count = moodTotals[m.label] || 0
+            const pct = totalVotos > 0 ? Math.round((count / totalVotos) * 100) : 0
+            const isSelected = myMood === m.label
+            return (
+              <button
+                key={m.label}
+                onClick={() => handleMoodSelect(m.label)}
+                className="cl-mood-pill"
+                style={isSelected ? { borderColor: 'rgba(196,168,240,.35)', background: 'rgba(196,168,240,.08)' } : {}}
+              >
+                {m.emoji}
+                <span style={{ display: 'block', fontSize: 9, color: isSelected ? 'var(--accent)' : 'var(--muted)', marginTop: 3 }}>{m.label}</span>
+                {totalVotos > 0 && (
+                  <span style={{ display: 'block', fontSize: 9, fontWeight: 700, color: isSelected ? 'var(--accent)' : 'rgba(240,235,248,.4)', marginTop: 1 }}>{pct}%</span>
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -137,10 +188,7 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, onB
 
       {/* Composer */}
       <div className="cl-composer">
-        <div
-          className="cl-comp-ava"
-          style={{ background: userColor.bg, color: userColor.color }}
-        >
+        <div className="cl-comp-ava" style={{ background: userColor.bg, color: userColor.color }}>
           {profile?.avatar_url ? (
             <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
           ) : initialUser}
@@ -154,16 +202,10 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, onB
                 value={novaPagina}
                 onChange={e => setNovaPagina(e.target.value)}
                 style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,.04)',
-                  border: '1px solid rgba(196,168,240,.15)',
-                  borderRadius: 8,
-                  padding: '8px 10px',
-                  fontFamily: 'Figtree, sans-serif',
-                  fontSize: 12,
-                  color: 'var(--text)',
-                  outline: 'none',
-                  marginBottom: 6,
+                  width: '100%', background: 'rgba(255,255,255,.04)',
+                  border: '1px solid rgba(196,168,240,.15)', borderRadius: 8,
+                  padding: '8px 10px', fontFamily: 'Figtree, sans-serif',
+                  fontSize: 12, color: 'var(--text)', outline: 'none', marginBottom: 6,
                 }}
               />
             </div>
@@ -176,49 +218,20 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, onB
                 onChange={e => setTrechoText(e.target.value)}
                 rows={3}
                 style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,.04)',
-                  border: '1px solid rgba(196,168,240,.15)',
-                  borderRadius: 8,
-                  padding: '8px 10px',
-                  fontFamily: 'Figtree, sans-serif',
-                  fontSize: 12,
-                  color: 'var(--text)',
-                  outline: 'none',
-                  resize: 'none',
-                  marginBottom: 6,
-                  fontStyle: 'italic',
+                  width: '100%', background: 'rgba(255,255,255,.04)',
+                  border: '1px solid rgba(196,168,240,.15)', borderRadius: 8,
+                  padding: '8px 10px', fontFamily: 'Figtree, sans-serif',
+                  fontSize: 12, color: 'var(--text)', outline: 'none',
+                  resize: 'none', marginBottom: 6, fontStyle: 'italic',
                 }}
               />
               <div style={{ display: 'flex', gap: 6 }}>
-                <input
-                  type="number"
-                  placeholder="Página"
-                  value={trechoPagina}
-                  onChange={e => setTrechoPagina(e.target.value)}
-                  style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(196,168,240,.15)', borderRadius: 8, padding: '6px 8px', fontFamily: 'Figtree, sans-serif', fontSize: 11, color: 'var(--text)', outline: 'none' }}
-                />
-                <input
-                  placeholder="Capítulo"
-                  value={trechoCapitulo}
-                  onChange={e => setTrechoCapitulo(e.target.value)}
-                  style={{ flex: 2, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(196,168,240,.15)', borderRadius: 8, padding: '6px 8px', fontFamily: 'Figtree, sans-serif', fontSize: 11, color: 'var(--text)', outline: 'none' }}
-                />
-                <button
-                  onClick={() => setIsSpoiler(v => !v)}
-                  style={{
-                    background: isSpoiler ? 'rgba(240,122,122,.2)' : 'rgba(255,255,255,.04)',
-                    color: isSpoiler ? '#F07A7A' : 'var(--muted)',
-                    border: `1px solid ${isSpoiler ? 'rgba(240,122,122,.35)' : 'rgba(196,168,240,.15)'}`,
-                    borderRadius: 8,
-                    padding: '6px 8px',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontFamily: 'Figtree, sans-serif',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
+                <input type="number" placeholder="Página" value={trechoPagina} onChange={e => setTrechoPagina(e.target.value)}
+                  style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(196,168,240,.15)', borderRadius: 8, padding: '6px 8px', fontFamily: 'Figtree, sans-serif', fontSize: 11, color: 'var(--text)', outline: 'none' }} />
+                <input placeholder="Capítulo" value={trechoCapitulo} onChange={e => setTrechoCapitulo(e.target.value)}
+                  style={{ flex: 2, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(196,168,240,.15)', borderRadius: 8, padding: '6px 8px', fontFamily: 'Figtree, sans-serif', fontSize: 11, color: 'var(--text)', outline: 'none' }} />
+                <button onClick={() => setIsSpoiler(v => !v)}
+                  style={{ background: isSpoiler ? 'rgba(240,122,122,.2)' : 'rgba(255,255,255,.04)', color: isSpoiler ? '#F07A7A' : 'var(--muted)', border: `1px solid ${isSpoiler ? 'rgba(240,122,122,.35)' : 'rgba(196,168,240,.15)'}`, borderRadius: 8, padding: '6px 8px', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'Figtree, sans-serif', whiteSpace: 'nowrap' }}>
                   ⚠ Spoiler
                 </button>
               </div>
@@ -226,59 +239,38 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, onB
           )}
           <textarea
             className="cl-comp-inp"
-            placeholder={
-              composerMode === 'progresso'
-                ? 'Comentário opcional...'
-                : 'Compartilhe um pensamento…'
-            }
+            placeholder={composerMode === 'progresso' ? 'Comentário opcional...' : 'Compartilhe um pensamento…'}
             value={composerText}
             onChange={e => setComposerText(e.target.value)}
-            rows={composerMode === 'comentario' ? 1 : 1}
+            rows={1}
             style={{ height: composerMode === 'comentario' ? 36 : 30 }}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setComposerMode(composerMode === 'trecho' ? 'comentario' : 'trecho')}
-              className="cl-comp-btn"
-              style={composerMode === 'trecho' ? { borderColor: 'rgba(196,168,240,.35)', color: 'var(--accent)' } : {}}
-            >
-              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M2 4h12M2 8h8M2 12h5"/>
-              </svg>
+            <button onClick={() => setComposerMode(composerMode === 'trecho' ? 'comentario' : 'trecho')} className="cl-comp-btn"
+              style={composerMode === 'trecho' ? { borderColor: 'rgba(196,168,240,.35)', color: 'var(--accent)' } : {}}>
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 4h12M2 8h8M2 12h5"/></svg>
               Citar
             </button>
-            <button
-              onClick={() => setComposerMode(composerMode === 'progresso' ? 'comentario' : 'progresso')}
-              className="cl-comp-btn"
-              style={composerMode === 'progresso' ? { borderColor: 'rgba(196,168,240,.35)', color: 'var(--accent)' } : {}}
-            >
-              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <circle cx="8" cy="8" r="6"/><polyline points="8 5 8 8 10 10"/>
-              </svg>
+            <button onClick={() => setComposerMode(composerMode === 'progresso' ? 'comentario' : 'progresso')} className="cl-comp-btn"
+              style={composerMode === 'progresso' ? { borderColor: 'rgba(196,168,240,.35)', color: 'var(--accent)' } : {}}>
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="8" cy="8" r="6"/><polyline points="8 5 8 8 10 10"/></svg>
               Pág.
             </button>
-            <button
-              className="cl-comp-send"
-              onClick={publish}
-              disabled={posting}
-            >
+            <button className="cl-comp-send" onClick={publish} disabled={posting}>
               {posting ? '...' : 'Publicar'}
             </button>
           </div>
         </div>
       </div>
 
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
-          Carregando...
-        </div>
-      )}
+      {loading && <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>Carregando...</div>}
 
       {!loading && posts.map(post => (
         <PostItem
           key={post.id}
           post={post}
           currentUserId={currentUserId}
+          isAdmin={isAdmin}
           onToggleLike={toggleLike}
           onDelete={deletePost}
           onReply={handleReply}

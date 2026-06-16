@@ -1,4 +1,15 @@
+function metaPillText(meta) {
+  if (!meta) return null
+  const parts = []
+  if (meta.cap_inicio && meta.cap_fim) parts.push(`Caps. ${meta.cap_inicio}–${meta.cap_fim}`)
+  else if (meta.cap_fim) parts.push(`até cap. ${meta.cap_fim}`)
+  if (meta.pagina_fim) parts.push(`até pág. ${meta.pagina_fim}`)
+  return parts.length > 0 ? parts.join(' · ') : meta.titulo
+}
+
 export default function ClubHeroCard({ club, activeMeta, onEnter, onInvite }) {
+  const coverSrc = club.foto_url || club.livro_capa || null
+
   const pct = activeMeta?.pagina_fim
     ? Math.min(100, Math.round(((club.pagina_atual || 0) / activeMeta.pagina_fim) * 100))
     : 0
@@ -7,10 +18,12 @@ export default function ClubHeroCard({ club, activeMeta, onEnter, onInvite }) {
     ? Math.max(0, Math.ceil((new Date(activeMeta.data_limite) - new Date()) / (1000 * 60 * 60 * 24)))
     : null
 
+  const pillText = metaPillText(activeMeta)
+
   return (
     <div className="cl-hero">
       <div className="cl-eyebrow">
-        <span>📖 Lendo agora</span>
+        <span>📖 LENDO AGORA</span>
         {club.streak_atual > 0 && (
           <div className="cl-streak">
             🔥 <span style={{ fontSize: 14 }}>{club.streak_atual}</span> dias seguidos
@@ -19,13 +32,13 @@ export default function ClubHeroCard({ club, activeMeta, onEnter, onInvite }) {
       </div>
 
       <div className="cl-book-row">
-        {club.livro_capa ? (
-          <img src={club.livro_capa} alt="" className="cl-cover" />
+        {coverSrc ? (
+          <img src={coverSrc} alt="" className="cl-cover" />
         ) : (
           <div className="cl-cover-ph">📚</div>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.25, marginBottom: 5 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.25, marginBottom: 5, color: 'var(--text)' }}>
             {club.nome}
           </div>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -33,15 +46,22 @@ export default function ClubHeroCard({ club, activeMeta, onEnter, onInvite }) {
               ? `${club.livro_titulo}${club.livro_autor ? ' · ' + club.livro_autor : ''}`
               : 'Sem livro selecionado'}
           </div>
-          {activeMeta && (
-            <div className="cl-meta-pill" style={{ marginBottom: 9 }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#F0C97A', flexShrink: 0, animation: 'pulse 1.8s infinite' }} />
-              Meta: {activeMeta.titulo}
+          {activeMeta && pillText && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+              <div className="cl-meta-pill">
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#F0C97A', flexShrink: 0, animation: 'pulse 1.8s infinite' }} />
+                {pillText}
+              </div>
+              {daysLeft !== null && (
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#F0C97A', background: 'rgba(240,201,122,.13)', borderRadius: 8, padding: '3px 7px', flexShrink: 0 }}>
+                  ⏳ {daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}
+                </div>
+              )}
             </div>
           )}
           {daysLeft !== null && (
             <div style={{ fontSize: 10, color: '#F0C97A', fontWeight: 600 }}>
-              ⏳ {daysLeft} {daysLeft === 1 ? 'dia restante' : 'dias restantes'}
+              {daysLeft === 0 ? 'Prazo encerrado' : `${daysLeft} ${daysLeft === 1 ? 'dia restante' : 'dias restantes'}`}
             </div>
           )}
         </div>
@@ -79,7 +99,7 @@ export default function ClubHeroCard({ club, activeMeta, onEnter, onInvite }) {
         >
           Entrar no clube
         </button>
-        {onInvite && club.role === 'admin' && (
+        {onInvite && (
           <button
             onClick={onInvite}
             style={{

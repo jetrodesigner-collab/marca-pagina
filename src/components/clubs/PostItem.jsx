@@ -85,7 +85,7 @@ function ReplyItem({ reply, currentUserId, onToggleLike }) {
   )
 }
 
-export default function PostItem({ post, currentUserId, onToggleLike, onDelete, onReply, activeMeta, onCutucar }) {
+export default function PostItem({ post, currentUserId, isAdmin, onToggleLike, onDelete, onReply, activeMeta, onCutucar }) {
   const [spoilerRevealed, setSpoilerRevealed] = useState(false)
   const [showReplyInput, setShowReplyInput] = useState(false)
   const [replyText, setReplyText] = useState('')
@@ -221,7 +221,7 @@ export default function PostItem({ post, currentUserId, onToggleLike, onDelete, 
           >
             💬 {post.replies?.length ? `${post.replies.length} resposta${post.replies.length > 1 ? 's' : ''}` : 'Responder'}
           </button>
-          {post.user_id === currentUserId && (
+          {(post.user_id === currentUserId || isAdmin) && (
             <button
               onClick={() => onDelete && onDelete(post.id)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--muted)', fontFamily: 'Figtree, sans-serif', fontWeight: 500, padding: '2px 0', marginLeft: 'auto' }}

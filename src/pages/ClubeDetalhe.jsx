@@ -5,10 +5,11 @@ import ClubFeed from '../components/clubs/ClubFeed'
 import ClubProgresso from '../components/clubs/ClubProgresso'
 import ClubTrechos from '../components/clubs/ClubTrechos'
 import ClubAlmanaque from '../components/clubs/ClubAlmanaque'
+import ClubGerenciar from '../components/clubs/ClubGerenciar'
 import BadgePopup from '../components/clubs/BadgePopup'
 import ModalConvidar from '../components/clubs/ModalConvidar'
 
-const TABS = ['Feed', 'Progresso', 'Trechos', 'Almanaque']
+const BASE_TABS = ['Feed', 'Progresso', 'Trechos', 'Almanaque']
 
 export default function ClubeDetalhe({ session, club: initialClub, onBack, onNavigate }) {
   const [activeTab, setActiveTab] = useState(0)
@@ -20,10 +21,14 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
 
   const { members, activeMeta, loading: membersLoading, refresh: refreshMembers } = useClubMembers(club.id)
 
-  const isAdmin = club.role === 'admin'
+  const isAdmin = club.role === 'admin' || club.criador_id === session.user.id
+  const TABS = isAdmin ? [...BASE_TABS, '⚙️'] : BASE_TABS
+
   const daysLeft = activeMeta?.data_limite
     ? Math.max(0, Math.ceil((new Date(activeMeta.data_limite) - new Date()) / (1000 * 60 * 60 * 24)))
     : null
+
+  const coverSrc = club.foto_url || club.livro_capa || null
 
   useEffect(() => {
     supabase
@@ -44,6 +49,11 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
     refreshMembers()
   }
 
+  function handleGerenciarUpdate(updates) {
+    if (updates?.clubData) setClub(c => ({ ...c, ...updates.clubData }))
+    refreshMembers()
+  }
+
   const postCount = members.reduce((s, m) => s + (m.postCount || 0), 0)
   const trechoCount = members.reduce((s, m) => s + (m.trechoCount || 0), 0)
 
@@ -53,9 +63,9 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
       {/* Banner */}
       <div className="cl-banner">
         <div className="cl-banner-bg" />
-        {club.livro_capa && (
+        {coverSrc && (
           <img
-            src={club.livro_capa}
+            src={coverSrc}
             alt=""
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: .12, filter: 'blur(8px)', transform: 'scale(1.1)' }}
           />
@@ -73,13 +83,13 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
           </button>
         )}
         <div className="cl-banner-content">
-          <div className="cl-banner-cover" style={{ background: 'rgba(196,168,240,.1)' }}>
-            {club.livro_capa
-              ? <img src={club.livro_capa} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div className="cl-banner-cover" style={{ background: coverSrc ? 'transparent' : 'rgba(196,168,240,.1)' }}>
+            {coverSrc
+              ? <img src={coverSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : <span>📚</span>}
           </div>
           <div style={{ flex: 1, minWidth: 0, paddingBottom: 3 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.2, marginBottom: 2 }}>{club.nome}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.2, marginBottom: 2, color: 'var(--text)' }}>{club.nome}</div>
             <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {club.livro_titulo
                 ? `${club.livro_titulo}${club.livro_autor ? ' · ' + club.livro_autor : ''}`
@@ -111,7 +121,7 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="8" cy="8" r="6"/><polyline points="8 5 8 8 10 10"/></svg>
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600 }}>🎯 {activeMeta.titulo}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>🎯 {activeMeta.titulo}</div>
               <div style={{ fontSize: 10, color: 'var(--muted)' }}>Meta em andamento</div>
             </div>
           </div>
@@ -144,6 +154,7 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
             activeMeta={activeMeta}
             members={members}
             currentUserId={session.user.id}
+            isAdmin={isAdmin}
             onBadgeUnlock={handleBadgeUnlock}
             onToast={showToast}
             profile={profile}
@@ -167,6 +178,16 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
         )}
         {activeTab === 3 && (
           <ClubAlmanaque club={club} clubId={club.id} />
+        )}
+        {isAdmin && activeTab === 4 && (
+          <ClubGerenciar
+            club={club}
+            userId={session.user.id}
+            members={members}
+            activeMeta={activeMeta}
+            onUpdate={handleGerenciarUpdate}
+            onClubDeleted={onBack}
+          />
         )}
       </div>
 
@@ -200,25 +221,14 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
         </div>
       </div>
 
-      {/* Toast */}
-      {toast && (
-        <div className="toast">{toast}</div>
-      )}
+      {toast && <div className="toast">{toast}</div>}
 
-      {/* Badge popup */}
       {pendingBadge && (
-        <BadgePopup
-          badge={pendingBadge}
-          onClose={() => setPendingBadge(null)}
-        />
+        <BadgePopup badge={pendingBadge} onClose={() => setPendingBadge(null)} />
       )}
 
-      {/* Modal convidar */}
       {showConvidar && (
-        <ModalConvidar
-          club={club}
-          onClose={() => setShowConvidar(false)}
-        />
+        <ModalConvidar club={club} onClose={() => setShowConvidar(false)} />
       )}
     </div>
   )

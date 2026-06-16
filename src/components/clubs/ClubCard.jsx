@@ -21,7 +21,7 @@ export default function ClubCard({ club, onClick }) {
           background: club.livro_capa ? 'transparent' : 'rgba(196,168,240,.1)',
         }}
       >
-        <CoverImg src={club.livro_capa} fallback="📚" />
+        <CoverImg src={club.foto_url || club.livro_capa} fallback="📚" />
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
