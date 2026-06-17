@@ -9,7 +9,7 @@ export function useClubPosts(clubId, userId) {
     if (!clubId) return
     setLoading(true)
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('club_posts')
       .select(`
         *,
@@ -25,14 +25,29 @@ export function useClubPosts(clubId, userId) {
       .is('parent_id', null)
       .order('criado_em', { ascending: false })
 
+    if (error) console.error('[useClubPosts] SELECT error:', error)
     setPosts(data || [])
     setLoading(false)
   }, [clubId])
 
   useEffect(() => { load() }, [load])
 
+  // Realtime: atualiza o feed para todos os membros do clube
+  useEffect(() => {
+    if (!clubId) return
+    const channel = supabase
+      .channel(`club_posts_${clubId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'club_posts', filter: `club_id=eq.${clubId}` },
+        () => load()
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [clubId, load])
+
   async function addPost({ tipo, conteudo, trecho_texto, trecho_pagina, trecho_capitulo, parent_id, is_spoiler }) {
-    const { error } = await supabase.from('club_posts').insert({
+    const { data, error } = await supabase.from('club_posts').insert({
       club_id: clubId,
       user_id: userId,
       tipo: tipo || 'comentario',
@@ -43,6 +58,7 @@ export function useClubPosts(clubId, userId) {
       parent_id: parent_id || null,
       is_spoiler: is_spoiler || false,
     })
+    console.log('[addPost] INSERT resultado:', { data, error })
     if (error) throw error
     await load()
   }

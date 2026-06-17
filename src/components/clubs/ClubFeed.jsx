@@ -162,7 +162,8 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
       setComposerText('')
       setComposerMode('comentario')
       onToast && onToast('✓ Publicado!')
-    } catch {
+    } catch (err) {
+      console.error('[ClubFeed] publish error:', err)
       onToast && onToast('Erro ao publicar.')
     } finally {
       setPosting(false)
