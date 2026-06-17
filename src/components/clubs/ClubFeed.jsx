@@ -122,14 +122,21 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
   async function publish() {
     if (posting) return
     const conteudo = composerText.trim()
-    if (!conteudo && composerMode === 'comentario') return
+
+    if (composerMode === 'comentario' && !conteudo) {
+      onToast && onToast('Escreva algo para publicar.')
+      return
+    }
 
     setPosting(true)
     try {
       const hour = new Date().getHours()
       if (composerMode === 'progresso') {
         const pg = parseInt(novaPagina)
-        if (!pg) return
+        if (!pg) {
+          onToast && onToast('Informe a página atual.')
+          return
+        }
         const newStreak = await updateStreak(currentUserId, club.id, pg)
         await supabase
           .from('club_members')
@@ -142,7 +149,10 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
         if (newStreak) onToast && onToast(`🔥 Streak: ${newStreak} dias!`)
         setNovaPagina('')
       } else if (composerMode === 'trecho') {
-        if (!trechoText.trim()) return
+        if (!trechoText.trim()) {
+          onToast && onToast('Cole o trecho do livro.')
+          return
+        }
         await addPost({
           tipo: 'trecho',
           conteudo: conteudo || null,

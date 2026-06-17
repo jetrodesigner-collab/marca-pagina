@@ -159,9 +159,11 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
     setDeletingClub(true)
     try {
       const { error } = await supabase.from('clubs').delete().eq('id', club.id)
+      console.log('[deleteClub] result:', { error })
       if (error) throw error
       onClubDeleted && onClubDeleted()
-    } catch {
+    } catch (err) {
+      console.error('[deleteClub] error:', err)
       showToast('Erro ao excluir clube.')
       setDeletingClub(false)
     }
