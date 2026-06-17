@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 export default function ModalProgresso({ paginaAtual, paginaFim, userId, clubId, onClose }) {
   const [pagina, setPagina] = useState(paginaAtual ?? '')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
 
   const pg = parseInt(pagina) || 0
   const pct = paginaFim && pg ? Math.min(100, Math.round((pg / paginaFim) * 100)) : null
@@ -11,13 +12,17 @@ export default function ModalProgresso({ paginaAtual, paginaFim, userId, clubId,
   async function save() {
     if (!pg || pg < 0) return
     setSaving(true)
+    setSaveError(null)
     try {
-      await supabase
+      const { error } = await supabase
         .from('club_members')
         .update({ pagina_atual: pg })
         .eq('club_id', clubId)
         .eq('user_id', userId)
+      if (error) throw error
       onClose(pg)
+    } catch {
+      setSaveError('Erro ao salvar. Verifique sua conexão ou execute o SQL de correção.')
     } finally {
       setSaving(false)
     }
@@ -63,6 +68,12 @@ export default function ModalProgresso({ paginaAtual, paginaFim, userId, clubId,
               <div style={{ height: '100%', width: `${pct}%`, borderRadius: 2, background: 'linear-gradient(90deg,var(--accent),#9B7BD4)', transition: 'width .3s' }} />
             </div>
             <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>{pct}% concluído</div>
+          </div>
+        )}
+
+        {saveError && (
+          <div style={{ fontSize: 11, color: '#F07A7A', marginBottom: 12, lineHeight: 1.4 }}>
+            {saveError}
           </div>
         )}
 

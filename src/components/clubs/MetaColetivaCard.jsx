@@ -1,6 +1,3 @@
-import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
-import { checkBadges } from '../../hooks/useBadges'
 
 const MEMBER_COLORS = [
   { bg: 'rgba(196,168,240,.14)', color: '#C4A8F0' },
@@ -17,9 +14,7 @@ function colorFor(id) {
   return MEMBER_COLORS[Math.abs(h) % MEMBER_COLORS.length]
 }
 
-export default function MetaColetivaCard({ members, activeMeta, clubId, onBadgeUnlock }) {
-  const [simulating, setSimulating] = useState(false)
-
+export default function MetaColetivaCard({ members, activeMeta }) {
   if (!activeMeta?.pagina_fim) return null
 
   const totalPct = members.length > 0
@@ -41,20 +36,6 @@ export default function MetaColetivaCard({ members, activeMeta, clubId, onBadgeU
     : daysLeft !== null
       ? `Todos chegando juntos em ${daysLeft} dia${daysLeft !== 1 ? 's' : ''}`
       : 'Todos chegando juntos'
-
-  async function simularMeta() {
-    if (simulating || !onBadgeUnlock) return
-    setSimulating(true)
-    for (const m of members) {
-      await checkBadges(m.user_id, clubId, { meta: activeMeta })
-    }
-    await supabase
-      .from('club_metas')
-      .update({ ativa: false })
-      .eq('id', activeMeta.id)
-    onBadgeUnlock({ tipo: 'meta_coletiva', label: 'Meta Coletiva', icone: '🏆' })
-    setSimulating(false)
-  }
 
   return (
     <div className="cl-goal">
@@ -112,27 +93,6 @@ export default function MetaColetivaCard({ members, activeMeta, clubId, onBadgeU
         )}
       </div>
 
-      {!unlocked && (
-        <button
-          onClick={simularMeta}
-          disabled={simulating}
-          style={{
-            width: '100%',
-            padding: '10px 0',
-            background: 'rgba(196,168,240,.1)',
-            border: '1px solid rgba(196,168,240,.22)',
-            borderRadius: 10,
-            fontFamily: 'Figtree, sans-serif',
-            fontSize: 12,
-            fontWeight: 600,
-            color: 'var(--accent)',
-            cursor: simulating ? 'default' : 'pointer',
-            opacity: simulating ? .6 : 1,
-          }}
-        >
-          {simulating ? '...' : '✨ Simular grupo chegando a 100%'}
-        </button>
-      )}
     </div>
   )
 }

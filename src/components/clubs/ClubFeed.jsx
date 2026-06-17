@@ -6,6 +6,30 @@ import { checkBadges } from '../../hooks/useBadges'
 import PostItem from './PostItem'
 import MetaColetivaCard from './MetaColetivaCard'
 
+const PROGRESS_RULES = [
+  { pct: '100%',   icone: '✅', label: 'Meta Concluída' },
+  { pct: '90–99%', icone: '⚡', label: 'Leitor Relâmpago' },
+  { pct: '75–89%', icone: '🔥', label: 'Chama Viva' },
+  { pct: '60–74%', icone: '🌅', label: 'Madrugador' },
+  { pct: '50–59%', icone: '📖', label: 'No Ritmo' },
+  { pct: '30–49%', icone: '🐢', label: 'Tartaruga Literária' },
+  { pct: '15–29%', icone: '😴', label: 'Soneca entre Capítulos' },
+  { pct: '1–14%',  icone: '👀', label: 'Só Olhou a Capa' },
+  { pct: '0%',     icone: '🛋️', label: 'Membro Honorário do Sofá' },
+]
+
+const RANK_RULES = [
+  { medal: '🥇', label: '1º lugar — Medalha de Ouro' },
+  { medal: '🥈', label: '2º lugar — Medalha de Prata' },
+  { medal: '🥉', label: '3º lugar — Medalha de Bronze' },
+]
+
+const SPECIAL_RULES = [
+  { icone: '👑', label: 'Fundador',  desc: 'Criador do clube' },
+  { icone: '🏆', label: 'Pioneiro',  desc: 'Primeiro a atingir 100%' },
+  { icone: '🔥', label: 'X dias',    desc: 'Dias consecutivos registrando progresso' },
+]
+
 const MOODS = [
   { emoji: '😱', label: 'Medo' },
   { emoji: '🤔', label: 'Suspense' },
@@ -37,6 +61,7 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
   const [isSpoiler, setIsSpoiler] = useState(false)
   const [novaPagina, setNovaPagina] = useState('')
   const [posting, setPosting] = useState(false)
+  const [showRegras, setShowRegras] = useState(false)
 
   // Humor do grupo
   const [myMood, setMyMood] = useState(null)
@@ -106,6 +131,11 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
         const pg = parseInt(novaPagina)
         if (!pg) return
         const newStreak = await updateStreak(currentUserId, club.id, pg)
+        await supabase
+          .from('club_members')
+          .update({ pagina_atual: pg })
+          .eq('club_id', club.id)
+          .eq('user_id', currentUserId)
         await addPost({ tipo: 'progresso', conteudo: conteudo || null, trecho_pagina: pg })
         const newBadges = await checkBadges(currentUserId, club.id, { postHour: hour, meta: activeMeta })
         newBadges.forEach(b => onBadgeUnlock && onBadgeUnlock(b))
@@ -150,6 +180,60 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
   return (
     <div style={{ padding: '28px 22px 120px' }}>
 
+      {/* Regras de premiação */}
+      <div style={{ background: 'var(--sur)', border: '1px solid var(--bor)', borderRadius: 14, overflow: 'hidden', marginBottom: 16 }}>
+        <button
+          onClick={() => setShowRegras(v => !v)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: 'Figtree, sans-serif', fontSize: 12, fontWeight: 700, color: 'var(--text)',
+          }}
+        >
+          <span>🏆 Regras de premiação</span>
+          <span style={{ fontSize: 10, color: 'var(--muted)' }}>{showRegras ? '▲' : '▼'}</span>
+        </button>
+        {showRegras && (
+          <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--bor)' }}>
+            <div style={{ paddingTop: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+                Badges por progresso
+              </div>
+              {PROGRESS_RULES.map(r => (
+                <div key={r.pct} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.icone}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600, flex: 1 }}>{r.label}</span>
+                  <span style={{ fontSize: 10, color: 'var(--muted)' }}>{r.pct}</span>
+                </div>
+              ))}
+              <div style={{ height: 1, background: 'var(--bor)', margin: '14px 0' }} />
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+                Medalhas de ranking
+              </div>
+              {RANK_RULES.map(r => (
+                <div key={r.medal} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.medal}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{r.label}</span>
+                </div>
+              ))}
+              <div style={{ height: 1, background: 'var(--bor)', margin: '14px 0' }} />
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+                Badges especiais
+              </div>
+              {SPECIAL_RULES.map(r => (
+                <div key={r.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.icone}</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{r.label}</div>
+                    <div style={{ fontSize: 10, color: 'var(--muted)' }}>{r.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Humor do grupo */}
       <div className="cl-mood">
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 14 }}>
@@ -182,8 +266,6 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
       <MetaColetivaCard
         members={members}
         activeMeta={activeMeta}
-        clubId={club.id}
-        onBadgeUnlock={onBadgeUnlock}
       />
 
       {/* Composer */}
@@ -193,7 +275,7 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
             <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
           ) : initialUser}
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
           {composerMode === 'progresso' && (
             <div style={{ marginBottom: 8 }}>
               <input
