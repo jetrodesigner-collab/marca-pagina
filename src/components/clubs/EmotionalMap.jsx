@@ -115,15 +115,15 @@ export default function EmotionalMap({ clubId, activeMeta, members }) {
     }
   }
 
-  const pageEnd = activeMeta?.pagina_fim
-  if (!pageEnd) return null
+  const pageEnd = activeMeta?.pagina_fim ?? null
 
   const chartData = useMemo(
-    () => buildChartData(members, moods, pageEnd),
+    () => buildChartData(members, moods, pageEnd || 0),
     [members, moods, pageEnd],
   )
 
   const hasMoods = moods.length > 0
+  const hasPageEnd = Boolean(pageEnd)
 
   const peakPoint = chartData.length
     ? chartData.reduce((mx, d) => (d.intensity > mx.intensity ? d : mx), chartData[0])
@@ -136,16 +136,30 @@ export default function EmotionalMap({ clubId, activeMeta, members }) {
   return (
     <div className="cl-mood" style={{ marginBottom: 16 }}>
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 14 }}>
-        Clima da leitura · Pág. 0–{pageEnd}
+        {hasPageEnd ? `Clima da leitura · Pág. 0–${pageEnd}` : 'Mapa Emocional do Grupo'}
       </div>
 
-      {loading && (
+      {/* Sem meta com página final configurada */}
+      {!hasPageEnd && (
+        <div style={{ height: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <span style={{ fontSize: 28 }}>📊</span>
+          <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.5 }}>
+            Defina a página final da meta
+            <br />
+            <span style={{ fontSize: 11, color: 'rgba(90,84,104,1)' }}>
+              O mapa emocional fica disponível assim que a meta tiver uma página-alvo.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {hasPageEnd && loading && (
         <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--muted)' }}>
           Carregando...
         </div>
       )}
 
-      {!loading && !hasMoods && (
+      {hasPageEnd && !loading && !hasMoods && (
         <div style={{ height: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <span style={{ fontSize: 28 }}>🌫️</span>
           <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.5 }}>
@@ -158,7 +172,7 @@ export default function EmotionalMap({ clubId, activeMeta, members }) {
         </div>
       )}
 
-      {!loading && hasMoods && (
+      {hasPageEnd && !loading && hasMoods && (
         <>
           {peakPoint?.emoji && (
             <div style={{

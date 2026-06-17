@@ -23,9 +23,9 @@ export default function PageBets({ clubId, activeMeta, members, currentUserId, i
   const [betInput, setBetInput] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  if (!activeMeta?.pagina_fim) return null
+  const hasActiveMeta = Boolean(activeMeta?.id)
+  const pageEnd = activeMeta?.pagina_fim ?? null
 
-  const pageEnd = activeMeta.pagina_fim
   const myBet = bets.find(b => b.user_id === currentUserId)
 
   const memberMap = {}
@@ -36,7 +36,7 @@ export default function PageBets({ clubId, activeMeta, members, currentUserId, i
     const currentPage = member?.pagina_atual || 0
     const pct = b.bet_pages > 0 ? Math.min(100, Math.round((currentPage / b.bet_pages) * 100)) : 0
     const fulfilled = currentPage >= b.bet_pages
-    const isOver = activeMeta.data_limite && new Date() > new Date(activeMeta.data_limite)
+    const isOver = activeMeta?.data_limite && new Date() > new Date(activeMeta.data_limite)
     const failed = isOver && !fulfilled
     const status = fulfilled ? 'success' : failed ? 'fail' : 'progress'
     return { ...b, member, currentPage, pct, status }
@@ -49,8 +49,8 @@ export default function PageBets({ clubId, activeMeta, members, currentUserId, i
 
   async function handlePlaceBet() {
     const pg = parseInt(betInput)
-    if (!pg || pg <= 0 || pg > pageEnd) {
-      onToast?.(`Digite uma página entre 1 e ${pageEnd}.`)
+    if (!pg || pg <= 0 || (pageEnd && pg > pageEnd)) {
+      onToast?.(pageEnd ? `Digite uma página entre 1 e ${pageEnd}.` : 'Digite um número de página válido.')
       return
     }
     setSubmitting(true)
@@ -69,15 +69,27 @@ export default function PageBets({ clubId, activeMeta, members, currentUserId, i
   return (
     <div style={{ background: 'var(--sur)', border: '1px solid var(--bor)', borderRadius: 14, padding: 18, marginBottom: 16 }}>
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 14 }}>
-        📊 Metas individuais · Esta meta
+        📊 Apostas de Páginas
       </div>
 
-      {loading && (
+      {/* Sem meta ativa */}
+      {!hasActiveMeta && (
+        <div style={{ height: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <span style={{ fontSize: 28 }}>🎯</span>
+          <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.5 }}>
+            Nenhuma meta ativa.
+            <br />
+            <span style={{ fontSize: 11, color: 'rgba(90,84,104,1)' }}>Crie uma meta para habilitar as apostas de páginas.</span>
+          </div>
+        </div>
+      )}
+
+      {hasActiveMeta && loading && (
         <div style={{ fontSize: 12, color: 'var(--muted)', padding: '12px 0', textAlign: 'center' }}>Carregando...</div>
       )}
 
-      {/* Empty state */}
-      {!loading && betCards.length === 0 && !showBetForm && (
+      {/* Empty state quando há meta mas sem apostas */}
+      {hasActiveMeta && !loading && betCards.length === 0 && !showBetForm && (
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
           <div style={{ fontSize: 24, marginBottom: 8 }}>📊</div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>Nenhuma aposta ainda. Seja o primeiro!</div>
@@ -85,7 +97,7 @@ export default function PageBets({ clubId, activeMeta, members, currentUserId, i
       )}
 
       {/* Bets grid */}
-      {!loading && betCards.length > 0 && (
+      {hasActiveMeta && !loading && betCards.length > 0 && (
         <div className="cl-bets-grid">
           {betCards.map(b => {
             const profile = b.member?.profile
@@ -142,7 +154,7 @@ export default function PageBets({ clubId, activeMeta, members, currentUserId, i
       )}
 
       {/* Bet form */}
-      {!myBet && !showBetForm && (
+      {hasActiveMeta && !myBet && !showBetForm && (
         <button
           onClick={() => setShowBetForm(true)}
           style={{
@@ -167,19 +179,21 @@ export default function PageBets({ clubId, activeMeta, members, currentUserId, i
         </button>
       )}
 
-      {showBetForm && (
+      {hasActiveMeta && showBetForm && (
         <div style={{ marginTop: betCards.length > 0 ? 10 : 0, background: 'rgba(42,38,55,1)', border: '1px solid rgba(196,168,240,.12)', borderRadius: 10, padding: 12 }}>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
-            Até qual página você vai chegar nesta meta? (limite: pág. {pageEnd})
+            {pageEnd
+              ? `Até qual página você vai chegar nesta meta? (limite: pág. ${pageEnd})`
+              : 'Até qual página você vai chegar nesta meta?'}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               type="number"
-              placeholder={`Ex: ${Math.round(pageEnd * 0.7)}`}
+              placeholder={pageEnd ? `Ex: ${Math.round(pageEnd * 0.7)}` : 'Ex: 150'}
               value={betInput}
               onChange={e => setBetInput(e.target.value)}
               min="1"
-              max={pageEnd}
+              max={pageEnd || undefined}
               style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(196,168,240,.15)', borderRadius: 8, padding: '8px 10px', fontFamily: 'Figtree, sans-serif', fontSize: 13, color: 'var(--text)', outline: 'none' }}
             />
             <button
@@ -200,7 +214,7 @@ export default function PageBets({ clubId, activeMeta, members, currentUserId, i
       )}
 
       {/* Collective goal */}
-      {betCards.length > 0 && (
+      {hasActiveMeta && betCards.length > 0 && (
         <div style={{ marginTop: 14, background: 'linear-gradient(135deg, rgba(196,168,240,.1), rgba(126,232,162,.06))', border: '1px solid rgba(196,168,240,.2)', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>🎯 Meta coletiva</span>
