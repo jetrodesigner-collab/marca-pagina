@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useClubPosts } from '../../hooks/useClubPosts'
 import { useStreak } from '../../hooks/useStreak'
 import { checkBadges } from '../../hooks/useBadges'
 import PostItem from './PostItem'
 import MetaColetivaCard from './MetaColetivaCard'
+import EmotionalMap from './EmotionalMap'
+import SecretPredictions from './SecretPredictions'
+import PageBets from './PageBets'
 
 const PROGRESS_RULES = [
   { pct: '100%',   icone: '✅', label: 'Meta Concluída' },
@@ -28,14 +31,6 @@ const SPECIAL_RULES = [
   { icone: '👑', label: 'Fundador',  desc: 'Criador do clube' },
   { icone: '🏆', label: 'Pioneiro',  desc: 'Primeiro a atingir 100%' },
   { icone: '🔥', label: 'X dias',    desc: 'Dias consecutivos registrando progresso' },
-]
-
-const MOODS = [
-  { emoji: '😱', label: 'Medo' },
-  { emoji: '🤔', label: 'Suspense' },
-  { emoji: '💔', label: 'Tristeza' },
-  { emoji: '😂', label: 'Divertido' },
-  { emoji: '😮', label: 'Surpresa' },
 ]
 
 const MEMBER_COLORS = [
@@ -63,61 +58,8 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
   const [posting, setPosting] = useState(false)
   const [showRegras, setShowRegras] = useState(false)
 
-  // Humor do grupo
-  const [myMood, setMyMood] = useState(null)
-  const [moodTotals, setMoodTotals] = useState({})
-  const [moodLoading, setMoodLoading] = useState(false)
-
   const initialUser = (profile?.full_name || profile?.username || '?').charAt(0).toUpperCase()
   const userColor = colorFor(currentUserId)
-  const totalVotos = Object.values(moodTotals).reduce((s, v) => s + v, 0)
-
-  useEffect(() => {
-    loadMoods()
-  }, [club.id, activeMeta?.id])
-
-  async function loadMoods() {
-    try {
-      const { data } = await supabase
-        .from('club_moods')
-        .select('user_id, mood')
-        .eq('club_id', club.id)
-      if (!data) return
-      const my = data.find(d => d.user_id === currentUserId)
-      setMyMood(my?.mood || null)
-      const totals = {}
-      data.forEach(d => { totals[d.mood] = (totals[d.mood] || 0) + 1 })
-      setMoodTotals(totals)
-    } catch {
-      // tabela pode não existir ainda — silencioso
-    }
-  }
-
-  async function handleMoodSelect(label) {
-    if (moodLoading) return
-    const newMood = myMood === label ? null : label
-    setMyMood(newMood)
-    setMoodLoading(true)
-    try {
-      if (newMood) {
-        await supabase.from('club_moods').upsert({
-          club_id: club.id,
-          meta_id: activeMeta?.id || null,
-          user_id: currentUserId,
-          mood: newMood,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'club_id,user_id' })
-      } else {
-        await supabase.from('club_moods').delete()
-          .eq('club_id', club.id).eq('user_id', currentUserId)
-      }
-      await loadMoods()
-    } catch {
-      // silencioso se tabela não existe
-    } finally {
-      setMoodLoading(false)
-    }
-  }
 
   async function publish() {
     if (posting) return
@@ -245,33 +187,31 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
         )}
       </div>
 
-      {/* Humor do grupo */}
-      <div className="cl-mood">
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 14 }}>
-          Humor do grupo nesta meta
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {MOODS.map(m => {
-            const count = moodTotals[m.label] || 0
-            const pct = totalVotos > 0 ? Math.round((count / totalVotos) * 100) : 0
-            const isSelected = myMood === m.label
-            return (
-              <button
-                key={m.label}
-                onClick={() => handleMoodSelect(m.label)}
-                className="cl-mood-pill"
-                style={isSelected ? { borderColor: 'rgba(196,168,240,.35)', background: 'rgba(196,168,240,.08)' } : {}}
-              >
-                {m.emoji}
-                <span style={{ display: 'block', fontSize: 9, color: isSelected ? 'var(--accent)' : 'var(--muted)', marginTop: 3 }}>{m.label}</span>
-                {totalVotos > 0 && (
-                  <span style={{ display: 'block', fontSize: 9, fontWeight: 700, color: isSelected ? 'var(--accent)' : 'rgba(240,235,248,.4)', marginTop: 1 }}>{pct}%</span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+      {/* Mapa Emocional */}
+      <EmotionalMap
+        clubId={club.id}
+        activeMeta={activeMeta}
+        members={members}
+      />
+
+      {/* Palpites Secretos */}
+      <SecretPredictions
+        clubId={club.id}
+        activeMeta={activeMeta}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+        onToast={onToast}
+      />
+
+      {/* Apostas de Páginas */}
+      <PageBets
+        clubId={club.id}
+        activeMeta={activeMeta}
+        members={members}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+        onToast={onToast}
+      />
 
       {/* Meta coletiva */}
       <MetaColetivaCard
