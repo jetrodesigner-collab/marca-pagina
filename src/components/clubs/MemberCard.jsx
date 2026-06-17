@@ -1,16 +1,18 @@
 import { useState } from 'react'
 
+const RANK_MEDALS = ['🥇', '🥈', '🥉']
+
 function getProgressBadge(pct, hasActiveMeta) {
   if (!hasActiveMeta) return null
-  if (pct >= 100) return { tipo: 'dyn_meta_ok',      label: 'Meta Concluída',           icone: '✅' }
-  if (pct >= 90)  return { tipo: 'dyn_relampago',    label: 'Leitor Relâmpago',          icone: '⚡' }
-  if (pct >= 75)  return { tipo: 'dyn_em_chamas',    label: 'Em Chamas',                 icone: '🔥' }
-  if (pct >= 60)  return { tipo: 'dyn_horizonte',    label: 'No Horizonte',              icone: '🌅' }
-  if (pct >= 50)  return { tipo: 'dyn_no_ritmo',     label: 'No Ritmo',                  icone: '📖' }
-  if (pct >= 30)  return { tipo: 'dyn_tartaruga',    label: 'Tartaruga Literária',       icone: '🐢' }
-  if (pct >= 15)  return { tipo: 'dyn_soneca',       label: 'Soneca entre Capítulos',    icone: '😴' }
-  if (pct >= 1)   return { tipo: 'dyn_capa',         label: 'Só Olhou a Capa',           icone: '👀' }
-  return           { tipo: 'dyn_sofa',               label: 'Membro Honorário do Sofá',  icone: '🛋️' }
+  if (pct >= 100) return { tipo: 'dyn_meta_ok',   label: 'Meta Concluída',          icone: '✅' }
+  if (pct >= 90)  return { tipo: 'dyn_relampago', label: 'Leitor Relâmpago',         icone: '⚡' }
+  if (pct >= 75)  return { tipo: 'dyn_em_chamas', label: 'Chama Viva',               icone: '🔥' }
+  if (pct >= 60)  return { tipo: 'dyn_horizonte', label: 'Madrugador',               icone: '🌅' }
+  if (pct >= 50)  return { tipo: 'dyn_no_ritmo',  label: 'No Ritmo',                 icone: '📖' }
+  if (pct >= 30)  return { tipo: 'dyn_tartaruga', label: 'Tartaruga Literária',      icone: '🐢' }
+  if (pct >= 15)  return { tipo: 'dyn_soneca',    label: 'Soneca entre Capítulos',   icone: '😴' }
+  if (pct >= 1)   return { tipo: 'dyn_capa',      label: 'Só Olhou a Capa',          icone: '👀' }
+  return           { tipo: 'dyn_sofa',            label: 'Membro Honorário do Sofá', icone: '🛋️' }
 }
 
 const MEMBER_COLORS = [
@@ -35,15 +37,15 @@ function progColor(pct) {
   return 'linear-gradient(90deg,#F07A7A,#C86060)'
 }
 
-export default function MemberCard({ member, activeMeta, isAdmin, currentUserId, isPokedToday, onCutucar, onBadgeClick }) {
+export default function MemberCard({ member, activeMeta, isAdmin, currentUserId, isPokedToday, onCutucar, onBadgeClick, rank }) {
   const profile = member.profile || {}
   const name = profile.full_name || profile.username || 'Usuário'
   const initial = name.charAt(0).toUpperCase()
   const color = colorFor(member.user_id)
   const pct = member.pct || 0
 
+  const medal = (typeof rank === 'number' && rank < 3) ? RANK_MEDALS[rank] : null
   const showCutucar = activeMeta && pct < 50 && member.user_id !== currentUserId
-
   const dynBadge = getProgressBadge(pct, !!activeMeta?.pagina_fim)
 
   return (
@@ -52,13 +54,20 @@ export default function MemberCard({ member, activeMeta, isAdmin, currentUserId,
       style={pct >= 100 ? { borderColor: 'rgba(126,223,168,.22)' } : pct < 30 && activeMeta ? { borderColor: 'rgba(240,122,122,.20)' } : {}}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <div
-          className="cl-mem-ava"
-          style={{ background: color.bg, color: color.color }}
-        >
-          {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-          ) : initial}
+        <div style={{ position: 'relative' }}>
+          <div
+            className="cl-mem-ava"
+            style={{ background: color.bg, color: color.color }}
+          >
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+            ) : initial}
+          </div>
+          {medal && (
+            <span style={{ position: 'absolute', bottom: -4, right: -6, fontSize: 14, lineHeight: 1 }}>
+              {medal}
+            </span>
+          )}
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -73,18 +82,25 @@ export default function MemberCard({ member, activeMeta, isAdmin, currentUserId,
             {member.postCount} post{member.postCount !== 1 ? 's' : ''} · {member.trechoCount} trecho{member.trechoCount !== 1 ? 's' : ''}
           </div>
         </div>
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            padding: '2px 8px',
-            borderRadius: 10,
-            background: member.role === 'admin' ? 'rgba(196,168,240,.14)' : 'rgba(255,255,255,.05)',
-            color: member.role === 'admin' ? 'var(--accent)' : 'var(--muted)',
-          }}
-        >
-          {member.role === 'admin' ? 'Admin' : 'Membro'}
-        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: 10,
+              background: member.role === 'admin' ? 'rgba(196,168,240,.14)' : 'rgba(255,255,255,.05)',
+              color: member.role === 'admin' ? 'var(--accent)' : 'var(--muted)',
+            }}
+          >
+            {member.role === 'admin' ? '👑 Admin' : 'Membro'}
+          </span>
+          {medal && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(240,235,248,.5)' }}>
+              {rank === 0 ? '1º' : rank === 1 ? '2º' : '3º'} lugar
+            </span>
+          )}
+        </div>
       </div>
 
       {activeMeta?.pagina_fim && (
@@ -137,7 +153,6 @@ export default function MemberCard({ member, activeMeta, isAdmin, currentUserId,
 
 function BadgeChip({ badge, onClick, dynamic }) {
   const styles = {
-    // badges persistentes (DB)
     fundador:         { bg: 'rgba(196,168,240,.14)', color: 'var(--accent)', border: 'rgba(196,168,240,.25)' },
     chama_viva:       { bg: 'rgba(255,107,53,.14)',  color: '#FF6B35',       border: 'rgba(255,107,53,.28)' },
     comentarista:     { bg: 'rgba(196,168,240,.14)', color: 'var(--accent)', border: 'rgba(196,168,240,.25)' },
@@ -145,7 +160,6 @@ function BadgeChip({ badge, onClick, dynamic }) {
     leitor_relampago: { bg: 'rgba(255,209,102,.14)', color: '#FFD166',       border: 'rgba(255,209,102,.25)' },
     meta_coletiva:    { bg: 'rgba(255,209,102,.14)', color: '#FFD166',       border: 'rgba(255,209,102,.25)' },
     pioneiro:         { bg: 'rgba(255,209,102,.18)', color: '#FFD166',       border: 'rgba(255,209,102,.35)' },
-    // badges dinâmicos (computados por pct)
     dyn_meta_ok:      { bg: 'rgba(126,223,168,.13)', color: '#7EDFA8',       border: 'rgba(126,223,168,.28)' },
     dyn_relampago:    { bg: 'rgba(255,209,102,.14)', color: '#FFD166',       border: 'rgba(255,209,102,.28)' },
     dyn_em_chamas:    { bg: 'rgba(255,107,53,.13)',  color: '#FF6B35',       border: 'rgba(255,107,53,.25)' },

@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Clube do Livro — Marca·Página</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root {
+  --bg:#1A1720; --surf:#221E2E; --surf2:#2A2538; --surf3:#312B40;
+  --border:rgba(196,168,240,0.10); --border2:rgba(196,168,240,0.18);
+  --acc:#C4A8F0; --acc-dim:rgba(196,168,240,0.14); --acc-glow:rgba(196,168,240,0.07);
+  --text:#F0EBF8; --muted:rgba(240,235,248,0.42); --sub:rgba(240,235,248,0.62);
+  --green:#7EDFA8; --green-d:rgba(126,223,168,0.13);
+  --amber:#F0C97A; --amber-d:rgba(240,201,122,0.13);
+  --red:#F07A7A; --red-d:rgba(240,122,122,0.13);
+  --gold:#FFD166; --gold-d:rgba(255,209,102,0.14);
+  --fire:#FF6B35;
+  --r:14px; --r-sm:8px;
+}
+body{background:#111018;font-family:'Figtree',sans-serif;color:var(--text);min-height:100vh;display:flex;justify-content:center;padding:24px 0 40px;}
+.shell{width:390px;background:var(--bg);border-radius:40px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.7),0 0 0 10px #000;position:relative;display:flex;flex-direction:column;min-height:780px;}
+.screen{display:none;flex-direction:column;height:100%;min-height:780px;}
+.screen.on{display:flex;}
+svg{display:block;}
+
+/* ── STREAK PILL ── */
+.streak-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,107,53,0.15);border:1px solid rgba(255,107,53,0.30);
+  border-radius:20px;padding:4px 10px;
+  font-size:12px;font-weight:700;color:var(--fire);
+}
+.streak-pill .n{font-size:14px;}
+
+/* ════════════ SCREEN 1 — LISTA ════════════ */
+.list-header{padding:48px 20px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.list-title{font-size:21px;font-weight:700;letter-spacing:-.3px;}
+.list-title em{color:var(--acc);font-style:normal;}
+.list-header-right{display:flex;align-items:center;gap:8px;}
+.btn-new{display:flex;align-items:center;gap:5px;background:var(--acc);color:#1A1720;border:none;border-radius:20px;padding:8px 13px;font:600 12px/1 'Figtree',sans-serif;cursor:pointer;flex-shrink:0;}
+.list-tabs{display:flex;padding:0 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.list-tab{padding:9px 0;margin-right:20px;font:500 13px 'Figtree',sans-serif;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all .18s;}
+.list-tab.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:600;}
+.list-scroll{flex:1;overflow-y:auto;padding:22px 22px 120px;scrollbar-width:none;}
+.list-scroll::-webkit-scrollbar{display:none;}
+
+/* hero card */
+.hero-club{background:linear-gradient(145deg,rgba(196,168,240,.13) 0%,rgba(196,168,240,.04) 100%);border:1px solid var(--border2);border-radius:var(--r);padding:22px;margin-bottom:26px;position:relative;overflow:hidden;}
+.hero-club::after{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:radial-gradient(circle,rgba(196,168,240,.18),transparent 70%);pointer-events:none;}
+.hero-eyebrow{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--acc);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.hero-book-row{display:flex;gap:16px;margin-bottom:18px;}
+.hero-cover{width:56px;height:78px;border-radius:6px;background:var(--surf2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.hero-info{flex:1;min-width:0;}
+.hero-name{font-size:15px;font-weight:700;line-height:1.25;margin-bottom:5px;}
+.hero-book{font-size:11px;color:var(--muted);margin-bottom:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.meta-pill{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(90deg,rgba(196,168,240,.22),rgba(158,120,240,.12));border:1px solid var(--border2);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--text);font-weight:500;margin-bottom:9px;}
+.meta-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--amber);flex-shrink:0;animation:pulse 1.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.prog-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.prog-label{font-size:11px;color:var(--muted);}
+.prog-pag{font-size:11px;color:var(--sub);font-weight:500;margin-left:auto;}
+.prog-bg{height:4px;flex:1;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--acc),#9B7BD4);}
+.hero-actions{display:flex;gap:8px;margin-top:18px;}
+.btn-enter{flex:1;padding:12px;background:var(--acc);color:#1A1720;border:none;border-radius:var(--r-sm);font:700 13px 'Figtree',sans-serif;cursor:pointer;}
+.btn-ghost{padding:12px 15px;background:var(--acc-dim);color:var(--acc);border:1px solid var(--border2);border-radius:var(--r-sm);font:500 12px 'Figtree',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.sec-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:8px;}
+.sec-label{font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);}
+.sec-link{font-size:11px;color:var(--acc);font-weight:500;cursor:pointer;}
+.club-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;display:flex;gap:11px;align-items:center;cursor:pointer;transition:background .15s;}
+.club-card:active{background:var(--surf2);}
+.card-cover{width:44px;height:60px;border-radius:5px;background:var(--surf2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.card-body{flex:1;min-width:0;}
+.card-name{font-size:13px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-book{font-size:11px;color:var(--muted);margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.chip{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--sub);}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.3px;}
+.badge-pub{background:var(--green-d);color:var(--green);}
+.badge-priv{background:var(--amber-d);color:var(--amber);}
+
+/* ════════════ SCREEN 2 — CLUBE ════════════ */
+.club-banner{height:156px;flex-shrink:0;position:relative;overflow:hidden;}
+.banner-bg{position:absolute;inset:0;background:linear-gradient(170deg,rgba(196,168,240,.20) 0%,var(--bg) 100%);}
+.banner-back{position:absolute;top:48px;left:14px;width:32px;height:32px;background:rgba(26,23,32,.72);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.banner-settings{position:absolute;top:48px;right:14px;width:32px;height:32px;background:rgba(26,23,32,.72);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.banner-content{position:absolute;bottom:0;left:0;right:0;padding:0 14px 12px;display:flex;gap:11px;align-items:flex-end;}
+.banner-cover{width:58px;height:80px;border-radius:7px;background:var(--surf2);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 8px 24px rgba(0,0,0,.45);flex-shrink:0;}
+.banner-info{flex:1;min-width:0;padding-bottom:3px;}
+.banner-name{font-size:16px;font-weight:700;line-height:1.2;margin-bottom:2px;}
+.banner-book{font-size:10px;color:var(--muted);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.banner-stats{display:flex;gap:12px;}
+.bstat{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--sub);}
+
+/* meta strip */
+.meta-strip{background:linear-gradient(90deg,rgba(196,168,240,.16),rgba(158,120,240,.08));border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.meta-strip-left{display:flex;align-items:center;gap:7px;}
+.meta-strip-icon{width:26px;height:26px;border-radius:6px;background:var(--acc-dim);display:flex;align-items:center;justify-content:center;}
+.meta-strip-label{font-size:12px;font-weight:600;}
+.meta-strip-sub{font-size:10px;color:var(--muted);}
+.meta-strip-timer{font-size:11px;font-weight:600;color:var(--amber);background:var(--amber-d);border-radius:8px;padding:3px 8px;}
+
+/* inner tabs */
+.i-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.i-tab{flex:1;padding:10px 0;font:500 11px 'Figtree',sans-serif;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;transition:all .18s;text-align:center;}
+.i-tab.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:700;}
+.pane{display:none;flex:1;overflow-y:auto;scrollbar-width:none;}
+.pane::-webkit-scrollbar{display:none;}
+.pane.on{display:block;}
+
+/* ── PANE FEED ── */
+.feed-wrap{padding:28px 22px 120px;}
+.mood-bar{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;}
+.mood-title{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
+.mood-pills{display:flex;gap:10px;}
+.mood-pill{flex:1;text-align:center;background:var(--surf2);border-radius:10px;padding:12px 8px;font-size:11px;font-weight:500;}
+.mood-pill span{display:block;font-size:10px;color:var(--muted);margin-top:3px;}
+
+/* META COLETIVA CARD — destaque */
+.collective-goal{padding:20px;
+  background:var(--surf);border:1px solid var(--border2);
+  border-radius:var(--r);padding:20px;margin-bottom:18px;
+  position:relative;overflow:hidden;
+}
+.collective-goal::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--acc),var(--green),var(--amber));
+}
+.cg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.cg-title{font-size:12px;font-weight:700;}
+.cg-pct{font-size:18px;font-weight:800;color:var(--acc);}
+.cg-bar-bg{height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:14px;position:relative;}
+.cg-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--acc),var(--green));transition:width .4s;}
+.cg-bar-milestone{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.2);}
+.cg-foot{display:flex;align-items:center;justify-content:space-between;}
+.cg-members{display:flex;gap:5px;}
+.cg-ava{width:20px;height:20px;border-radius:50%;border:2px solid var(--bg);font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-left:-5px;flex-shrink:0;}
+.cg-ava:first-child{margin-left:0;}
+.cg-unlock{
+  display:flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:600;color:var(--gold);
+  background:var(--gold-d);border-radius:8px;padding:3px 9px;
+}
+.cg-unlock-locked{
+  display:flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:500;color:var(--muted);
+}
+
+/* composer */
+.composer{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:16px;display:flex;gap:9px;}
+.comp-ava{width:30px;height:30px;border-radius:50%;background:var(--acc-dim);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--acc);}
+.comp-body{flex:1;}
+.comp-input{width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font:400 12px 'Figtree',sans-serif;color:var(--muted);resize:none;outline:none;height:36px;}
+.comp-actions{display:flex;align-items:center;gap:6px;margin-top:10px;justify-content:flex-end;}
+.comp-btn{display:flex;align-items:center;gap:4px;font:500 11px 'Figtree',sans-serif;color:var(--muted);background:none;border:1px solid var(--border);border-radius:14px;padding:4px 9px;cursor:pointer;}
+.comp-send{font:600 11px 'Figtree',sans-serif;color:#1A1720;background:var(--acc);border:none;border-radius:14px;padding:4px 13px;cursor:pointer;}
+
+/* feed item */
+.fi{margin-bottom:20px;}
+.fi-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
+.fi-head{display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+.fi-ava{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.fi-name{font-size:12px;font-weight:600;}
+.fi-cap{font-size:10px;font-weight:700;letter-spacing:.4px;color:var(--muted);margin-left:2px;text-transform:uppercase;}
+.fi-time{font-size:10px;color:var(--muted);margin-left:auto;}
+.cited{background:var(--acc-glow);border-left:3px solid var(--acc);border-radius:0 6px 6px 0;padding:12px 14px;margin-bottom:14px;}
+.cited-tag{font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--acc);text-transform:uppercase;margin-bottom:5px;}
+.cited-body{font-size:12px;color:var(--sub);line-height:1.55;font-style:italic;}
+.spoiler{background:var(--red-d);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:12px 14px;margin-bottom:14px;position:relative;overflow:hidden;cursor:pointer;}
+.spoiler-blur{filter:blur(4px);user-select:none;pointer-events:none;font-size:12px;color:var(--sub);line-height:1.55;font-style:italic;}
+.spoiler-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(30,25,40,.82);}
+.spoiler-label{font-size:10px;font-weight:700;color:var(--red);letter-spacing:.8px;text-transform:uppercase;margin-bottom:1px;}
+.spoiler-sub{font-size:9px;color:var(--muted);}
+.fi-text{font-size:12px;line-height:1.62;color:var(--text);margin-bottom:14px;}
+.fi-actions{display:flex;align-items:center;gap:14px;}
+.fi-act{display:flex;align-items:center;gap:3px;font:500 11px 'Figtree',sans-serif;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 0;}
+.fi-act.on{color:var(--acc);}
+.reply{margin:12px 0 0 16px;background:var(--surf2);border-left:2px solid var(--border2);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:14px 14px;}
+.rep-head{display:flex;align-items:center;gap:7px;margin-bottom:8px;}
+.rep-ava{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;}
+.rep-name{font-size:11px;font-weight:600;}
+.rep-time{font-size:10px;color:var(--muted);margin-left:auto;}
+.rep-text{font-size:11px;color:var(--sub);line-height:1.5;}
+.prog-post{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;}
+.prog-post-ava{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.prog-post-body{flex:1;}
+.prog-post-txt{font-size:11px;color:var(--sub);}
+.prog-post-txt strong{color:var(--text);font-weight:600;}
+.prog-mini{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:7px;overflow:hidden;}
+.prog-mini-fill{height:100%;border-radius:2px;}
+.prog-post-time{font-size:10px;color:var(--muted);align-self:flex-start;}
+.cutucar-btn{font:600 10px 'Figtree',sans-serif;color:var(--acc);background:var(--acc-dim);border:none;border-radius:8px;padding:3px 8px;cursor:pointer;}
+
+/* ── PANE PROGRESSO ── */
+.members-wrap{padding:28px 22px 120px;}
+.member-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;}
+.mem-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.mem-ava{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.mem-name-wrap{flex:1;}
+.mem-name{font-size:13px;font-weight:600;margin-bottom:2px;display:flex;align-items:center;gap:5px;}
+.mem-sub{font-size:10px;color:var(--muted);}
+.mem-role{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.role-a{background:var(--acc-dim);color:var(--acc);}
+.role-m{background:rgba(255,255,255,.05);color:var(--muted);}
+.mem-prog-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:9px;}
+.mem-prog-lbl span:last-child{color:var(--sub);font-weight:500;}
+.mem-prog-bg{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.mem-prog-fill{height:100%;border-radius:3px;}
+
+/* ── BADGES ── */
+.badges-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;}
+.badge-earn{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:600;padding:3px 8px;
+  border-radius:10px;border:1px solid;
+}
+.badge-gold{background:var(--gold-d);color:var(--gold);border-color:rgba(255,209,102,.25);}
+.badge-green{background:var(--green-d);color:var(--green);border-color:rgba(126,223,168,.25);}
+.badge-purple{background:var(--acc-dim);color:var(--acc);border-color:rgba(196,168,240,.25);}
+.badge-fire{background:rgba(255,107,53,.14);color:var(--fire);border-color:rgba(255,107,53,.28);}
+
+/* streak dentro do card */
+.mem-streak{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;font-weight:700;color:var(--fire);
+}
+
+/* ── PANE TRECHOS ── */
+.exc-wrap{padding:28px 22px 120px;}
+.exc-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;}
+.exc-head{display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+.exc-ava{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;}
+.exc-name{font-size:11px;font-weight:600;}
+.exc-time{font-size:10px;color:var(--muted);margin-left:auto;}
+.exc-page{font-size:10px;font-weight:700;color:var(--acc);letter-spacing:.4px;margin-bottom:12px;}
+.exc-body{background:var(--acc-glow);border-left:3px solid var(--acc);border-radius:0 6px 6px 0;padding:14px 16px;margin-bottom:14px;font-size:12px;color:var(--sub);line-height:1.6;font-style:italic;}
+.exc-foot{display:flex;align-items:center;gap:14px;}
+.exc-comment{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;}
+.exc-like{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;}
+.exc-like.on{color:var(--acc);}
+
+/* ── PANE ALMANAQUE ── */
+.alma-wrap{padding:28px 22px 120px;}
+.alma-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;}
+.alma-title{font-size:12px;font-weight:700;margin-bottom:9px;}
+.alma-body{font-size:12px;color:var(--sub);line-height:1.58;}
+.alma-tag{display:inline-block;margin-top:7px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;}
+
+/* ── BOTTOM NAV ── */
+.bnav{position:sticky;bottom:0;background:rgba(26,23,32,.94);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:9px 0 22px;z-index:40;flex-shrink:0;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:3px 0;}
+.ni-ic{color:var(--muted);width:22px;height:22px;display:flex;align-items:center;justify-content:center;}
+.ni.on .ni-ic{color:var(--acc);}
+.ni-lb{font-size:9px;font-weight:500;color:var(--muted);}
+.ni.on .ni-lb{color:var(--acc);font-weight:700;}
+.ni-dot{width:4px;height:4px;border-radius:50%;background:var(--acc);margin-top:-2px;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#312B40;border:1px solid var(--border2);
+  border-radius:20px;padding:9px 18px;
+  font-size:12px;font-weight:600;color:var(--text);
+  white-space:nowrap;z-index:999;
+  opacity:0;transition:all .3s;pointer-events:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── BADGE POPUP ── */
+.badge-popup{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%) scale(.8);
+  background:var(--surf);border:1px solid var(--border2);
+  border-radius:20px;padding:28px 24px;
+  text-align:center;z-index:1000;
+  opacity:0;transition:all .3s;pointer-events:none;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  width:260px;
+}
+.badge-popup.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+.bp-icon{font-size:48px;margin-bottom:12px;}
+.bp-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+.bp-sub{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px;}
+.bp-close{background:var(--acc);color:#1A1720;border:none;border-radius:10px;padding:9px 24px;font:700 13px 'Figtree',sans-serif;cursor:pointer;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;opacity:0;transition:.3s;pointer-events:none;}
+.overlay.show{opacity:1;pointer-events:all;}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeBadgePopup()"></div>
+<!-- BADGE POPUP -->
+<div class="badge-popup" id="badge-popup">
+  <div class="bp-icon" id="bp-icon">🏆</div>
+  <div class="bp-title" id="bp-title">Conquista desbloqueada!</div>
+  <div class="bp-sub" id="bp-sub">Você ganhou um novo selo.</div>
+  <button class="bp-close" onclick="closeBadgePopup()">Ver meu perfil</button>
+</div>
+
+<div class="shell">
+
+<!-- ════════════════════════════════
+     SCREEN 1 — LISTA
+════════════════════════════════ -->
+<div class="screen on" id="s-list">
+  <div class="list-header">
+    <div class="list-title">Clubes<em>·</em>do<em>·</em>Livro</div>
+    <div class="list-header-right">
+      <!-- STREAK na lista -->
+      <div class="streak-pill" title="Seu streak de leitura">🔥 <span class="n">7</span> dias</div>
+      <button class="btn-new" onclick="goClub()" style="margin-left:6px">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="1" x2="6" y2="11"/><line x1="1" y1="6" x2="11" y2="6"/></svg>
+        Criar
+      </button>
+    </div>
+  </div>
+
+  <div class="list-tabs">
+    <button class="list-tab on">Meus clubes</button>
+    <button class="list-tab">Explorar</button>
+    <button class="list-tab">Convites</button>
+  </div>
+
+  <div class="list-scroll">
+    <div class="hero-club">
+      <div class="hero-eyebrow">
+        <span>📖 Lendo agora</span>
+        <div class="streak-pill" style="font-size:10px;padding:3px 8px">🔥 7 dias seguidos</div>
+      </div>
+      <div class="hero-book-row">
+        <div class="hero-cover">📚</div>
+        <div class="hero-info">
+          <div class="hero-name">Os Leitores de Elite</div>
+          <div class="hero-book">O Iluminado · Stephen King</div>
+          <div class="meta-pill"><span class="dot"></span>Meta: caps. 10–15 · pág. 250</div>
+          <div style="font-size:10px;color:var(--amber);font-weight:600">⏳ 3 dias restantes</div>
+        </div>
+      </div>
+      <div class="prog-row">
+        <span class="prog-label">Seu progresso</span>
+        <span class="prog-pag">pág. 185 / 250</span>
+      </div>
+      <div class="prog-bg"><div class="prog-fill" style="width:74%"></div></div>
+      <div class="hero-actions">
+        <button class="btn-enter" onclick="goClub()">Entrar no clube</button>
+        <button class="btn-ghost">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 3a3 3 0 110 6M5 3a3 3 0 110 6M1 13c0-2.2 1.8-4 4-4h4c2.2 0 4 1.8 4 4M13 9c1.1 0 2 .9 2 2v2"/></svg>
+          Convidar
+        </button>
+      </div>
+    </div>
+
+    <div class="sec-row">
+      <span class="sec-label">Participando</span>
+      <span class="sec-link">ver todos</span>
+    </div>
+
+    <div class="club-card" onclick="goClub()">
+      <div class="card-cover">🌊</div>
+      <div class="card-body">
+        <div class="card-name">Leitores do Caos</div>
+        <div class="card-book">O Guia do Mochileiro das Galáxias · Adams</div>
+        <div class="card-meta">
+          <div class="chip"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>4 membros</div>
+          <span class="badge badge-pub">Público</span>
+        </div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex-shrink:0"><polyline points="6 4 10 8 6 12"/></svg>
+    </div>
+
+    <div class="club-card">
+      <div class="card-cover">🔮</div>
+      <div class="card-body">
+        <div class="card-name">Filósofos de Plantão</div>
+        <div class="card-book">A República · Platão</div>
+        <div class="card-meta">
+          <div class="chip"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>12 membros</div>
+          <span class="badge badge-priv">Privado</span>
+        </div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--muted);flex-shrink:0"><polyline points="6 4 10 8 6 12"/></svg>
+    </div>
+  </div>
+
+  <nav class="bnav">
+    <div class="ni"><div class="ni-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><span class="ni-lb">Início</span></div>
+    <div class="ni"><div class="ni-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><span class="ni-lb">Explorar</span></div>
+    <div class="ni on"><div class="ni-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div><span class="ni-lb">Clubes</span><div class="ni-dot"></div></div>
+    <div class="ni"><div class="ni-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="ni-lb">Perfil</span></div>
+  </nav>
+</div>
+
+<!-- ════════════════════════════════
+     SCREEN 2 — CLUBE
+════════════════════════════════ -->
+<div class="screen" id="s-club">
+
+  <div class="club-banner">
+    <div class="banner-bg"></div>
+    <div class="banner-back" onclick="goList()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="10 4 6 8 10 12"/></svg></div>
+    <div class="banner-settings"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg></div>
+    <div class="banner-content">
+      <div class="banner-cover">📚</div>
+      <div class="banner-info">
+        <div class="banner-name">Os Leitores de Elite</div>
+        <div class="banner-book">O Iluminado · Stephen King</div>
+        <div class="banner-stats">
+          <div class="bstat"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>7 membros</div>
+          <div class="bstat"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H2a1 1 0 00-1 1v9a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>31 posts</div>
+          <div class="bstat"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4h12M2 8h8M2 12h5"/></svg>14 trechos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="meta-strip">
+    <div class="meta-strip-left">
+      <div class="meta-strip-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><polyline points="8 5 8 8 10 10"/></svg></div>
+      <div>
+        <div class="meta-strip-label">🎯 Caps. 10–15 · até pág. 250</div>
+        <div class="meta-strip-sub">Meta semanal em andamento</div>
+      </div>
+    </div>
+    <div class="meta-strip-timer">⏳ 3 dias</div>
+  </div>
+
+  <div class="i-tabs">
+    <button class="i-tab on" onclick="tab('feed',this)">Feed</button>
+    <button class="i-tab" onclick="tab('prog',this)">Progresso</button>
+    <button class="i-tab" onclick="tab('exc',this)">Trechos</button>
+    <button class="i-tab" onclick="tab('alma',this)">Almanaque</button>
+  </div>
+
+  <!-- ── FEED ── -->
+  <div class="pane on" id="p-feed">
+  <div class="feed-wrap">
+
+    <!-- Humor -->
+    <div class="mood-bar">
+      <div class="mood-title">Humor do grupo nesta meta</div>
+      <div class="mood-pills">
+        <div class="mood-pill">😱 Medo<span>65%</span></div>
+        <div class="mood-pill">🤔 Suspense<span>25%</span></div>
+        <div class="mood-pill">💔 Tristeza<span>10%</span></div>
+      </div>
+    </div>
+
+    <!-- META COLETIVA — gamificação principal -->
+    <div class="collective-goal">
+      <div class="cg-head">
+        <div>
+          <div class="cg-title">🏅 Meta coletiva do grupo</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">Todos chegando juntos em 3 dias</div>
+        </div>
+        <div class="cg-pct" id="cg-pct">62%</div>
+      </div>
+      <div class="cg-bar-bg">
+        <div class="cg-bar-fill" id="cg-bar" style="width:62%"></div>
+        <div class="cg-bar-milestone" style="left:25%"></div>
+        <div class="cg-bar-milestone" style="left:50%"></div>
+        <div class="cg-bar-milestone" style="left:75%"></div>
+      </div>
+      <div class="cg-foot">
+        <div class="cg-members">
+          <div class="cg-ava" style="background:var(--acc-dim);color:var(--acc)">J</div>
+          <div class="cg-ava" style="background:var(--green-d);color:var(--green)">M</div>
+          <div class="cg-ava" style="background:var(--amber-d);color:var(--amber)">A</div>
+          <div class="cg-ava" style="background:var(--red-d);color:var(--red)">C</div>
+          <div class="cg-ava" style="background:var(--surf3);color:var(--muted)">+3</div>
+        </div>
+        <div class="cg-unlock-locked" id="cg-unlock">
+          🔒 <span>Card dourado ao atingir 100%</span>
+        </div>
+      </div>
+      <!-- botão demo -->
+      <div style="margin-top:10px;text-align:center">
+        <button onclick="simularMeta()" style="font:600 11px 'Figtree',sans-serif;color:var(--acc);background:var(--acc-dim);border:1px solid var(--border2);border-radius:10px;padding:5px 14px;cursor:pointer;">
+          ✨ Simular grupo chegando a 100%
+        </button>
+      </div>
+    </div>
+
+    <!-- Composer -->
+    <div class="composer">
+      <div class="comp-ava">J</div>
+      <div class="comp-body">
+        <textarea class="comp-input" placeholder="Compartilhe um pensamento…" readonly></textarea>
+        <div class="comp-actions">
+          <button class="comp-btn"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4h12M2 8h8M2 12h5"/></svg>Citar</button>
+          <button class="comp-btn"><svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><polyline points="8 5 8 8 10 10"/></svg>Pág.</button>
+          <button class="comp-send">Publicar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post com trecho -->
+    <div class="fi">
+      <div class="fi-card">
+        <div class="fi-head">
+          <div class="fi-ava" style="background:var(--acc-dim);color:var(--acc)">J</div>
+          <span class="fi-name">Você</span>
+          <span class="fi-cap">Cap. 12</span>
+          <span class="fi-time">há 2h</span>
+        </div>
+        <div class="cited">
+          <div class="cited-tag">✦ Trecho citado · pág. 198</div>
+          <div class="cited-body">"Nem tudo que brilha é ouro, e nem todo lugar tranquilo é seguro."</div>
+        </div>
+        <div class="fi-text">Esse trecho me pegou de surpresa. O King usa a calmaria exatamente antes do caos.</div>
+        <div class="fi-actions">
+          <button class="fi-act on">❤️ 4</button>
+          <button class="fi-act">💬 1 resposta</button>
+        </div>
+      </div>
+      <div class="reply">
+        <div class="rep-head">
+          <div class="rep-ava" style="background:var(--green-d);color:var(--green)">M</div>
+          <span class="rep-name">Mariana</span>
+          <span class="rep-time">há 1h</span>
+        </div>
+        <div class="rep-text">Concordo! Ele faz isso em Carrie também. A normalidade falsa é a arma dele.</div>
+      </div>
+    </div>
+
+    <!-- Mariana concluiu + badge ganho -->
+    <div class="prog-post" style="border-color:rgba(126,223,168,.25);background:rgba(126,223,168,.04)">
+      <div class="prog-post-ava" style="background:var(--green-d);color:var(--green)">M</div>
+      <div class="prog-post-body">
+        <div class="prog-post-txt"><strong>Mariana</strong> concluiu a meta 🎉 — <strong>pág. 250</strong></div>
+        <div class="prog-mini"><div class="prog-mini-fill" style="width:100%;background:var(--green)"></div></div>
+        <!-- Badge ganho inline -->
+        <div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap">
+          <div class="badge-earn badge-gold" onclick="showBadge('⚡','Leitor Relâmpago','Terminou a meta com mais de 24h de antecedência. Velocidade de elite!')">⚡ Leitor Relâmpago</div>
+          <div class="badge-earn badge-fire" onclick="showBadge('🔥','Chama Viva','Manteve o streak de leitura por 7 dias seguidos sem parar!')">🔥 Chama Viva</div>
+        </div>
+      </div>
+      <span class="prog-post-time">há 3h</span>
+    </div>
+
+    <!-- Post com spoiler -->
+    <div class="fi">
+      <div class="fi-card">
+        <div class="fi-head">
+          <div class="fi-ava" style="background:var(--amber-d);color:var(--amber)">A</div>
+          <span class="fi-name">Ana</span>
+          <span class="fi-cap">Cap. 14</span>
+          <span class="fi-time">há 5h</span>
+        </div>
+        <div class="spoiler">
+          <div class="spoiler-blur">"O elevador despejou sangue pelos corredores e Jack finalmente perdeu a razão por completo."</div>
+          <div class="spoiler-overlay"><div class="spoiler-label">⚠ Spoiler</div><div class="spoiler-sub">Toque para revelar</div></div>
+        </div>
+        <div class="fi-text">Não revelarei mais nada 🤐 Mas preparem-se!</div>
+        <div class="fi-actions">
+          <button class="fi-act">❤️ 2</button>
+          <button class="fi-act">💬 Responder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Carlos atrasado -->
+    <div class="prog-post">
+      <div class="prog-post-ava" style="background:rgba(196,168,240,.10);color:var(--muted)">C</div>
+      <div class="prog-post-body">
+        <div class="prog-post-txt"><strong>Carlos</strong> está na <strong>pág. 102</strong> — precisa acelerar</div>
+        <div class="prog-mini"><div class="prog-mini-fill" style="width:40%;background:var(--red)"></div></div>
+      </div>
+      <button class="cutucar-btn" onclick="showToast('⚡ Carlos foi cutucado!')">⚡ Cutucar</button>
+    </div>
+
+  </div>
+  </div>
+
+  <!-- ── PROGRESSO ── -->
+  <div class="pane" id="p-prog">
+  <div class="members-wrap">
+
+    <div class="mood-bar" style="margin-bottom:12px">
+      <div class="mood-title">Progresso coletivo na meta</div>
+      <div style="margin-top:8px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px">
+          <span>Média do grupo</span><span style="color:var(--sub);font-weight:600">62%</span>
+        </div>
+        <div class="prog-bg" style="height:6px"><div class="prog-fill" style="width:62%"></div></div>
+      </div>
+    </div>
+
+    <!-- Você -->
+    <div class="member-card">
+      <div class="mem-row">
+        <div class="mem-ava" style="background:var(--acc-dim);color:var(--acc)">J</div>
+        <div class="mem-name-wrap">
+          <div class="mem-name">Você <span class="mem-streak">🔥 7</span></div>
+          <div class="mem-sub">7 posts · 3 trechos</div>
+        </div>
+        <span class="mem-role role-a">Admin</span>
+      </div>
+      <div class="mem-prog-lbl"><span>Progresso na meta</span><span>pág. 185 / 250 · 74%</span></div>
+      <div class="mem-prog-bg"><div class="mem-prog-fill" style="width:74%;background:linear-gradient(90deg,var(--acc),#9B7BD4)"></div></div>
+      <div class="badges-row">
+        <div class="badge-earn badge-purple" onclick="showBadge('📖','Fundador','Criou este clube e mantém a turma unida.')">📖 Fundador</div>
+        <div class="badge-earn badge-fire" onclick="showBadge('🔥','Chama Viva','7 dias de streak de leitura seguidos!')">🔥 Chama Viva</div>
+      </div>
+    </div>
+
+    <!-- Mariana -->
+    <div class="member-card" style="border-color:rgba(126,223,168,.22)">
+      <div class="mem-row">
+        <div class="mem-ava" style="background:var(--green-d);color:var(--green)">M</div>
+        <div class="mem-name-wrap">
+          <div class="mem-name">Mariana 🎉 <span class="mem-streak">🔥 12</span></div>
+          <div class="mem-sub">12 posts · 5 trechos</div>
+        </div>
+        <span class="mem-role role-m">Membro</span>
+      </div>
+      <div class="mem-prog-lbl"><span>Meta concluída ✅</span><span>pág. 250 / 250 · 100%</span></div>
+      <div class="mem-prog-bg"><div class="mem-prog-fill" style="width:100%;background:linear-gradient(90deg,var(--green),#5BC894)"></div></div>
+      <div class="badges-row">
+        <div class="badge-earn badge-gold" onclick="showBadge('⚡','Leitor Relâmpago','Terminou a meta com mais de 24h de antecedência!')">⚡ Leitor Relâmpago</div>
+        <div class="badge-earn badge-green" onclick="showBadge('🌙','Madrugador','Postou trechos entre 00h e 05h da manhã.')">🌙 Madrugador</div>
+        <div class="badge-earn badge-fire" onclick="showBadge('🔥','Chama Viva','12 dias de streak — recorde do clube!')">🔥 12 dias</div>
+      </div>
+    </div>
+
+    <!-- Ana -->
+    <div class="member-card">
+      <div class="mem-row">
+        <div class="mem-ava" style="background:var(--amber-d);color:var(--amber)">A</div>
+        <div class="mem-name-wrap">
+          <div class="mem-name">Ana <span class="mem-streak">🔥 5</span></div>
+          <div class="mem-sub">5 posts · 2 trechos</div>
+        </div>
+        <span class="mem-role role-m">Membro</span>
+      </div>
+      <div class="mem-prog-lbl"><span>Progresso na meta</span><span>pág. 210 / 250 · 84%</span></div>
+      <div class="mem-prog-bg"><div class="mem-prog-fill" style="width:84%;background:linear-gradient(90deg,var(--amber),#D4A854)"></div></div>
+      <div class="badges-row">
+        <div class="badge-earn badge-purple" onclick="showBadge('💬','Comentarista','Mais de 10 comentários em discussões do clube.')">💬 Comentarista</div>
+      </div>
+    </div>
+
+    <!-- Carlos -->
+    <div class="member-card" style="border-color:rgba(240,122,122,.20)">
+      <div class="mem-row">
+        <div class="mem-ava" style="background:var(--red-d);color:var(--red)">C</div>
+        <div class="mem-name-wrap">
+          <div class="mem-name">Carlos</div>
+          <div class="mem-sub">2 posts · 0 trechos</div>
+        </div>
+        <span class="mem-role role-m">Membro</span>
+      </div>
+      <div class="mem-prog-lbl"><span>Ficou para trás ⚠️</span><span>pág. 102 / 250 · 40%</span></div>
+      <div class="mem-prog-bg"><div class="mem-prog-fill" style="width:40%;background:linear-gradient(90deg,var(--red),#C86060)"></div></div>
+      <div style="margin-top:8px;display:flex;justify-content:flex-end">
+        <button class="cutucar-btn" onclick="showToast('⚡ Carlos foi cutucado!')">⚡ Cutucar Carlos</button>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <!-- ── TRECHOS ── -->
+  <div class="pane" id="p-exc">
+  <div class="exc-wrap">
+    <div class="exc-card">
+      <div class="exc-head">
+        <div class="exc-ava" style="background:var(--acc-dim);color:var(--acc)">J</div>
+        <span class="exc-name">Você</span>
+        <span class="exc-time">há 2h</span>
+      </div>
+      <div class="exc-page">✦ Página 198 · Capítulo 12</div>
+      <div class="exc-body">"Nem tudo que brilha é ouro, e nem todo lugar tranquilo é seguro."</div>
+      <div class="exc-foot">
+        <div class="exc-comment"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H2a1 1 0 00-1 1v9a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>3 comentários</div>
+        <div class="exc-like on">❤️ 4</div>
+      </div>
+    </div>
+    <div class="exc-card">
+      <div class="exc-head">
+        <div class="exc-ava" style="background:var(--green-d);color:var(--green)">M</div>
+        <span class="exc-name">Mariana</span>
+        <span class="exc-time">há 5h</span>
+      </div>
+      <div class="exc-page">✦ Página 234 · Capítulo 13</div>
+      <div class="exc-body">"A mente humana é o lugar mais assombrado que existe. O Hotel Overlook apenas emprestou o cenário."</div>
+      <div class="exc-foot">
+        <div class="exc-comment"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H2a1 1 0 00-1 1v9a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>7 comentários</div>
+        <div class="exc-like">❤️ 9</div>
+      </div>
+    </div>
+    <div class="exc-card">
+      <div class="exc-head">
+        <div class="exc-ava" style="background:var(--amber-d);color:var(--amber)">A</div>
+        <span class="exc-name">Ana</span>
+        <span class="exc-time">ontem</span>
+      </div>
+      <div class="exc-page">✦ Página 176 · Capítulo 11</div>
+      <div class="exc-body">"Toda família tem seus segredos. Alguns ficam enterrados. Outros voltam."</div>
+      <div class="exc-foot">
+        <div class="exc-comment"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H2a1 1 0 00-1 1v9a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg>2 comentários</div>
+        <div class="exc-like">❤️ 5</div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- ── ALMANAQUE ── -->
+  <div class="pane" id="p-alma">
+  <div class="alma-wrap">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5">Contexto histórico, curiosidades e notas sobre <em style="color:var(--sub)">O Iluminado</em>.</div>
+    <div class="alma-card">
+      <div class="alma-title">📅 Publicação & contexto</div>
+      <div class="alma-body">Publicado em 1977, baseado nas experiências de King no Stanley Hotel, Colorado. A relação turbulenta de Jack com o alcoolismo reflete um período pessoal difícil do autor.</div>
+      <span class="alma-tag" style="background:var(--acc-dim);color:var(--acc)">História</span>
+    </div>
+    <div class="alma-card">
+      <div class="alma-title">🎬 Adaptação de Kubrick (1980)</div>
+      <div class="alma-body">Stephen King rejeitou o filme de Kubrick, considerando-o frio e distante do texto. Produziu sua própria minissérie em 1997.</div>
+      <span class="alma-tag" style="background:var(--green-d);color:var(--green)">Cinema</span>
+    </div>
+    <div class="alma-card">
+      <div class="alma-title">📌 Metas anteriores</div>
+      <div class="alma-body">Caps. 1–5 · 24 comentários salvos<br>Caps. 6–9 · 18 comentários salvos</div>
+      <span class="alma-tag" style="background:rgba(126,223,168,.1);color:var(--green)">Histórico</span>
+    </div>
+  </div>
+  </div>
+
+  <nav class="bnav">
+    <div class="ni"><div class="ni-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><span class="ni-lb">Início</span></div>
+    <div class="ni"><div class="ni-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><span class="ni-lb">Explorar</span></div>
+    <div class="ni on"><div class="ni-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div><span class="ni-lb">Clubes</span><div class="ni-dot"></div></div>
+    <div class="ni"><div class="ni-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="ni-lb">Perfil</span></div>
+  </nav>
+</div>
+
+</div><!-- /shell -->
+
+<script>
+// navegação
+function goClub(){
+  document.getElementById('s-list').classList.remove('on');
+  document.getElementById('s-club').classList.add('on');
+}
+function goList(){
+  document.getElementById('s-club').classList.remove('on');
+  document.getElementById('s-list').classList.add('on');
+}
+function tab(id,el){
+  document.querySelectorAll('.i-tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('p-'+id).classList.add('on');
+}
+
+// spoiler
+document.querySelectorAll('.spoiler').forEach(s=>{
+  s.addEventListener('click',()=>{
+    const ov=s.querySelector('.spoiler-overlay');
+    if(ov){ov.style.display='none';}
+  });
+});
+
+// toast
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// badge popup
+function showBadge(icon,title,desc){
+  document.getElementById('bp-icon').textContent=icon;
+  document.getElementById('bp-title').textContent=title;
+  document.getElementById('bp-sub').textContent=desc;
+  document.getElementById('badge-popup').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+}
+function closeBadgePopup(){
+  document.getElementById('badge-popup').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// simular meta coletiva 100%
+let metaVal=62;
+function simularMeta(){
+  if(metaVal>=100) return;
+  const bar=document.getElementById('cg-bar');
+  const pct=document.getElementById('cg-pct');
+  const unlock=document.getElementById('cg-unlock');
+  const interval=setInterval(()=>{
+    metaVal+=2;
+    if(metaVal>=100){ metaVal=100; clearInterval(interval); }
+    bar.style.width=metaVal+'%';
+    pct.textContent=metaVal+'%';
+    if(metaVal>=100){
+      unlock.innerHTML='🏆 <span style="color:var(--gold)">Card Dourado desbloqueado!</span>';
+      unlock.className='cg-unlock';
+      setTimeout(()=>showBadge('🏆','Meta Coletiva!','O grupo inteiro concluiu a meta semanal. Card Dourado desbloqueado para todos!'),400);
+    }
+  },40);
+}
+</script>
+</body>
+</html>

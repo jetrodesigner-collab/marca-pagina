@@ -288,6 +288,71 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
         })}
       </div>
 
+      {/* Regras de premiação */}
+      <div style={sectionBox}>
+        <div style={sectionTitle}>📜 Regras de premiação</div>
+
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>
+          Badges por progresso
+        </div>
+        {[
+          { pct: '100%',   icone: '✅', label: 'Meta Concluída' },
+          { pct: '90–99%', icone: '⚡', label: 'Leitor Relâmpago' },
+          { pct: '75–89%', icone: '🔥', label: 'Chama Viva' },
+          { pct: '60–74%', icone: '🌅', label: 'Madrugador' },
+          { pct: '50–59%', icone: '📖', label: 'No Ritmo' },
+          { pct: '30–49%', icone: '🐢', label: 'Tartaruga Literária' },
+          { pct: '15–29%', icone: '😴', label: 'Soneca entre Capítulos' },
+          { pct: '1–14%',  icone: '👀', label: 'Só Olhou a Capa' },
+          { pct: '0%',     icone: '🛋️', label: 'Membro Honorário do Sofá' },
+        ].map(r => (
+          <div key={r.pct} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+            <span style={{ fontSize: 15, width: 20, textAlign: 'center' }}>{r.icone}</span>
+            <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600, flex: 1 }}>{r.label}</span>
+            <span style={{ fontSize: 10, color: 'var(--muted)' }}>{r.pct}</span>
+          </div>
+        ))}
+
+        <div style={{ height: 1, background: 'var(--bor)', margin: '12px 0' }} />
+
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>
+          Medalhas de ranking
+        </div>
+        {[
+          { medal: '🥇', label: '1º lugar — Medalha de Ouro' },
+          { medal: '🥈', label: '2º lugar — Medalha de Prata' },
+          { medal: '🥉', label: '3º lugar — Medalha de Bronze' },
+        ].map(r => (
+          <div key={r.medal} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+            <span style={{ fontSize: 15, width: 20, textAlign: 'center' }}>{r.medal}</span>
+            <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{r.label}</span>
+          </div>
+        ))}
+
+        <div style={{ height: 1, background: 'var(--bor)', margin: '12px 0' }} />
+
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>
+          Badges especiais
+        </div>
+        {[
+          { icone: '👑', label: 'Fundador', desc: 'Criador do clube' },
+          { icone: '🏆', label: 'Pioneiro', desc: 'Primeiro a atingir 100%' },
+          { icone: '🔥', label: 'X dias', desc: 'Dias consecutivos registrando progresso' },
+        ].map(r => (
+          <div key={r.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+            <span style={{ fontSize: 15, width: 20, textAlign: 'center' }}>{r.icone}</span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{r.label}</div>
+              <div style={{ fontSize: 10, color: 'var(--muted)' }}>{r.desc}</div>
+            </div>
+          </div>
+        ))}
+
+        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 12, lineHeight: 1.5, fontStyle: 'italic' }}>
+          As regras são visíveis para todos os membros na aba Progresso.
+        </div>
+      </div>
+
       {/* Zona de perigo */}
       <div style={{ ...sectionBox, border: '1px solid rgba(240,122,122,.25)', background: 'rgba(240,122,122,.04)' }}>
         <div style={{ ...sectionTitle, color: '#F07A7A' }}>⚠️ Zona de perigo</div>

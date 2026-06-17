@@ -46,7 +46,7 @@ export default function ClubTrechos({ clubId, currentUserId }) {
       .eq('club_id', clubId)
       .eq('tipo', 'trecho')
       .is('parent_id', null)
-      .order('likes_count', { ascending: false })
+      .order('criado_em', { ascending: false })
 
     const items = data || []
     setTrechos(items)
