@@ -8,6 +8,9 @@ import ClubAlmanaque from '../components/clubs/ClubAlmanaque'
 import ClubGerenciar from '../components/clubs/ClubGerenciar'
 import ClubPalpites from '../components/clubs/ClubPalpites'
 import ClubApostas from '../components/clubs/ClubApostas'
+import ClubCriarAvaliacao from '../components/clubs/ClubCriarAvaliacao'
+import ClubAvaliacaoTela from '../components/clubs/ClubAvaliacaoTela'
+import { useClubActivity } from '../hooks/useClubActivity'
 import BadgePopup from '../components/clubs/BadgePopup'
 import ModalConvidar from '../components/clubs/ModalConvidar'
 import ModalProgresso from '../components/clubs/ModalProgresso'
@@ -16,7 +19,7 @@ const BASE_TABS = ['Feed', 'Progresso', 'Trechos', 'Almanaque']
 
 export default function ClubeDetalhe({ session, club: initialClub, onBack, onNavigate }) {
   const [activeTab, setActiveTab] = useState(0)
-  const [subScreen, setSubScreen] = useState(null) // 'palpites' | 'apostas' | null
+  const [subScreen, setSubScreen] = useState(null) // 'palpites' | 'apostas' | 'avaliacao' | 'criar-avaliacao' | null
   const [club, setClub] = useState(initialClub)
   const [profile, setProfile] = useState(null)
   const [pendingBadge, setPendingBadge] = useState(null)
@@ -25,6 +28,13 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
   const [toast, setToast] = useState(null)
 
   const { members, activeMeta, loading: membersLoading, refresh: refreshMembers } = useClubMembers(club.id)
+  const {
+    activity, answers: activityAnswers, grades: activityGrades,
+    myAnswers: myActivityAnswers, myGrade: myActivityGrade,
+    loading: loadingActivity,
+    createActivity, submitAnswers, deleteMyAnswers, saveGrade, deleteActivity, updateStatus: updateActivityStatus,
+    refresh: refreshActivity,
+  } = useClubActivity(club.id, session.user.id)
 
   const isAdmin = club.role === 'admin' || club.criador_id === session.user.id
   const TABS = isAdmin ? [...BASE_TABS, '⚙️'] : BASE_TABS
@@ -167,6 +177,10 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
             profile={profile}
             onViewPalpites={() => setSubScreen('palpites')}
             onViewApostas={() => setSubScreen('apostas')}
+            activity={activity}
+            loadingActivity={loadingActivity}
+            onViewAvaliacao={() => setSubScreen('avaliacao')}
+            onCriarAvaliacao={() => setSubScreen('criar-avaliacao')}
           />
         )}
         {activeTab === 1 && (
@@ -255,6 +269,34 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
           isAdmin={isAdmin}
           onBack={() => setSubScreen(null)}
           onToast={showToast}
+        />
+      )}
+      {subScreen === 'criar-avaliacao' && (
+        <ClubCriarAvaliacao
+          onBack={() => setSubScreen(null)}
+          onToast={showToast}
+          onCreated={async (data) => {
+            await createActivity(data)
+          }}
+        />
+      )}
+      {subScreen === 'avaliacao' && activity && (
+        <ClubAvaliacaoTela
+          activity={activity}
+          answers={activityAnswers}
+          grades={activityGrades}
+          myAnswers={myActivityAnswers}
+          myGrade={myActivityGrade}
+          members={members}
+          currentUserId={session.user.id}
+          isAdmin={isAdmin}
+          onBack={() => setSubScreen(null)}
+          onToast={showToast}
+          onSubmitAnswers={submitAnswers}
+          onDeleteMyAnswers={deleteMyAnswers}
+          onSaveGrade={saveGrade}
+          onUpdateStatus={updateActivityStatus}
+          onDeleteActivity={deleteActivity}
         />
       )}
 

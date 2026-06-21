@@ -8,6 +8,7 @@ import MetaColetivaCard from './MetaColetivaCard'
 import EmotionalMap from './EmotionalMap'
 import SecretPredictions from './SecretPredictions'
 import PageBets from './PageBets'
+import ClubAtividade from './ClubAtividade'
 
 const PROGRESS_RULES = [
   { pct: '100%',   icone: '✅', label: 'Meta Concluída' },
@@ -45,7 +46,7 @@ function colorFor(id) {
   return MEMBER_COLORS[Math.abs(h) % MEMBER_COLORS.length]
 }
 
-export default function ClubFeed({ club, activeMeta, members, currentUserId, isAdmin, onBadgeUnlock, onToast, profile, onViewPalpites, onViewApostas }) {
+export default function ClubFeed({ club, activeMeta, members, currentUserId, isAdmin, onBadgeUnlock, onToast, profile, onViewPalpites, onViewApostas, activity, loadingActivity, onViewAvaliacao, onCriarAvaliacao }) {
   const { posts, loading, addPost, toggleLike, deletePost, refresh } = useClubPosts(club.id, currentUserId)
   const { updateStreak } = useStreak()
   const [composerText, setComposerText] = useState('')
@@ -215,6 +216,15 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
         clubId={club.id}
         activeMeta={activeMeta}
         members={members}
+      />
+
+      {/* Avaliação */}
+      <ClubAtividade
+        activity={activity}
+        loadingActivity={loadingActivity}
+        isAdmin={isAdmin}
+        onViewAvaliacao={onViewAvaliacao}
+        onCriarAvaliacao={onCriarAvaliacao}
       />
 
       {/* Palpites Secretos — resumo */}
