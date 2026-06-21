@@ -204,6 +204,17 @@ function AdminContentCard({
                 onToast?.('✓ Salvo!')
               } catch (err) {
                 console.error('[ClubAlmanaque] save error:', err)
+                // DIAGNÓSTICO TEMPORÁRIO — mostra o erro completo na tela
+                // Remover após identificar a causa raiz
+                const linhas = [
+                  `Mensagem: ${err?.message || '(sem mensagem)'}`,
+                  err?.dbCode    ? `Código SQL: ${err.dbCode}`       : null,
+                  err?.dbStatus  ? `HTTP status: ${err.dbStatus}`    : null,
+                  err?.dbDetails ? `Detalhes: ${err.dbDetails}`      : null,
+                  err?.dbHint    ? `Hint: ${err.dbHint}`             : null,
+                ].filter(Boolean).join('\n')
+                // eslint-disable-next-line no-alert
+                alert(`⛔ ERRO AO SALVAR (diagnóstico temporário)\n\n${linhas}\n\nCopie este texto e passe para o dev.`)
                 onToast?.(`Erro: ${err?.message || 'falha ao salvar'}`)
               } finally {
                 setSaving(false)

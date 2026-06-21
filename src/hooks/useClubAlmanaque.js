@@ -70,35 +70,69 @@ export function useClubAlmanaque(clubId, currentUserId) {
   }
 
   async function saveContent(contextoHistorico, curiosidades) {
+    const payload = {
+      club_id: clubId,
+      contexto_historico: contextoHistorico !== undefined ? (contextoHistorico || null) : null,
+      curiosidades: curiosidades !== undefined ? (curiosidades || null) : null,
+      updated_by: currentUserId,
+      updated_at: new Date().toISOString(),
+    }
+    console.log('[useClubAlmanaque] saveContent payload:', payload)
+
     const { error } = await supabase
       .from('club_almanaque_content')
-      .upsert(
-        {
-          club_id: clubId,
-          contexto_historico: contextoHistorico !== undefined ? (contextoHistorico || null) : null,
-          curiosidades: curiosidades !== undefined ? (curiosidades || null) : null,
-          updated_by: currentUserId,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'club_id' }
-      )
+      .upsert(payload, { onConflict: 'club_id' })
+
     if (error) {
-      const msg = error.message || error.details || error.hint || JSON.stringify(error)
-      console.error('[useClubAlmanaque] saveContent upsert error:', msg, error)
-      throw new Error(`DB ${error.code || 'erro'}: ${msg}`)
+      // Log completo para diagnóstico — copie do console e passe para o dev
+      console.error('[useClubAlmanaque] UPSERT FALHOU:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        status: error.status,
+        statusCode: error.statusCode,
+        raw: error,
+      })
+      const e = new Error(`[UPSERT] DB ${error.code || 'erro'}: ${error.message}`)
+      e.dbCode = error.code
+      e.dbDetails = error.details
+      e.dbHint = error.hint
+      e.dbStatus = error.status || error.statusCode
+      throw e
     }
+
+    console.log('[useClubAlmanaque] upsert OK — fazendo SELECT de confirmação...')
     const { data, error: selErr } = await supabase
       .from('club_almanaque_content')
       .select('*')
       .eq('club_id', clubId)
       .maybeSingle()
+
     if (selErr) {
-      const msg = selErr.message || selErr.details || JSON.stringify(selErr)
-      console.error('[useClubAlmanaque] saveContent select error:', msg)
+      console.error('[useClubAlmanaque] SELECT PÓS-UPSERT FALHOU:', {
+        message: selErr.message,
+        code: selErr.code,
+        details: selErr.details,
+        hint: selErr.hint,
+        raw: selErr,
+      })
+      const e = new Error(`[SELECT] DB ${selErr.code || 'erro'}: ${selErr.message}`)
+      e.dbCode = selErr.code
+      e.dbDetails = selErr.details
+      e.dbHint = selErr.hint
+      throw e
     }
+
+    console.log('[useClubAlmanaque] SELECT retornou:', data)
     setContent(data || null)
+
     if (!data) {
-      throw new Error('Permissão negada — execute clubs-v12-almanaque-fix.sql no Supabase.')
+      // Upsert não deu erro mas SELECT retornou null — RLS pode estar bloqueando o SELECT.
+      // O dado pode ter sido salvo mesmo assim; precisa confirmar no banco.
+      const e = new Error('[SELECT-NULL] Upsert sem erro mas SELECT retornou null — possível bloqueio de RLS no SELECT')
+      e.dbCode = 'SELECT_NULL'
+      throw e
     }
   }
 
