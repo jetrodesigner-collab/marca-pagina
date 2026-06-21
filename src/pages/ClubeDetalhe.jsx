@@ -203,7 +203,13 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
           />
         )}
         {activeTab === 3 && (
-          <ClubAlmanaque club={club} clubId={club.id} />
+          <ClubAlmanaque
+            club={club}
+            clubId={club.id}
+            currentUserId={session.user.id}
+            isAdmin={isAdmin}
+            onToast={showToast}
+          />
         )}
         {isAdmin && activeTab === 4 && (
           <ClubGerenciar
