@@ -56,20 +56,23 @@ function TabResponder({ activity, myAnswers, currentUserId, isAdmin, isDeadlineP
 
   const initForm = () => questions.map(q => {
     const existing = myAnswers.find(a => a.question_id === q.id)
-    return { questionId: q.id, answerText: existing?.answer_text || '', isPublic: existing?.is_public || false }
+    return { questionId: q.id, answerText: existing?.answer_text || '' }
   })
 
   const [formAnswers, setFormAnswers] = useState(initForm)
+  // Single privacy toggle for the whole activity submission
+  const [isPublic, setIsPublic] = useState(() => myAnswers[0]?.is_public || false)
   const [submitting, setSubmitting] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     setFormAnswers(initForm())
+    setIsPublic(myAnswers[0]?.is_public || false)
     setEditMode(!hasSubmitted)
   }, [myAnswers.length, activity.id])
 
-  function updateAnswer(qi, field, value) {
-    setFormAnswers(prev => prev.map((a, i) => i === qi ? { ...a, [field]: value } : a))
+  function updateAnswerText(qi, value) {
+    setFormAnswers(prev => prev.map((a, i) => i === qi ? { ...a, answerText: value } : a))
   }
 
   async function handleSubmit() {
@@ -77,7 +80,8 @@ function TabResponder({ activity, myAnswers, currentUserId, isAdmin, isDeadlineP
     if (incomplete) { onToast?.('Responda todas as perguntas.'); return }
     setSubmitting(true)
     try {
-      await onSubmitAnswers(formAnswers)
+      // Apply the single isPublic value to every answer row
+      await onSubmitAnswers(formAnswers.map(a => ({ ...a, isPublic })))
       setEditMode(false)
       onToast?.('✓ Resposta enviada!')
     } catch {
@@ -91,6 +95,7 @@ function TabResponder({ activity, myAnswers, currentUserId, isAdmin, isDeadlineP
     setDeleting(true)
     try {
       await onDeleteMyAnswers()
+      setIsPublic(false)
       setEditMode(true)
       onToast?.('Respostas removidas.')
     } catch {
@@ -101,25 +106,31 @@ function TabResponder({ activity, myAnswers, currentUserId, isAdmin, isDeadlineP
   }
 
   const canEdit = !isDeadlinePassed || isAdmin
+  const submittedIsPublic = myAnswers[0]?.is_public || false
 
   if (hasSubmitted && !editMode) {
     return (
       <div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ color: '#7EE8A2' }}>✓</span> Você já respondeu esta avaliação.
+        {/* Single privacy badge for the whole submission */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <span style={{ fontSize: 11, color: '#7EE8A2' }}>✓</span>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Você já respondeu esta avaliação.</span>
+          <span style={{
+            fontSize: 10, fontWeight: 600, borderRadius: 6, padding: '2px 8px',
+            color: submittedIsPublic ? '#7EE8A2' : '#C4A8F0',
+            background: submittedIsPublic ? 'rgba(126,232,162,.1)' : 'rgba(196,168,240,.1)',
+            border: `1px solid ${submittedIsPublic ? 'rgba(126,232,162,.25)' : 'rgba(196,168,240,.2)'}`,
+          }}>
+            {submittedIsPublic ? '🌐 Pública' : '🔒 Privada'}
+          </span>
         </div>
         {questions.map((q, qi) => {
           const ans = myAnswers.find(a => a.question_id === q.id)
           return (
-            <div key={q.id} style={{ marginBottom: 16, background: 'rgba(42,38,55,1)', border: '1px solid var(--bor)', borderRadius: 12, padding: 14 }}>
+            <div key={q.id} style={{ marginBottom: 12, background: 'rgba(42,38,55,1)', border: '1px solid var(--bor)', borderRadius: 12, padding: 14 }}>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Pergunta {qi + 1}</div>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 8, lineHeight: 1.4 }}>{q.question_text}</div>
               <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{ans?.answer_text || '—'}</div>
-              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontSize: 10, color: ans?.is_public ? '#7EE8A2' : 'var(--muted)' }}>
-                  {ans?.is_public ? '🌐 Pública' : '🔒 Privada'}
-                </span>
-              </div>
             </div>
           )
         })}
@@ -165,17 +176,13 @@ function TabResponder({ activity, myAnswers, currentUserId, isAdmin, isDeadlineP
         const fa = formAnswers[qi]
         return (
           <div key={q.id} style={{ marginBottom: 18 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-              <div>
-                <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700 }}>Pergunta {qi + 1}</span>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, marginTop: 2 }}>{q.question_text}</div>
-              </div>
-            </div>
+            <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700 }}>Pergunta {qi + 1}</span>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4, marginTop: 2, marginBottom: 8 }}>{q.question_text}</div>
 
             {q.type === 'dissertativa' ? (
               <textarea
                 value={fa?.answerText || ''}
-                onChange={e => updateAnswer(qi, 'answerText', e.target.value)}
+                onChange={e => updateAnswerText(qi, e.target.value)}
                 placeholder="Sua resposta..."
                 rows={3}
                 style={{ ...inputStyle, resize: 'none', fontSize: 13 }}
@@ -185,7 +192,7 @@ function TabResponder({ activity, myAnswers, currentUserId, isAdmin, isDeadlineP
                 {(q.options || []).map((opt, oi) => (
                   <button
                     key={oi}
-                    onClick={() => updateAnswer(qi, 'answerText', opt)}
+                    onClick={() => updateAnswerText(qi, opt)}
                     style={{
                       textAlign: 'left', padding: '9px 12px', borderRadius: 9, cursor: 'pointer',
                       fontFamily: 'Figtree, sans-serif', fontSize: 13,
@@ -200,32 +207,39 @@ function TabResponder({ activity, myAnswers, currentUserId, isAdmin, isDeadlineP
                 ))}
               </div>
             )}
-
-            {/* Privacy toggle per question */}
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-              {[
-                { value: false, label: '🔒 Privada', desc: 'só o admin vê' },
-                { value: true,  label: '🌐 Pública', desc: 'todo o clube vê' },
-              ].map(opt => (
-                <button
-                  key={String(opt.value)}
-                  onClick={() => updateAnswer(qi, 'isPublic', opt.value)}
-                  style={{
-                    fontSize: 10, fontWeight: 600, borderRadius: 7, padding: '4px 10px', cursor: 'pointer', fontFamily: 'Figtree, sans-serif',
-                    color: fa?.isPublic === opt.value ? (opt.value ? '#7EE8A2' : '#C4A8F0') : 'var(--muted)',
-                    background: fa?.isPublic === opt.value ? (opt.value ? 'rgba(126,232,162,.1)' : 'rgba(196,168,240,.1)') : 'rgba(255,255,255,.03)',
-                    border: `1px solid ${fa?.isPublic === opt.value ? (opt.value ? 'rgba(126,232,162,.25)' : 'rgba(196,168,240,.2)') : 'rgba(196,168,240,.12)'}`,
-                  }}
-                >
-                  {opt.label} <span style={{ opacity: 0.7 }}>— {opt.desc}</span>
-                </button>
-              ))}
-            </div>
           </div>
         )
       })}
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+      {/* Single privacy toggle for the whole activity */}
+      <div style={{ marginBottom: 16, marginTop: 4, padding: '14px', background: 'rgba(42,38,55,1)', border: '1px solid rgba(196,168,240,.12)', borderRadius: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', marginBottom: 10 }}>
+          Minha resposta nesta avaliação será:
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[
+            { value: false, label: '🔒 Privada', desc: 'só o professor vê' },
+            { value: true,  label: '🌐 Pública', desc: 'todo o clube vê' },
+          ].map(opt => (
+            <button
+              key={String(opt.value)}
+              onClick={() => setIsPublic(opt.value)}
+              style={{
+                flex: 1, padding: '10px 8px', cursor: 'pointer',
+                fontFamily: 'Figtree, sans-serif', borderRadius: 10,
+                color: isPublic === opt.value ? (opt.value ? '#7EE8A2' : '#C4A8F0') : 'var(--muted)',
+                background: isPublic === opt.value ? (opt.value ? 'rgba(126,232,162,.1)' : 'rgba(196,168,240,.1)') : 'rgba(255,255,255,.03)',
+                border: `1.5px solid ${isPublic === opt.value ? (opt.value ? 'rgba(126,232,162,.3)' : 'rgba(196,168,240,.25)') : 'rgba(196,168,240,.12)'}`,
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 700 }}>{opt.label}</div>
+              <div style={{ fontSize: 10, opacity: 0.65, marginTop: 2 }}>{opt.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8 }}>
         {editMode && hasSubmitted && (
           <button
             onClick={() => setEditMode(false)}
@@ -266,13 +280,17 @@ function TabRespostas({ activity, answers, grades, members, currentUserId, isAdm
   const responded = memberList.filter(m => m.hasAnswered)
   const pending   = memberList.filter(m => !m.hasAnswered)
 
-  function canSeeContent(memberId, isPublic) {
-    return isPublic || memberId === currentUserId || isAdmin
+  // Single is_public per user — all their answers share the same value
+  function getUserIsPublic(userAnswers) {
+    return userAnswers[0]?.is_public || false
+  }
+
+  function canSeeAnswers(memberId, userAnswers) {
+    return getUserIsPublic(userAnswers) || memberId === currentUserId || isAdmin
   }
 
   function canSeeGrade(memberId, userAnswers) {
-    const hasPublicAnswer = userAnswers.some(a => a.is_public)
-    return memberId === currentUserId || isAdmin || hasPublicAnswer
+    return memberId === currentUserId || isAdmin || getUserIsPublic(userAnswers)
   }
 
   return (
@@ -292,13 +310,14 @@ function TabRespostas({ activity, answers, grades, members, currentUserId, isAdm
 
       {responded.map(m => {
         const isOwn = m.user_id === currentUserId
-        const hasPublicContent = m.userAnswers.some(a => a.is_public)
+        const userIsPublic = getUserIsPublic(m.userAnswers)
+        const showContent = canSeeAnswers(m.user_id, m.userAnswers)
         const showGrade = canSeeGrade(m.user_id, m.userAnswers)
 
         return (
           <div key={m.user_id} style={{ marginBottom: 14, background: 'rgba(42,38,55,1)', border: '1px solid var(--bor)', borderRadius: 12, overflow: 'hidden' }}>
             {/* Member header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: hasPublicContent || isOwn || isAdmin ? '1px solid var(--bor)' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: showContent ? '1px solid var(--bor)' : 'none' }}>
               <Avatar profile={m.profile} userId={m.user_id} size={28} />
               <div style={{ flex: 1 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
@@ -310,27 +329,30 @@ function TabRespostas({ activity, answers, grades, members, currentUserId, isAdm
                   </span>
                 )}
               </div>
-              <span style={{ fontSize: 10, fontWeight: 600, color: '#7EE8A2', background: 'rgba(126,232,162,.1)', borderRadius: 6, padding: '2px 7px' }}>
-                ✓ Respondido
-              </span>
+              <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 600, borderRadius: 6, padding: '2px 6px',
+                  color: userIsPublic ? '#7EE8A2' : '#C4A8F0',
+                  background: userIsPublic ? 'rgba(126,232,162,.1)' : 'rgba(196,168,240,.1)',
+                  border: `1px solid ${userIsPublic ? 'rgba(126,232,162,.25)' : 'rgba(196,168,240,.2)'}`,
+                }}>
+                  {userIsPublic ? '🌐' : '🔒'}
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: '#7EE8A2', background: 'rgba(126,232,162,.1)', borderRadius: 6, padding: '2px 7px' }}>
+                  ✓
+                </span>
+              </div>
             </div>
 
-            {/* Answers */}
-            {(isOwn || isAdmin || hasPublicContent) ? (
+            {/* Answers — all visible or none */}
+            {showContent ? (
               <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {questions.map((q, qi) => {
                   const ans = m.userAnswers.find(a => a.question_id === q.id)
-                  const visible = canSeeContent(m.user_id, ans?.is_public)
                   return (
                     <div key={q.id}>
                       <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 2 }}>P{qi + 1}. {q.question_text}</div>
-                      {visible ? (
-                        <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{ans?.answer_text || '—'}</div>
-                      ) : (
-                        <div style={{ fontSize: 11, color: 'rgba(90,84,104,1)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          🔒 Resposta privada
-                        </div>
-                      )}
+                      <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>{ans?.answer_text || '—'}</div>
                     </div>
                   )
                 })}
@@ -341,7 +363,13 @@ function TabRespostas({ activity, answers, grades, members, currentUserId, isAdm
                   </div>
                 )}
               </div>
-            ) : null}
+            ) : (
+              <div style={{ padding: '10px 14px' }}>
+                <div style={{ fontSize: 11, color: 'rgba(90,84,104,1)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  🔒 Resposta privada — conteúdo visível apenas para o admin
+                </div>
+              </div>
+            )}
           </div>
         )
       })}
@@ -434,6 +462,7 @@ function TabCorrigir({ activity, answers, grades, members, currentUserId, onToas
 
       {respondents.map(r => {
         const gs = gradeStates[r.userId] || { nota: '', feedback: '' }
+        const userIsPublic = r.answers[0]?.is_public || false
         return (
           <div key={r.userId} style={{ marginBottom: 18, background: 'rgba(42,38,55,1)', border: '1px solid var(--bor)', borderRadius: 12, overflow: 'hidden' }}>
             {/* Header */}
@@ -442,11 +471,21 @@ function TabCorrigir({ activity, answers, grades, members, currentUserId, onToas
               <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                 {r.userId === currentUserId ? 'Você' : (r.profile?.full_name || r.profile?.username || 'Membro')}
               </span>
-              {r.grade && (
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#CCA33D', background: 'rgba(204,163,61,.15)', borderRadius: 6, padding: '2px 6px' }}>
-                  {r.grade.nota !== null && r.grade.nota !== undefined ? `Nota ${r.grade.nota}` : 'Sem nota'}
+              <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 600, borderRadius: 6, padding: '2px 6px',
+                  color: userIsPublic ? '#7EE8A2' : '#C4A8F0',
+                  background: userIsPublic ? 'rgba(126,232,162,.1)' : 'rgba(196,168,240,.1)',
+                  border: `1px solid ${userIsPublic ? 'rgba(126,232,162,.25)' : 'rgba(196,168,240,.2)'}`,
+                }}>
+                  {userIsPublic ? '🌐 Pública' : '🔒 Privada'}
                 </span>
-              )}
+                {r.grade && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#CCA33D', background: 'rgba(204,163,61,.15)', borderRadius: 6, padding: '2px 6px' }}>
+                    {r.grade.nota !== null && r.grade.nota !== undefined ? `Nota ${r.grade.nota}` : 'Sem nota'}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Answers */}
@@ -455,12 +494,7 @@ function TabCorrigir({ activity, answers, grades, members, currentUserId, onToas
                 const ans = r.answers.find(a => a.question_id === q.id)
                 return (
                   <div key={q.id} style={{ marginBottom: qi < questions.length - 1 ? 12 : 0 }}>
-                    <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 2 }}>
-                      P{qi + 1}. {q.question_text}
-                      <span style={{ marginLeft: 6, color: ans?.is_public ? '#7EE8A2' : 'rgba(196,168,240,.5)' }}>
-                        {ans?.is_public ? '🌐' : '🔒'}
-                      </span>
-                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 2 }}>P{qi + 1}. {q.question_text}</div>
                     <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>
                       {ans?.answer_text || <span style={{ color: 'var(--muted)' }}>Sem resposta</span>}
                     </div>
