@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const STATUS_LABEL = { aberta: 'Aberta', encerrada: 'Encerrada', corrigida: 'Corrigida' }
 const STATUS_STYLE = {
@@ -564,6 +564,15 @@ export default function ClubAvaliacaoTela({
   members, currentUserId, isAdmin,
   onBack, onToast, onSubmitAnswers, onDeleteMyAnswers, onSaveGrade, onUpdateStatus, onDeleteActivity,
 }) {
+  const containerRef = useRef(null)
+  const contentRef = useRef(null)
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    if (containerRef.current) containerRef.current.scrollTop = 0
+    if (contentRef.current) contentRef.current.scrollTop = 0
+  }, [])
+
   const status = computeStatus(activity)
   const isDeadlinePassed = activity?.deadline && new Date() > new Date(activity.deadline)
 
@@ -590,7 +599,7 @@ export default function ClubAvaliacaoTela({
   if (!activity) return null
 
   return (
-    <div style={{
+    <div ref={containerRef} style={{
       position: 'absolute', inset: 0, zIndex: 50,
       background: 'var(--bg)', display: 'flex', flexDirection: 'column',
     }}>
@@ -657,7 +666,7 @@ export default function ClubAvaliacaoTela({
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', padding: '20px 20px 48px' }}>
+      <div ref={contentRef} style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', padding: '20px 20px 48px' }}>
         {activeTab === 0 && (
           <TabResponder
             activity={activity}

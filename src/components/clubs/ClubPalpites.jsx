@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useClubPredictions } from '../../hooks/useClubPredictions'
 
 function timeAgo(dateStr) {
@@ -20,9 +20,15 @@ export default function ClubPalpites({ clubId, activeMeta, currentUserId, isAdmi
   const { predictions, loading, myPrediction, addPrediction, revealAll, markCorrect } =
     useClubPredictions(clubId, activeMeta?.id, currentUserId)
 
+  const containerRef = useRef(null)
   const [showForm, setShowForm] = useState(false)
   const [formText, setFormText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    if (containerRef.current) containerRef.current.scrollTop = 0
+  }, [])
 
   const allRevealed = predictions.length > 0 && predictions.every(p => p.revealed)
 
@@ -57,7 +63,7 @@ export default function ClubPalpites({ clubId, activeMeta, currentUserId, isAdmi
   }
 
   return (
-    <div style={{
+    <div ref={containerRef} style={{
       position: 'absolute', inset: 0, zIndex: 50,
       background: 'var(--bg)', display: 'flex', flexDirection: 'column',
       overflowY: 'auto', scrollbarWidth: 'none',

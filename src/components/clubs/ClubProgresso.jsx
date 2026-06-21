@@ -2,6 +2,30 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import MemberCard from './MemberCard'
 
+const PROGRESS_RULES = [
+  { pct: '100%',   icone: '✅', label: 'Meta Concluída' },
+  { pct: '90–99%', icone: '⚡', label: 'Leitor Relâmpago' },
+  { pct: '75–89%', icone: '🔥', label: 'Chama Viva' },
+  { pct: '60–74%', icone: '🌅', label: 'Madrugador' },
+  { pct: '50–59%', icone: '📖', label: 'No Ritmo' },
+  { pct: '30–49%', icone: '🐢', label: 'Tartaruga Literária' },
+  { pct: '15–29%', icone: '😴', label: 'Soneca entre Capítulos' },
+  { pct: '1–14%',  icone: '👀', label: 'Só Olhou a Capa' },
+  { pct: '0%',     icone: '🛋️', label: 'Membro Honorário do Sofá' },
+]
+
+const RANK_RULES = [
+  { medal: '🥇', label: '1º lugar — Medalha de Ouro' },
+  { medal: '🥈', label: '2º lugar — Medalha de Prata' },
+  { medal: '🥉', label: '3º lugar — Medalha de Bronze' },
+]
+
+const SPECIAL_RULES = [
+  { icone: '👑', label: 'Fundador',  desc: 'Criador do clube' },
+  { icone: '🏆', label: 'Pioneiro',  desc: 'Primeiro a atingir 100%' },
+  { icone: '🔥', label: 'X dias',    desc: 'Dias consecutivos registrando progresso' },
+]
+
 function getProgressBadge(pct, hasActiveMeta) {
   if (!hasActiveMeta) return null
   if (pct >= 100) return { tipo: 'dyn_meta_ok',   label: 'Meta Concluída',          icone: '✅' }
@@ -29,6 +53,7 @@ const BADGE_STYLES = {
 
 export default function ClubProgresso({ members, activeMeta, clubId, currentUserId, profile, clubName, onUpdateProgress, onBadgeClick, onToast }) {
   const [pokedToday, setPokedToday] = useState(new Set())
+  const [showRegras, setShowRegras] = useState(false)
 
   const avgPct = members.length > 0
     ? Math.round(members.reduce((s, m) => s + (m.pct || 0), 0) / members.length)
@@ -203,6 +228,60 @@ export default function ClubProgresso({ members, activeMeta, clubId, currentUser
           onBadgeClick={onBadgeClick}
         />
       ))}
+
+      {/* Regras de premiação */}
+      <div style={{ background: 'var(--sur)', border: '1px solid var(--bor)', borderRadius: 14, overflow: 'hidden', marginTop: 8 }}>
+        <button
+          onClick={() => setShowRegras(v => !v)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: 'Figtree, sans-serif', fontSize: 12, fontWeight: 700, color: 'var(--text)',
+          }}
+        >
+          <span>🏆 Regras de premiação</span>
+          <span style={{ fontSize: 10, color: 'var(--muted)' }}>{showRegras ? '▲' : '▼'}</span>
+        </button>
+        {showRegras && (
+          <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--bor)' }}>
+            <div style={{ paddingTop: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+                Badges por progresso
+              </div>
+              {PROGRESS_RULES.map(r => (
+                <div key={r.pct} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.icone}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600, flex: 1 }}>{r.label}</span>
+                  <span style={{ fontSize: 10, color: 'var(--muted)' }}>{r.pct}</span>
+                </div>
+              ))}
+              <div style={{ height: 1, background: 'var(--bor)', margin: '14px 0' }} />
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+                Medalhas de ranking
+              </div>
+              {RANK_RULES.map(r => (
+                <div key={r.medal} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.medal}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{r.label}</span>
+                </div>
+              ))}
+              <div style={{ height: 1, background: 'var(--bor)', margin: '14px 0' }} />
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+                Badges especiais
+              </div>
+              {SPECIAL_RULES.map(r => (
+                <div key={r.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.icone}</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{r.label}</div>
+                    <div style={{ fontSize: 10, color: 'var(--muted)' }}>{r.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
     </div>
   )

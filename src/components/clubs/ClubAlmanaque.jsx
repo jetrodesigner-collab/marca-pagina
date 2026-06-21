@@ -202,7 +202,8 @@ function AdminContentCard({
                 await onSave(draft.trim())
                 setEditing(false)
                 onToast?.('✓ Salvo!')
-              } catch {
+              } catch (err) {
+                console.error('[ClubAlmanaque] save error:', err)
                 onToast?.('Erro ao salvar.')
               } finally {
                 setSaving(false)

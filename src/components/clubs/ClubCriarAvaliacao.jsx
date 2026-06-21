@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const inputStyle = {
   display: 'block', width: '100%', boxSizing: 'border-box',
@@ -17,6 +17,13 @@ function emptyQuestion() {
 }
 
 export default function ClubCriarAvaliacao({ onBack, onToast, onCreated }) {
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    if (containerRef.current) containerRef.current.scrollTop = 0
+  }, [])
+
   const [title, setTitle] = useState('')
   const [deadline, setDeadline] = useState('')
   const [questions, setQuestions] = useState([emptyQuestion()])
@@ -85,7 +92,8 @@ export default function ClubCriarAvaliacao({ onBack, onToast, onCreated }) {
       })
       onBack()
       onToast?.('✓ Avaliação publicada!')
-    } catch {
+    } catch (err) {
+      console.error('[ClubCriarAvaliacao] publish error:', err)
       onToast?.('Erro ao publicar avaliação.')
     } finally {
       setSubmitting(false)
@@ -96,7 +104,7 @@ export default function ClubCriarAvaliacao({ onBack, onToast, onCreated }) {
   const minDeadline = new Date(Date.now() + 60000).toISOString().slice(0, 16)
 
   return (
-    <div style={{
+    <div ref={containerRef} style={{
       position: 'absolute', inset: 0, zIndex: 50,
       background: 'var(--bg)', display: 'flex', flexDirection: 'column',
       overflowY: 'auto', scrollbarWidth: 'none',

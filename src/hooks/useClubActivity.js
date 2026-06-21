@@ -76,7 +76,15 @@ export function useClubActivity(clubId, currentUserId) {
       .insert({ club_id: clubId, created_by: currentUserId, title, deadline, status: 'aberta' })
       .select()
       .single()
-    if (error) throw error
+    if (error) {
+      console.error('[useClubActivity] createActivity insert error:', error)
+      throw error
+    }
+    if (!act) {
+      const err = new Error('Avaliação não pôde ser criada — verifique permissões do clube.')
+      console.error('[useClubActivity] createActivity: insert retornou null', err)
+      throw err
+    }
 
     if (questions?.length) {
       const { error: qErr } = await supabase
@@ -88,7 +96,10 @@ export function useClubActivity(clubId, currentUserId) {
           options: q.options?.length ? q.options : null,
           order_index: i,
         })))
-      if (qErr) throw qErr
+      if (qErr) {
+        console.error('[useClubActivity] createActivity questions insert error:', qErr)
+        throw qErr
+      }
     }
 
     await load()

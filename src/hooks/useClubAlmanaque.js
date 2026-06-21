@@ -82,9 +82,20 @@ export function useClubAlmanaque(clubId, currentUserId) {
         },
         { onConflict: 'club_id' }
       )
-    if (error) throw error
-    const { data } = await supabase.from('club_almanaque_content').select('*').eq('club_id', clubId).maybeSingle()
+    if (error) {
+      console.error('[useClubAlmanaque] saveContent upsert error:', error)
+      throw error
+    }
+    const { data, error: selErr } = await supabase
+      .from('club_almanaque_content')
+      .select('*')
+      .eq('club_id', clubId)
+      .maybeSingle()
+    if (selErr) console.error('[useClubAlmanaque] saveContent select error:', selErr)
     setContent(data || null)
+    if (!data) {
+      throw new Error('Conteúdo não pôde ser salvo — verifique permissões do clube.')
+    }
   }
 
   async function addNote(text) {
