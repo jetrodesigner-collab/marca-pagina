@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import MemberCard from './MemberCard'
+import MetaColetivaCard from './MetaColetivaCard'
 
 const PROGRESS_RULES = [
   { pct: '100%',   icone: '✅', label: 'Meta Concluída' },
@@ -280,6 +281,11 @@ export default function ClubProgresso({ members, activeMeta, clubId, currentUser
           onBadgeClick={onBadgeClick}
         />
       ))}
+
+      {/* ──────────────────────────────────────────────── */}
+      {/* SEÇÃO 5: META COLETIVA DO GRUPO                 */}
+      {/* ──────────────────────────────────────────────── */}
+      <MetaColetivaCard members={members} activeMeta={activeMeta} />
 
     </div>
   )

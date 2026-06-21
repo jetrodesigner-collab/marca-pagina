@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
+const MOODS = [
+  { key: 'Medo',      emoji: '😱' },
+  { key: 'Suspense',  emoji: '🤔' },
+  { key: 'Tristeza',  emoji: '💔' },
+  { key: 'Divertido', emoji: '😂' },
+  { key: 'Surpresa',  emoji: '😮' },
+]
+
 export default function ModalProgresso({ paginaAtual, paginaFim, userId, clubId, onClose }) {
   const [pagina, setPagina] = useState(paginaAtual ?? '')
+  const [selectedMood, setSelectedMood] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
 
@@ -20,6 +29,13 @@ export default function ModalProgresso({ paginaAtual, paginaFim, userId, clubId,
         .eq('club_id', clubId)
         .eq('user_id', userId)
       if (error) throw error
+
+      if (selectedMood && clubId) {
+        // delete + insert garante que só existe um humor por usuário por clube
+        await supabase.from('club_moods').delete().eq('club_id', clubId).eq('user_id', userId)
+        await supabase.from('club_moods').insert({ club_id: clubId, user_id: userId, mood: selectedMood })
+      }
+
       onClose(pg)
     } catch {
       setSaveError('Erro ao salvar. Verifique sua conexão ou execute o SQL de correção.')
@@ -70,6 +86,30 @@ export default function ModalProgresso({ paginaAtual, paginaFim, userId, clubId,
             <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>{pct}% concluído</div>
           </div>
         )}
+
+        {/* Seletor de humor — alimenta o Clima da Leitura */}
+        <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.1em', textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
+          Clima da leitura <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span>
+        </label>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+          {MOODS.map(m => (
+            <button
+              key={m.key}
+              type="button"
+              onClick={() => setSelectedMood(selectedMood === m.key ? null : m.key)}
+              style={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                padding: '8px 4px', borderRadius: 10,
+                border: `1px solid ${selectedMood === m.key ? 'rgba(196,168,240,.5)' : 'rgba(196,168,240,.15)'}`,
+                background: selectedMood === m.key ? 'rgba(196,168,240,.16)' : 'rgba(255,255,255,.03)',
+                cursor: 'pointer', fontFamily: 'Figtree, sans-serif',
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{m.emoji}</span>
+              <span style={{ fontSize: 9, color: selectedMood === m.key ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>{m.key}</span>
+            </button>
+          ))}
+        </div>
 
         {saveError && (
           <div style={{ fontSize: 11, color: '#F07A7A', marginBottom: 12, lineHeight: 1.4 }}>

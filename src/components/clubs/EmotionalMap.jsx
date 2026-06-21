@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import {
   AreaChart, Area, XAxis, Tooltip, ResponsiveContainer,
@@ -95,12 +95,8 @@ export default function EmotionalMap({ clubId, activeMeta, members }) {
   const [moods, setMoods] = useState([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!clubId) return
-    load()
-  }, [clubId, activeMeta?.id])
-
-  async function load() {
     setLoading(true)
     try {
       const { data } = await supabase
@@ -113,7 +109,26 @@ export default function EmotionalMap({ clubId, activeMeta, members }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [clubId])
+
+  useEffect(() => {
+    load()
+  }, [load, activeMeta?.id])
+
+  // Realtime: recarrega quando qualquer humor for salvo neste clube
+  useEffect(() => {
+    if (!clubId) return
+    const channel = supabase
+      .channel(`club-moods-${clubId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'club_moods',
+        filter: `club_id=eq.${clubId}`,
+      }, () => load())
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [clubId, load])
 
   const pageEnd = activeMeta?.pagina_fim ?? null
 

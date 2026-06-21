@@ -4,11 +4,7 @@ import { useClubPosts } from '../../hooks/useClubPosts'
 import { useStreak } from '../../hooks/useStreak'
 import { checkBadges } from '../../hooks/useBadges'
 import PostItem from './PostItem'
-import MetaColetivaCard from './MetaColetivaCard'
 import EmotionalMap from './EmotionalMap'
-import SecretPredictions from './SecretPredictions'
-import PageBets from './PageBets'
-import ClubAtividade from './ClubAtividade'
 
 const MEMBER_COLORS = [
   { bg: 'rgba(196,168,240,.14)', color: '#C4A8F0' },
@@ -198,41 +194,50 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
         members={members}
       />
 
-      {/* Avaliação */}
-      <ClubAtividade
-        activity={activity}
-        loadingActivity={loadingActivity}
-        isAdmin={isAdmin}
-        onViewAvaliacao={onViewAvaliacao}
-        onCriarAvaliacao={onCriarAvaliacao}
-      />
-
-      {/* Palpites Secretos — resumo */}
-      <SecretPredictions
-        clubId={club.id}
-        activeMeta={activeMeta}
-        currentUserId={currentUserId}
-        isAdmin={isAdmin}
-        onToast={onToast}
-        onViewAll={onViewPalpites}
-      />
-
-      {/* Apostas de Páginas — resumo */}
-      <PageBets
-        clubId={club.id}
-        activeMeta={activeMeta}
-        members={members}
-        currentUserId={currentUserId}
-        isAdmin={isAdmin}
-        onToast={onToast}
-        onViewAll={onViewApostas}
-      />
-
-      {/* Meta coletiva */}
-      <MetaColetivaCard
-        members={members}
-        activeMeta={activeMeta}
-      />
+      {/* Acesso rápido — chips compactos */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {(activity || isAdmin) && (
+          <button
+            onClick={() => activity ? onViewAvaliacao() : onCriarAvaliacao()}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '7px 13px', borderRadius: 20,
+              border: '1px solid rgba(196,168,240,.22)',
+              background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
+              fontSize: 12, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
+              cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            📝 Avaliação
+          </button>
+        )}
+        <button
+          onClick={onViewPalpites}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '7px 13px', borderRadius: 20,
+            border: '1px solid rgba(196,168,240,.22)',
+            background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
+            fontSize: 12, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
+            cursor: 'pointer', whiteSpace: 'nowrap',
+          }}
+        >
+          🔮 Palpites Secretos
+        </button>
+        <button
+          onClick={onViewApostas}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '7px 13px', borderRadius: 20,
+            border: '1px solid rgba(196,168,240,.22)',
+            background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
+            fontSize: 12, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
+            cursor: 'pointer', whiteSpace: 'nowrap',
+          }}
+        >
+          📊 Apostas de Página
+        </button>
+      </div>
 
       {loading && <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>Carregando...</div>}
 

@@ -66,10 +66,10 @@ export function useClubMembers(clubId) {
 
   useEffect(() => { load() }, [load])
 
-  // Realtime: atualiza contagem e dados quando club_members muda
+  // Realtime: atualiza quando club_members ou club_metas muda
   useEffect(() => {
     if (!clubId) return
-    const channel = supabase
+    const ch1 = supabase
       .channel(`club-members-${clubId}`)
       .on('postgres_changes', {
         event: '*',
@@ -78,7 +78,19 @@ export function useClubMembers(clubId) {
         filter: `club_id=eq.${clubId}`,
       }, () => load())
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    const ch2 = supabase
+      .channel(`club-metas-${clubId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'club_metas',
+        filter: `club_id=eq.${clubId}`,
+      }, () => load())
+      .subscribe()
+    return () => {
+      supabase.removeChannel(ch1)
+      supabase.removeChannel(ch2)
+    }
   }, [clubId, load])
 
   return { members, activeMeta, loading, refresh: load }
