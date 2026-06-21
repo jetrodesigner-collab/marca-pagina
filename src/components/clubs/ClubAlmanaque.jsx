@@ -204,7 +204,7 @@ function AdminContentCard({
                 onToast?.('✓ Salvo!')
               } catch (err) {
                 console.error('[ClubAlmanaque] save error:', err)
-                onToast?.('Erro ao salvar.')
+                onToast?.(`Erro: ${err?.message || 'falha ao salvar'}`)
               } finally {
                 setSaving(false)
               }

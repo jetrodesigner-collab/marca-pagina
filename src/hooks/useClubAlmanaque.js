@@ -75,26 +75,30 @@ export function useClubAlmanaque(clubId, currentUserId) {
       .upsert(
         {
           club_id: clubId,
-          contexto_historico: contextoHistorico || null,
-          curiosidades: curiosidades || null,
+          contexto_historico: contextoHistorico !== undefined ? (contextoHistorico || null) : null,
+          curiosidades: curiosidades !== undefined ? (curiosidades || null) : null,
           updated_by: currentUserId,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'club_id' }
       )
     if (error) {
-      console.error('[useClubAlmanaque] saveContent upsert error:', error)
-      throw error
+      const msg = error.message || error.details || error.hint || JSON.stringify(error)
+      console.error('[useClubAlmanaque] saveContent upsert error:', msg, error)
+      throw new Error(`DB ${error.code || 'erro'}: ${msg}`)
     }
     const { data, error: selErr } = await supabase
       .from('club_almanaque_content')
       .select('*')
       .eq('club_id', clubId)
       .maybeSingle()
-    if (selErr) console.error('[useClubAlmanaque] saveContent select error:', selErr)
+    if (selErr) {
+      const msg = selErr.message || selErr.details || JSON.stringify(selErr)
+      console.error('[useClubAlmanaque] saveContent select error:', msg)
+    }
     setContent(data || null)
     if (!data) {
-      throw new Error('Conteúdo não pôde ser salvo — verifique permissões do clube.')
+      throw new Error('Permissão negada — execute clubs-v12-almanaque-fix.sql no Supabase.')
     }
   }
 

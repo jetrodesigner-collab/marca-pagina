@@ -169,6 +169,11 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
             style={{ height: composerMode === 'comentario' ? 36 : 30 }}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <button onClick={() => setComposerMode('comentario')} className="cl-comp-btn"
+              style={composerMode === 'comentario' ? { borderColor: 'rgba(196,168,240,.35)', color: 'var(--accent)' } : {}}>
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 1C4.1 1 1 3.8 1 7.2c0 2 1 3.8 2.6 5L3 13l2.5-1c.8.3 1.6.5 2.5.5 3.9 0 7-2.8 7-6.3S11.9 1 8 1z"/></svg>
+              Pensamento
+            </button>
             <button onClick={() => setComposerMode(composerMode === 'trecho' ? 'comentario' : 'trecho')} className="cl-comp-btn"
               style={composerMode === 'trecho' ? { borderColor: 'rgba(196,168,240,.35)', color: 'var(--accent)' } : {}}>
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 4h12M2 8h8M2 12h5"/></svg>

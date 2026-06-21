@@ -45,6 +45,7 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
   // Edit club
   const [nome, setNome] = useState(club.nome || '')
   const [descricao, setDescricao] = useState(club.descricao || '')
+  const [livroTitulo, setLivroTitulo] = useState(club.livro_titulo || '')
   const [fotoFile, setFotoFile] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(club.foto_url || null)
   const [savingClub, setSavingClub] = useState(false)
@@ -93,9 +94,10 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
       }
       const { error } = await supabase.from('clubs').update({
         nome: nome.trim(), descricao: descricao.trim() || null, foto_url,
+        livro_titulo: livroTitulo.trim() || null,
       }).eq('id', club.id)
       if (error) throw error
-      onUpdate && onUpdate({ clubData: { nome: nome.trim(), descricao: descricao.trim() || null, foto_url } })
+      onUpdate && onUpdate({ clubData: { nome: nome.trim(), descricao: descricao.trim() || null, foto_url, livro_titulo: livroTitulo.trim() || null } })
       showToast('✓ Clube atualizado!')
     } catch {
       showToast('Erro ao salvar.')
@@ -202,7 +204,10 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
         <input className="finp" value={nome} onChange={e => setNome(e.target.value)} style={{ marginBottom: 12 }} />
 
         <label style={labelStyle}>Descrição</label>
-        <textarea className="finp" value={descricao} onChange={e => setDescricao(e.target.value)} rows={2} style={{ resize: 'none', marginBottom: 16 }} />
+        <textarea className="finp" value={descricao} onChange={e => setDescricao(e.target.value)} rows={2} style={{ resize: 'none', marginBottom: 12 }} />
+
+        <label style={labelStyle}>Livro atual</label>
+        <input className="finp" value={livroTitulo} onChange={e => setLivroTitulo(e.target.value)} placeholder="Título do livro" style={{ marginBottom: 16 }} />
 
         <button
           onClick={saveClub} disabled={savingClub}
