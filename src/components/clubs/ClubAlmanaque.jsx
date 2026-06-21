@@ -146,30 +146,6 @@ function AdminContentCard({
 
   if (!hasContent && !isAdmin) return null
 
-  if (!hasContent && isAdmin) {
-    return (
-      <div
-        className="cl-alma-card"
-        style={{ borderStyle: 'dashed', borderColor: 'rgba(196,168,240,.2)', background: 'rgba(196,168,240,.03)' }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{emoji} {title}</div>
-          <button
-            onClick={() => { setDraft(''); setEditing(true) }}
-            style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--accent)',
-              background: 'rgba(196,168,240,.1)', border: '1px solid rgba(196,168,240,.2)',
-              borderRadius: 7, padding: '3px 10px', cursor: 'pointer', fontFamily: 'Figtree, sans-serif',
-            }}
-          >
-            + Adicionar
-          </button>
-        </div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>Nenhum conteúdo ainda.</div>
-      </div>
-    )
-  }
-
   if (editing) {
     return (
       <div className="cl-alma-card">
@@ -231,6 +207,30 @@ function AdminContentCard({
             {saving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
+      </div>
+    )
+  }
+
+  if (!hasContent && isAdmin) {
+    return (
+      <div
+        className="cl-alma-card"
+        style={{ borderStyle: 'dashed', borderColor: 'rgba(196,168,240,.2)', background: 'rgba(196,168,240,.03)' }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{emoji} {title}</div>
+          <button
+            onClick={() => { setDraft(''); setEditing(true) }}
+            style={{
+              fontSize: 11, fontWeight: 600, color: 'var(--accent)',
+              background: 'rgba(196,168,240,.1)', border: '1px solid rgba(196,168,240,.2)',
+              borderRadius: 7, padding: '3px 10px', cursor: 'pointer', fontFamily: 'Figtree, sans-serif',
+            }}
+          >
+            + Adicionar
+          </button>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>Nenhum conteúdo ainda.</div>
       </div>
     )
   }
