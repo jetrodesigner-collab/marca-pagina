@@ -45,7 +45,7 @@ function colorFor(id) {
   return MEMBER_COLORS[Math.abs(h) % MEMBER_COLORS.length]
 }
 
-export default function ClubFeed({ club, activeMeta, members, currentUserId, isAdmin, onBadgeUnlock, onToast, profile }) {
+export default function ClubFeed({ club, activeMeta, members, currentUserId, isAdmin, onBadgeUnlock, onToast, profile, onViewPalpites, onViewApostas }) {
   const { posts, loading, addPost, toggleLike, deletePost, refresh } = useClubPosts(club.id, currentUserId)
   const { updateStreak } = useStreak()
   const [composerText, setComposerText] = useState('')
@@ -133,93 +133,7 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
   return (
     <div style={{ padding: '28px 22px 120px' }}>
 
-      {/* Regras de premiação */}
-      <div style={{ background: 'var(--sur)', border: '1px solid var(--bor)', borderRadius: 14, overflow: 'hidden', marginBottom: 16 }}>
-        <button
-          onClick={() => setShowRegras(v => !v)}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer',
-            fontFamily: 'Figtree, sans-serif', fontSize: 12, fontWeight: 700, color: 'var(--text)',
-          }}
-        >
-          <span>🏆 Regras de premiação</span>
-          <span style={{ fontSize: 10, color: 'var(--muted)' }}>{showRegras ? '▲' : '▼'}</span>
-        </button>
-        {showRegras && (
-          <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--bor)' }}>
-            <div style={{ paddingTop: 14 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
-                Badges por progresso
-              </div>
-              {PROGRESS_RULES.map(r => (
-                <div key={r.pct} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
-                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.icone}</span>
-                  <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600, flex: 1 }}>{r.label}</span>
-                  <span style={{ fontSize: 10, color: 'var(--muted)' }}>{r.pct}</span>
-                </div>
-              ))}
-              <div style={{ height: 1, background: 'var(--bor)', margin: '14px 0' }} />
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
-                Medalhas de ranking
-              </div>
-              {RANK_RULES.map(r => (
-                <div key={r.medal} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
-                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.medal}</span>
-                  <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{r.label}</span>
-                </div>
-              ))}
-              <div style={{ height: 1, background: 'var(--bor)', margin: '14px 0' }} />
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
-                Badges especiais
-              </div>
-              {SPECIAL_RULES.map(r => (
-                <div key={r.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.icone}</span>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{r.label}</div>
-                    <div style={{ fontSize: 10, color: 'var(--muted)' }}>{r.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Mapa Emocional */}
-      <EmotionalMap
-        clubId={club.id}
-        activeMeta={activeMeta}
-        members={members}
-      />
-
-      {/* Palpites Secretos */}
-      <SecretPredictions
-        clubId={club.id}
-        activeMeta={activeMeta}
-        currentUserId={currentUserId}
-        isAdmin={isAdmin}
-        onToast={onToast}
-      />
-
-      {/* Apostas de Páginas */}
-      <PageBets
-        clubId={club.id}
-        activeMeta={activeMeta}
-        members={members}
-        currentUserId={currentUserId}
-        isAdmin={isAdmin}
-        onToast={onToast}
-      />
-
-      {/* Meta coletiva */}
-      <MetaColetivaCard
-        members={members}
-        activeMeta={activeMeta}
-      />
-
-      {/* Composer */}
+      {/* Composer — fixo no topo */}
       <div className="cl-composer">
         <div className="cl-comp-ava" style={{ background: userColor.bg, color: userColor.color }}>
           {profile?.avatar_url ? (
@@ -295,6 +209,94 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
           </div>
         </div>
       </div>
+
+      {/* Mapa Emocional */}
+      <EmotionalMap
+        clubId={club.id}
+        activeMeta={activeMeta}
+        members={members}
+      />
+
+      {/* Palpites Secretos — resumo */}
+      <SecretPredictions
+        clubId={club.id}
+        activeMeta={activeMeta}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+        onToast={onToast}
+        onViewAll={onViewPalpites}
+      />
+
+      {/* Apostas de Páginas — resumo */}
+      <PageBets
+        clubId={club.id}
+        activeMeta={activeMeta}
+        members={members}
+        currentUserId={currentUserId}
+        isAdmin={isAdmin}
+        onToast={onToast}
+        onViewAll={onViewApostas}
+      />
+
+      {/* Regras de premiação */}
+      <div style={{ background: 'var(--sur)', border: '1px solid var(--bor)', borderRadius: 14, overflow: 'hidden', marginBottom: 16 }}>
+        <button
+          onClick={() => setShowRegras(v => !v)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 18px', background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: 'Figtree, sans-serif', fontSize: 12, fontWeight: 700, color: 'var(--text)',
+          }}
+        >
+          <span>🏆 Regras de premiação</span>
+          <span style={{ fontSize: 10, color: 'var(--muted)' }}>{showRegras ? '▲' : '▼'}</span>
+        </button>
+        {showRegras && (
+          <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--bor)' }}>
+            <div style={{ paddingTop: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+                Badges por progresso
+              </div>
+              {PROGRESS_RULES.map(r => (
+                <div key={r.pct} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.icone}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600, flex: 1 }}>{r.label}</span>
+                  <span style={{ fontSize: 10, color: 'var(--muted)' }}>{r.pct}</span>
+                </div>
+              ))}
+              <div style={{ height: 1, background: 'var(--bor)', margin: '14px 0' }} />
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+                Medalhas de ranking
+              </div>
+              {RANK_RULES.map(r => (
+                <div key={r.medal} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.medal}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{r.label}</span>
+                </div>
+              ))}
+              <div style={{ height: 1, background: 'var(--bor)', margin: '14px 0' }} />
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.9px', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+                Badges especiais
+              </div>
+              {SPECIAL_RULES.map(r => (
+                <div key={r.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{r.icone}</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{r.label}</div>
+                    <div style={{ fontSize: 10, color: 'var(--muted)' }}>{r.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Meta coletiva */}
+      <MetaColetivaCard
+        members={members}
+        activeMeta={activeMeta}
+      />
 
       {loading && <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>Carregando...</div>}
 

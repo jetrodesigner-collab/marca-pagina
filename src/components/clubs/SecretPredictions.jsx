@@ -1,23 +1,8 @@
 import { useState } from 'react'
 import { useClubPredictions } from '../../hooks/useClubPredictions'
 
-function timeAgo(dateStr) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'agora'
-  if (mins < 60) return `há ${mins}min`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `há ${hrs}h`
-  const days = Math.floor(hrs / 24)
-  return `há ${days} dia${days > 1 ? 's' : ''}`
-}
-
-function avatarInitial(profile) {
-  return ((profile?.full_name || profile?.username || '?').charAt(0)).toUpperCase()
-}
-
-export default function SecretPredictions({ clubId, activeMeta, currentUserId, isAdmin, onToast }) {
-  const { predictions, loading, myPrediction, addPrediction, revealAll, markCorrect } =
+export default function SecretPredictions({ clubId, activeMeta, currentUserId, isAdmin, onToast, onViewAll }) {
+  const { predictions, loading, myPrediction, addPrediction, revealAll } =
     useClubPredictions(clubId, activeMeta?.id, currentUserId)
 
   const [showForm, setShowForm] = useState(false)
@@ -25,12 +10,11 @@ export default function SecretPredictions({ clubId, activeMeta, currentUserId, i
   const [submitting, setSubmitting] = useState(false)
 
   const allRevealed = predictions.length > 0 && predictions.every(p => p.revealed)
+  const revealedCount = predictions.filter(p => p.revealed).length
+  const correctCount = predictions.filter(p => p.correct).length
 
   async function handleSubmit() {
-    if (!formText.trim()) {
-      onToast?.('Escreva seu palpite.')
-      return
-    }
+    if (!formText.trim()) { onToast?.('Escreva seu palpite.'); return }
     setSubmitting(true)
     try {
       await addPrediction(formText.trim())
@@ -56,7 +40,7 @@ export default function SecretPredictions({ clubId, activeMeta, currentUserId, i
   return (
     <div style={{ background: 'var(--sur)', border: '1px solid var(--bor)', borderRadius: 14, padding: 18, marginBottom: 16 }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
           🔮 Palpites Secretos
         </div>
@@ -71,84 +55,26 @@ export default function SecretPredictions({ clubId, activeMeta, currentUserId, i
       </div>
 
       {loading && (
-        <div style={{ fontSize: 12, color: 'var(--muted)', padding: '12px 0', textAlign: 'center' }}>Carregando...</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', padding: '8px 0', textAlign: 'center' }}>Carregando...</div>
+      )}
+
+      {/* Summary */}
+      {!loading && predictions.length > 0 && (
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+          <span style={{ color: 'var(--text)', fontWeight: 600 }}>{predictions.length}</span>
+          {predictions.length === 1 ? 'palpite registrado' : 'palpites registrados'}
+          {revealedCount > 0 && <span style={{ color: 'rgba(240,235,248,.25)' }}>·</span>}
+          {revealedCount > 0 && <span>{revealedCount} revelado{revealedCount > 1 ? 's' : ''}</span>}
+          {correctCount > 0 && <span style={{ color: 'rgba(240,235,248,.25)' }}>·</span>}
+          {correctCount > 0 && <span style={{ color: '#7EE8A2' }}>{correctCount} correto{correctCount > 1 ? 's' : ''}</span>}
+        </div>
       )}
 
       {/* Empty state */}
       {!loading && predictions.length === 0 && !showForm && (
-        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+        <div style={{ textAlign: 'center', padding: '16px 0' }}>
           <div style={{ fontSize: 28, marginBottom: 8 }}>🔮</div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>Nenhum palpite ainda. Seja o primeiro!</div>
-        </div>
-      )}
-
-      {/* Predictions list */}
-      {!loading && predictions.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-          {predictions.map(p => {
-            const isOwn = p.user_id === currentUserId
-            const isBlurred = !isOwn && !p.revealed
-            const isRevealed = p.revealed
-
-            return (
-              <div key={p.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                {/* Avatar */}
-                <div className="cl-pred-ava">
-                  {p.profile?.avatar_url ? (
-                    <img
-                      src={p.profile.avatar_url}
-                      alt=""
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                    />
-                  ) : avatarInitial(p.profile)}
-                </div>
-
-                {/* Bubble */}
-                <div className={`cl-pred-bubble${isRevealed && p.correct ? ' cl-pred-correct' : ''}`}>
-                  {isRevealed && (
-                    <div className="cl-pred-rev-badge">✓ Revelado · Meta encerrada</div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
-                      {isOwn ? 'Você' : (p.profile?.full_name || p.profile?.username || 'Membro')}
-                    </span>
-                    <span style={{ fontSize: 10, color: 'rgba(90,84,104,1)' }}>{timeAgo(p.created_at)}</span>
-                  </div>
-                  <div style={{
-                    fontSize: 13,
-                    lineHeight: 1.5,
-                    color: 'var(--text)',
-                    filter: isBlurred ? 'blur(5px)' : 'none',
-                    userSelect: isBlurred ? 'none' : 'auto',
-                    transition: 'filter .3s',
-                  }}>
-                    {p.content}
-                  </div>
-                  {isBlurred && (
-                    <div style={{ fontSize: 10, color: 'rgba(90,84,104,1)', marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      🔒 Revelado ao encerrar a meta
-                    </div>
-                  )}
-                  {isRevealed && p.correct && (
-                    <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, color: '#FF8C42', background: 'rgba(255,140,66,.15)', borderRadius: 6, padding: '2px 7px' }}>
-                        🏆 +50 pts
-                      </span>
-                      <span style={{ fontSize: 10, color: 'var(--muted)' }}>Acertou!</span>
-                    </div>
-                  )}
-                  {isRevealed && !p.correct && isAdmin && (
-                    <button
-                      onClick={() => markCorrect(p.id)}
-                      style={{ marginTop: 6, fontSize: 10, color: '#7EE8A2', background: 'rgba(126,232,162,.1)', border: '1px solid rgba(126,232,162,.25)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontFamily: 'Figtree, sans-serif' }}
-                    >
-                      ✓ Marcar como correto
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
         </div>
       )}
 
@@ -180,11 +106,40 @@ export default function SecretPredictions({ clubId, activeMeta, currentUserId, i
         </div>
       )}
 
-      {/* CTA button */}
-      {!myPrediction && !showForm && (
-        <button onClick={() => setShowForm(true)} className="cl-pred-btn">
-          🔮 Fazer meu palpite
-        </button>
+      {/* Bottom row */}
+      {!showForm && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          {!myPrediction && (
+            <button
+              onClick={() => setShowForm(true)}
+              style={{
+                flex: 1, padding: '9px 12px', borderRadius: 10,
+                border: '1.5px dashed rgba(196,168,240,.3)',
+                background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                fontFamily: 'Figtree, sans-serif',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              🔮 Fazer meu palpite
+            </button>
+          )}
+          <button
+            onClick={onViewAll}
+            style={{
+              flex: myPrediction ? 1 : 'none',
+              padding: '9px 14px', borderRadius: 10,
+              border: '1px solid rgba(196,168,240,.25)',
+              background: 'rgba(196,168,240,.06)', color: 'var(--accent)',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              fontFamily: 'Figtree, sans-serif',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Ver palpites 🔮
+          </button>
+        </div>
       )}
     </div>
   )

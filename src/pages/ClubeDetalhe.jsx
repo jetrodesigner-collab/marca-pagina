@@ -6,6 +6,8 @@ import ClubProgresso from '../components/clubs/ClubProgresso'
 import ClubTrechos from '../components/clubs/ClubTrechos'
 import ClubAlmanaque from '../components/clubs/ClubAlmanaque'
 import ClubGerenciar from '../components/clubs/ClubGerenciar'
+import ClubPalpites from '../components/clubs/ClubPalpites'
+import ClubApostas from '../components/clubs/ClubApostas'
 import BadgePopup from '../components/clubs/BadgePopup'
 import ModalConvidar from '../components/clubs/ModalConvidar'
 import ModalProgresso from '../components/clubs/ModalProgresso'
@@ -14,6 +16,7 @@ const BASE_TABS = ['Feed', 'Progresso', 'Trechos', 'Almanaque']
 
 export default function ClubeDetalhe({ session, club: initialClub, onBack, onNavigate }) {
   const [activeTab, setActiveTab] = useState(0)
+  const [subScreen, setSubScreen] = useState(null) // 'palpites' | 'apostas' | null
   const [club, setClub] = useState(initialClub)
   const [profile, setProfile] = useState(null)
   const [pendingBadge, setPendingBadge] = useState(null)
@@ -162,6 +165,8 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
             onBadgeUnlock={handleBadgeUnlock}
             onToast={showToast}
             profile={profile}
+            onViewPalpites={() => setSubScreen('palpites')}
+            onViewApostas={() => setSubScreen('apostas')}
           />
         )}
         {activeTab === 1 && (
@@ -229,6 +234,29 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
       </div>
 
       {toast && <div className="toast">{toast}</div>}
+
+      {/* Sub-telas de palpites e apostas */}
+      {subScreen === 'palpites' && (
+        <ClubPalpites
+          clubId={club.id}
+          activeMeta={activeMeta}
+          currentUserId={session.user.id}
+          isAdmin={isAdmin}
+          onBack={() => setSubScreen(null)}
+          onToast={showToast}
+        />
+      )}
+      {subScreen === 'apostas' && (
+        <ClubApostas
+          clubId={club.id}
+          activeMeta={activeMeta}
+          members={members}
+          currentUserId={session.user.id}
+          isAdmin={isAdmin}
+          onBack={() => setSubScreen(null)}
+          onToast={showToast}
+        />
+      )}
 
       {pendingBadge && (
         <BadgePopup badge={pendingBadge} onClose={() => setPendingBadge(null)} />
