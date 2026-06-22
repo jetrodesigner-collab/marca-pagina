@@ -27,7 +27,7 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
   const [showModalProgresso, setShowModalProgresso] = useState(false)
   const [toast, setToast] = useState(null)
 
-  const { members, activeMeta, loading: membersLoading, refresh: refreshMembers } = useClubMembers(club.id)
+  const { members, activeMeta, loading: membersLoading, refresh: refreshMembers, setActiveMeta: setMetaImmediate } = useClubMembers(club.id)
   const {
     activity, answers: activityAnswers, grades: activityGrades,
     myAnswers: myActivityAnswers, myGrade: myActivityGrade,
@@ -64,8 +64,9 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
     refreshMembers()
   }
 
-  function handleGerenciarUpdate(updates) {
-    if (updates?.clubData) setClub(c => ({ ...c, ...updates.clubData }))
+  function handleGerenciarUpdate({ clubData, newMeta } = {}) {
+    if (clubData) setClub(c => ({ ...c, ...clubData }))
+    if (newMeta) setMetaImmediate(newMeta)
     refreshMembers()
   }
 

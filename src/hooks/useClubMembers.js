@@ -93,5 +93,5 @@ export function useClubMembers(clubId) {
     }
   }, [clubId, load])
 
-  return { members, activeMeta, loading, refresh: load }
+  return { members, activeMeta, loading, refresh: load, setActiveMeta }
 }

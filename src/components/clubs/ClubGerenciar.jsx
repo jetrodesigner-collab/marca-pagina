@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
 async function toWebP400(file) {
@@ -57,6 +57,15 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
   const [paginaFim, setPaginaFim] = useState(activeMeta?.pagina_fim || '')
   const [prazoDias, setPrazoDias] = useState('')
   const [savingMeta, setSavingMeta] = useState(false)
+
+  // Sincroniza campos quando activeMeta carrega após a montagem do componente
+  useEffect(() => {
+    if (activeMeta) {
+      setCapInicio(activeMeta.cap_inicio || '')
+      setCapFim(activeMeta.cap_fim || '')
+      setPaginaFim(activeMeta.pagina_fim || '')
+    }
+  }, [activeMeta?.id])
 
   // Remove member
   const [removingId, setRemovingId] = useState(null)
@@ -123,18 +132,29 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
       if (updates.pagina_fim) parts.push(`até pág. ${updates.pagina_fim}`)
       if (parts.length) updates.titulo = parts.join(' · ')
 
+      let savedMeta
       if (activeMeta?.id) {
-        const { error } = await supabase.from('club_metas').update(updates).eq('id', activeMeta.id)
+        const { data, error } = await supabase
+          .from('club_metas')
+          .update(updates)
+          .eq('id', activeMeta.id)
+          .select()
         if (error) throw error
+        if (!data || data.length === 0) throw new Error('update-blocked')
+        savedMeta = data[0]
       } else {
-        const { error } = await supabase.from('club_metas').insert({
-          club_id: club.id, ...updates, titulo: updates.titulo || 'Meta', ativa: true,
-        })
+        const { data, error } = await supabase
+          .from('club_metas')
+          .insert({ club_id: club.id, ...updates, titulo: updates.titulo || 'Meta', ativa: true })
+          .select()
         if (error) throw error
+        if (!data || data.length === 0) throw new Error('insert-blocked')
+        savedMeta = data[0]
       }
-      onUpdate && onUpdate({})
+      onUpdate && onUpdate({ newMeta: savedMeta })
       showToast('✓ Meta atualizada!')
-    } catch {
+    } catch (err) {
+      console.error('[saveMeta]', err)
       showToast('Erro ao salvar meta.')
     } finally {
       setSavingMeta(false)
