@@ -12,6 +12,14 @@ const MEMBER_COLORS = [
   { bg: 'rgba(240,201,122,.13)', color: '#F0C97A' },
 ]
 
+const MOODS = [
+  { key: 'Medo',      emoji: '😱' },
+  { key: 'Suspense',  emoji: '🤔' },
+  { key: 'Tristeza',  emoji: '💔' },
+  { key: 'Divertido', emoji: '😂' },
+  { key: 'Surpresa',  emoji: '😮' },
+]
+
 function colorFor(id) {
   let h = 0
   for (let i = 0; i < (id || '').length; i++) h = (h * 31 + id.charCodeAt(i)) % MEMBER_COLORS.length
@@ -29,6 +37,7 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
   const [isSpoiler, setIsSpoiler] = useState(false)
   const [novaPagina, setNovaPagina] = useState('')
   const [posting, setPosting] = useState(false)
+  const [composerMood, setComposerMood] = useState(null)
 
   const initialUser = (profile?.full_name || profile?.username || '?').charAt(0).toUpperCase()
   const userColor = colorFor(currentUserId)
@@ -61,7 +70,15 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
         const newBadges = await checkBadges(currentUserId, club.id, { postHour: hour, meta: activeMeta })
         newBadges.forEach(b => onBadgeUnlock && onBadgeUnlock(b))
         if (newStreak) onToast && onToast(`🔥 Streak: ${newStreak} dias!`)
+        if (composerMood) {
+          await supabase.from('club_moods').delete()
+            .eq('club_id', club.id).eq('user_id', currentUserId)
+          await supabase.from('club_moods').insert({
+            club_id: club.id, user_id: currentUserId, mood: composerMood,
+          })
+        }
         setNovaPagina('')
+        setComposerMood(null)
       } else if (composerMode === 'trecho') {
         if (!trechoText.trim()) {
           onToast && onToast('Cole o trecho do livro.')
@@ -172,6 +189,25 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
                   fontSize: 12, color: 'var(--text)', outline: 'none', marginBottom: 6,
                 }}
               />
+              <div style={{ display: 'flex', gap: 4 }}>
+                {MOODS.map(m => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => setComposerMood(composerMood === m.key ? null : m.key)}
+                    style={{
+                      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                      padding: '5px 2px', borderRadius: 8,
+                      border: `1px solid ${composerMood === m.key ? 'rgba(196,168,240,.5)' : 'rgba(196,168,240,.12)'}`,
+                      background: composerMood === m.key ? 'rgba(196,168,240,.14)' : 'rgba(255,255,255,.02)',
+                      cursor: 'pointer', fontFamily: 'Figtree, sans-serif',
+                    }}
+                  >
+                    <span style={{ fontSize: 15 }}>{m.emoji}</span>
+                    <span style={{ fontSize: 8, color: composerMood === m.key ? 'var(--accent)' : 'var(--muted)', fontWeight: 600 }}>{m.key}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {composerMode === 'trecho' && (
@@ -210,17 +246,17 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
             style={{ height: composerMode === 'comentario' ? 36 : 30 }}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-            <button onClick={() => setComposerMode('comentario')} className="cl-comp-btn"
+            <button onClick={() => { setComposerMode('comentario'); setComposerMood(null) }} className="cl-comp-btn"
               style={composerMode === 'comentario' ? { borderColor: 'rgba(196,168,240,.35)', color: 'var(--accent)' } : {}}>
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 1C4.1 1 1 3.8 1 7.2c0 2 1 3.8 2.6 5L3 13l2.5-1c.8.3 1.6.5 2.5.5 3.9 0 7-2.8 7-6.3S11.9 1 8 1z"/></svg>
               Pensamento
             </button>
-            <button onClick={() => setComposerMode(composerMode === 'trecho' ? 'comentario' : 'trecho')} className="cl-comp-btn"
+            <button onClick={() => { setComposerMode(composerMode === 'trecho' ? 'comentario' : 'trecho'); setComposerMood(null) }} className="cl-comp-btn"
               style={composerMode === 'trecho' ? { borderColor: 'rgba(196,168,240,.35)', color: 'var(--accent)' } : {}}>
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 4h12M2 8h8M2 12h5"/></svg>
               Citar
             </button>
-            <button onClick={() => setComposerMode(composerMode === 'progresso' ? 'comentario' : 'progresso')} className="cl-comp-btn"
+            <button onClick={() => { setComposerMode(composerMode === 'progresso' ? 'comentario' : 'progresso'); setComposerMood(null) }} className="cl-comp-btn"
               style={composerMode === 'progresso' ? { borderColor: 'rgba(196,168,240,.35)', color: 'var(--accent)' } : {}}>
               <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="8" cy="8" r="6"/><polyline points="8 5 8 8 10 10"/></svg>
               Pág.

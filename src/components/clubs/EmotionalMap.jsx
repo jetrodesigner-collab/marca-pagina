@@ -104,7 +104,8 @@ export default function EmotionalMap({ clubId, activeMeta, members }) {
         .select('user_id, mood')
         .eq('club_id', clubId)
       setMoods(data || [])
-    } catch {
+    } catch (err) {
+      console.error('[EmotionalMap] load error:', err)
       setMoods([])
     } finally {
       setLoading(false)
@@ -174,20 +175,20 @@ export default function EmotionalMap({ clubId, activeMeta, members }) {
         </div>
       )}
 
-      {hasPageEnd && !loading && !hasMoods && (
+      {hasPageEnd && !loading && (!hasMoods || chartData.length === 0) && (
         <div style={{ height: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <span style={{ fontSize: 28 }}>🌫️</span>
           <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.5 }}>
             Nenhum humor registrado ainda.
             <br />
             <span style={{ fontSize: 11, color: 'rgba(90,84,104,1)' }}>
-              O mapa emocional aparece quando os membros registrarem humor.
+              Atualize sua página e escolha um clima — o gráfico aparece aqui.
             </span>
           </div>
         </div>
       )}
 
-      {hasPageEnd && !loading && hasMoods && (
+      {hasPageEnd && !loading && hasMoods && chartData.length > 0 && (
         <>
           {peakPoint?.emoji && (
             <div style={{
