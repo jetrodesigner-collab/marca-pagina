@@ -67,6 +67,10 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
     }
   }, [activeMeta?.id])
 
+  // Close cycle
+  const [confirmClose, setConfirmClose] = useState(false)
+  const [closingMeta, setClosingMeta] = useState(false)
+
   // Remove member
   const [removingId, setRemovingId] = useState(null)
 
@@ -161,6 +165,48 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
     }
   }
 
+  async function closeMeta() {
+    setClosingMeta(true)
+    try {
+      // 1. Set meta to inactive
+      await supabase.from('club_metas').update({ ativa: false }).eq('id', activeMeta.id)
+
+      // 2. Reveal all predictions for this meta
+      await supabase.from('club_predictions')
+        .update({ revealed: true })
+        .eq('club_id', club.id)
+        .eq('meta_id', activeMeta.id)
+
+      // 3. Compute fulfilled status for all bets using current member pages
+      const { data: bets } = await supabase
+        .from('club_page_bets')
+        .select('id, user_id, bet_pages')
+        .eq('club_id', club.id)
+        .eq('meta_id', activeMeta.id)
+
+      if (bets?.length) {
+        const memberPageMap = {}
+        members.forEach(m => { memberPageMap[m.user_id] = m.pagina_atual || 0 })
+        await Promise.all(bets.map(bet => {
+          const finalPages = memberPageMap[bet.user_id] || 0
+          return supabase.from('club_page_bets').update({
+            fulfilled: finalPages >= bet.bet_pages,
+            final_pages: finalPages,
+          }).eq('id', bet.id)
+        }))
+      }
+
+      setConfirmClose(false)
+      onUpdate && onUpdate({})
+      showToast('✓ Ciclo encerrado! Palpites revelados automaticamente.')
+    } catch (err) {
+      console.error('[closeMeta]', err)
+      showToast('Erro ao encerrar ciclo.')
+    } finally {
+      setClosingMeta(false)
+    }
+  }
+
   async function removeMember(memberId) {
     if (memberId === userId) { showToast('Você não pode se remover.'); return }
     setRemovingId(memberId)
@@ -239,6 +285,52 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
           {savingClub ? 'Salvando...' : 'Salvar alterações'}
         </button>
       </div>
+
+      {/* Encerrar ciclo */}
+      {activeMeta && (
+        <div style={{ ...sectionBox, border: '1px solid rgba(240,201,122,.25)', background: 'rgba(240,201,122,.03)' }}>
+          <div style={{ ...sectionTitle, color: '#F0C97A' }}>🔄 Encerrar ciclo atual</div>
+          <div style={{ fontSize: 12, color: 'rgba(240,235,248,.7)', marginBottom: 14, lineHeight: 1.5 }}>
+            Meta: <strong style={{ color: 'var(--text)' }}>{activeMeta.titulo}</strong>
+            <br />
+            Encerrar revela automaticamente todos os palpites e registra o progresso das apostas. O ciclo vai para o Almanaque.
+          </div>
+          {!confirmClose ? (
+            <button
+              onClick={() => setConfirmClose(true)}
+              style={{
+                width: '100%', padding: '11px 0',
+                background: 'rgba(240,201,122,.12)', color: '#F0C97A',
+                border: '1px solid rgba(240,201,122,.3)', borderRadius: 10,
+                fontFamily: 'Figtree, sans-serif', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              Encerrar este ciclo
+            </button>
+          ) : (
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--text)', marginBottom: 14, lineHeight: 1.5 }}>
+                Confirmar encerramento? Esta ação é irreversível. Os palpites serão revelados e o ciclo irá para o histórico.
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => setConfirmClose(false)}
+                  style={{ flex: 1, padding: '10px 0', background: 'var(--sur)', color: 'var(--muted)', border: '1px solid var(--bor2)', borderRadius: 10, fontFamily: 'Figtree, sans-serif', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={closeMeta}
+                  disabled={closingMeta}
+                  style={{ flex: 1, padding: '10px 0', background: '#F0C97A', color: '#1A1720', border: 'none', borderRadius: 10, fontFamily: 'Figtree, sans-serif', fontSize: 12, fontWeight: 700, cursor: closingMeta ? 'default' : 'pointer', opacity: closingMeta ? .6 : 1 }}
+                >
+                  {closingMeta ? 'Encerrando...' : 'Confirmar'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Editar meta */}
       <div style={sectionBox}>

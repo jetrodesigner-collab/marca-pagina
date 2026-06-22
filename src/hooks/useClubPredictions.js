@@ -14,11 +14,15 @@ export function useClubPredictions(clubId, metaId, currentUserId) {
   async function load() {
     setLoading(true)
     try {
-      const { data } = await supabase
+      let q = supabase
         .from('club_predictions')
         .select('*')
         .eq('club_id', clubId)
         .order('created_at', { ascending: false })
+
+      if (metaId) q = q.eq('meta_id', metaId)
+
+      const { data } = await q
 
       if (!data?.length) {
         setPredictions([])
@@ -56,10 +60,14 @@ export function useClubPredictions(clubId, metaId, currentUserId) {
   }
 
   async function revealAll() {
-    await supabase
+    let q = supabase
       .from('club_predictions')
       .update({ revealed: true })
       .eq('club_id', clubId)
+
+    if (metaId) q = q.eq('meta_id', metaId)
+
+    await q
     await load()
   }
 

@@ -376,11 +376,134 @@ function NoteItem({ note, currentUserId, isAdmin, onDelete, onToggleLike, onAddC
   )
 }
 
+// ── Cycle History components ──────────────────────────────────────────────────
+
+function CycleCard({ cycle, currentUserId }) {
+  const [expanded, setExpanded] = useState(false)
+  const preds = cycle.predictions || []
+  const bets = cycle.bets || []
+  const correctCount = preds.filter(p => p.correct).length
+  const fulfilledCount = bets.filter(b => b.fulfilled === true).length
+  const allFulfilled = bets.length > 0 && fulfilledCount === bets.length
+
+  return (
+    <div style={{ marginBottom: 10, background: 'rgba(42,38,55,1)', border: '1px solid var(--bor)', borderRadius: 14, overflow: 'hidden' }}>
+      <button
+        onClick={() => setExpanded(v => !v)}
+        style={{
+          width: '100%', textAlign: 'left', padding: '14px 16px',
+          background: 'none', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          fontFamily: 'Figtree, sans-serif',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
+            {cycle.titulo || 'Ciclo encerrado'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 10, color: 'var(--muted)' }}>
+            {preds.length > 0 && (
+              <span>
+                🔮 {preds.length} palpite{preds.length !== 1 ? 's' : ''}
+                {correctCount > 0 ? ` · ${correctCount} certo${correctCount !== 1 ? 's' : ''}` : ''}
+              </span>
+            )}
+            {bets.length > 0 && (
+              <span style={{ color: allFulfilled ? '#7EE8A2' : 'var(--muted)' }}>
+                📊 {fulfilledCount}/{bets.length} apostas cumpridas{allFulfilled ? ' 🎉' : ''}
+              </span>
+            )}
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'none', flexShrink: 0, marginLeft: 8 }}>
+          ▾
+        </div>
+      </button>
+
+      {expanded && (
+        <div style={{ padding: '0 16px 16px', borderTop: '1px solid rgba(196,168,240,.08)' }}>
+
+          {preds.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 8 }}>
+                🔮 Palpites revelados
+              </div>
+              {preds.map(p => {
+                const name = p.profile?.full_name || p.profile?.username || 'Membro'
+                const isOwn = p.user_id === currentUserId
+                return (
+                  <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, color: 'var(--muted)', minWidth: 60, paddingTop: 2, fontWeight: 600, flexShrink: 0 }}>
+                      {isOwn ? 'Você' : name}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, color: 'rgba(240,235,248,.8)', lineHeight: 1.5 }}>
+                        {p.revealed
+                          ? p.content
+                          : <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>Não revelado</span>}
+                      </div>
+                      {p.correct && (
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#FF8C42', background: 'rgba(255,140,66,.15)', borderRadius: 6, padding: '1px 6px', display: 'inline-block', marginTop: 3 }}>
+                          🏆 Acertou! +50 pts
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {bets.length > 0 && (
+            <div style={{ marginTop: preds.length > 0 ? 12 : 12, paddingTop: preds.length > 0 ? 10 : 0, borderTop: preds.length > 0 ? '1px solid rgba(196,168,240,.08)' : 'none' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 8 }}>
+                📊 Apostas
+              </div>
+              {bets.map(b => {
+                const name = b.profile?.full_name || b.profile?.username || 'Membro'
+                const isOwn = b.user_id === currentUserId
+                return (
+                  <div key={b.id} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+                    <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600, minWidth: 60 }}>
+                      {isOwn ? 'Você' : name}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text)' }}>Apostou {b.bet_pages} pág.</span>
+                    {b.fulfilled === true && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#7EE8A2', background: 'rgba(126,232,162,.12)', borderRadius: 6, padding: '1px 6px' }}>
+                        ✓ Cumpriu{b.final_pages ? ` · ${b.final_pages} pág.` : ''}
+                      </span>
+                    )}
+                    {b.fulfilled === false && (
+                      <span style={{ fontSize: 10, fontWeight: 600, color: '#FF6464', background: 'rgba(255,100,100,.1)', borderRadius: 6, padding: '1px 6px' }}>
+                        ✗{b.final_pages ? ` ${b.final_pages} pág.` : ' Não cumpriu'}
+                      </span>
+                    )}
+                    {b.fulfilled === null && (
+                      <span style={{ fontSize: 10, color: 'rgba(90,84,104,1)' }}>pendente</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {preds.length === 0 && bets.length === 0 && (
+            <div style={{ padding: '12px 0', fontSize: 12, color: 'var(--muted)', textAlign: 'center' }}>
+              Nenhum dado para este ciclo.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ClubAlmanaque({ club, clubId, currentUserId, isAdmin, onToast }) {
   const [bookData, setBookData] = useState(null)
   const [oldMetas, setOldMetas] = useState([])
+  const [cycleHistory, setCycleHistory] = useState([])
   const [bookLoading, setBookLoading] = useState(true)
   const [noteText, setNoteText] = useState('')
   const [addingNote, setAddingNote] = useState(false)
@@ -399,7 +522,7 @@ export default function ClubAlmanaque({ club, clubId, currentUserId, isAdmin, on
     setBookLoading(true)
     const metasReq = supabase
       .from('club_metas')
-      .select('titulo, criado_em')
+      .select('id, titulo, criado_em, cap_inicio, cap_fim, pagina_fim')
       .eq('club_id', clubId)
       .eq('ativa', false)
       .order('criado_em', { ascending: false })
@@ -411,6 +534,35 @@ export default function ClubAlmanaque({ club, clubId, currentUserId, isAdmin, on
 
     const [{ data: metas }, bookJson] = await Promise.all([metasReq, bookReq || Promise.resolve(null)])
     setOldMetas(metas || [])
+
+    if (metas?.length) {
+      const metaIds = metas.map(m => m.id)
+      const [predsRes, betsRes] = await Promise.all([
+        supabase.from('club_predictions').select('*').in('meta_id', metaIds).order('created_at', { ascending: true }),
+        supabase.from('club_page_bets').select('id, user_id, meta_id, bet_pages, fulfilled, final_pages, created_at').in('meta_id', metaIds),
+      ])
+
+      const predsData = predsRes.data || []
+      const betsData = betsRes.data || []
+      const allUserIds = [...new Set([...predsData.map(p => p.user_id), ...betsData.map(b => b.user_id)])]
+
+      let profileMap = {}
+      if (allUserIds.length) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, full_name, username, avatar_url')
+          .in('id', allUserIds)
+        profs?.forEach(p => { profileMap[p.id] = p })
+      }
+
+      setCycleHistory(metas.map(m => ({
+        ...m,
+        predictions: predsData.filter(p => p.meta_id === m.id).map(p => ({ ...p, profile: profileMap[p.user_id] || null })),
+        bets: betsData.filter(b => b.meta_id === m.id).map(b => ({ ...b, profile: profileMap[b.user_id] || null })),
+      })))
+    } else {
+      setCycleHistory([])
+    }
 
     if (bookJson) {
       setBookData({
@@ -519,17 +671,6 @@ export default function ClubAlmanaque({ club, clubId, currentUserId, isAdmin, on
         </div>
       )}
 
-      {oldMetas.length > 0 && (
-        <div className="cl-alma-card">
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 9, color: 'var(--text)' }}>📌 Metas anteriores</div>
-          <div style={{ fontSize: 12, color: 'rgba(240,235,248,.62)', lineHeight: 1.68 }}>
-            {oldMetas.map((m, i) => <div key={i} style={{ marginBottom: 4 }}>{m.titulo}</div>)}
-          </div>
-          <span style={{ display: 'inline-block', marginTop: 7, fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 10, background: 'rgba(126,223,168,.1)', color: '#7EDFA8' }}>
-            Histórico
-          </span>
-        </div>
-      )}
 
       {!club.livro_titulo && !bookLoading && (
         <div style={{ textAlign: 'center', padding: '32px 0', fontSize: 12, color: 'var(--muted)' }}>
@@ -594,6 +735,18 @@ export default function ClubAlmanaque({ club, clubId, currentUserId, isAdmin, on
           ))
         )}
       </div>
+
+      {/* ── Cycle history ── */}
+      {cycleHistory.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 14 }}>
+            📚 Histórico de Ciclos
+          </div>
+          {cycleHistory.map(cycle => (
+            <CycleCard key={cycle.id} cycle={cycle} currentUserId={currentUserId} />
+          ))}
+        </div>
+      )}
 
       {toast && <div className="toast">{toast}</div>}
     </div>
