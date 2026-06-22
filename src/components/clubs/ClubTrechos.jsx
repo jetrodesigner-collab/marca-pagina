@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 
 const MEMBER_COLORS = [
@@ -27,32 +27,86 @@ export default function ClubTrechos({ clubId, currentUserId }) {
   const [trechos, setTrechos] = useState([])
   const [loading, setLoading] = useState(true)
   const [liked, setLiked] = useState(new Set())
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addText, setAddText] = useState('')
+  const [addPagina, setAddPagina] = useState('')
+  const [adding, setAdding] = useState(false)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!clubId) return
-    load()
-  }, [clubId])
-
-  async function load() {
     setLoading(true)
-    const { data } = await supabase
+
+    // 1. Posts de tipo 'trecho' — sem FK hints (club_posts.user_id → auth.users, não profiles)
+    const { data: postsData } = await supabase
       .from('club_posts')
-      .select(`
-        *,
-        profile:profiles!user_id (id, full_name, username, avatar_url),
-        likes:club_post_likes (user_id),
-        replies:club_posts!parent_id (id)
-      `)
+      .select('*')
       .eq('club_id', clubId)
       .eq('tipo', 'trecho')
       .is('parent_id', null)
       .order('criado_em', { ascending: false })
 
-    const items = data || []
-    setTrechos(items)
-    setLiked(new Set(items.filter(p => p.likes?.some(l => l.user_id === currentUserId)).map(p => p.id)))
+    const items = postsData || []
+
+    if (items.length === 0) {
+      setTrechos([])
+      setLiked(new Set())
+      setLoading(false)
+      return
+    }
+
+    const postIds = items.map(p => p.id)
+    const userIds = [...new Set(items.map(p => p.user_id))]
+
+    // 2. Likes, perfis e replies em paralelo — queries separadas
+    const [{ data: likesData }, { data: profilesData }, { data: repliesData }] = await Promise.all([
+      supabase.from('club_post_likes').select('post_id, user_id').in('post_id', postIds),
+      supabase.from('profiles').select('id, full_name, username, avatar_url').in('id', userIds),
+      supabase.from('club_posts').select('id, parent_id').in('parent_id', postIds),
+    ])
+
+    // 3. Montar maps
+    const profileMap = {}
+    ;(profilesData || []).forEach(p => { profileMap[p.id] = p })
+
+    const likesMap = {}
+    ;(likesData || []).forEach(l => {
+      if (!likesMap[l.post_id]) likesMap[l.post_id] = []
+      likesMap[l.post_id].push({ user_id: l.user_id })
+    })
+
+    const repliesMap = {}
+    ;(repliesData || []).forEach(r => {
+      if (!repliesMap[r.parent_id]) repliesMap[r.parent_id] = []
+      repliesMap[r.parent_id].push(r)
+    })
+
+    // 4. Merge final
+    const merged = items.map(p => ({
+      ...p,
+      profile: profileMap[p.user_id] || null,
+      likes: likesMap[p.id] || [],
+      replies: repliesMap[p.id] || [],
+    }))
+
+    setTrechos(merged)
+    setLiked(new Set(merged.filter(p => p.likes.some(l => l.user_id === currentUserId)).map(p => p.id)))
     setLoading(false)
-  }
+  }, [clubId, currentUserId])
+
+  useEffect(() => { load() }, [load])
+
+  // Realtime: novos trechos postados no Feed aparecem aqui automaticamente
+  useEffect(() => {
+    if (!clubId) return
+    const channel = supabase
+      .channel(`club_trechos_${clubId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'club_posts',
+        filter: `club_id=eq.${clubId}`,
+      }, () => load())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [clubId, load])
 
   async function toggleLike(postId) {
     const isLiked = liked.has(postId)
@@ -67,8 +121,103 @@ export default function ClubTrechos({ clubId, currentUserId }) {
     }
   }
 
+  async function addTrecho() {
+    if (!addText.trim()) return
+    setAdding(true)
+    try {
+      const { error } = await supabase.from('club_posts').insert({
+        club_id: clubId,
+        user_id: currentUserId,
+        tipo: 'trecho',
+        trecho_texto: addText.trim(),
+        trecho_pagina: addPagina ? parseInt(addPagina) : null,
+        conteudo: null,
+        is_spoiler: false,
+      })
+      if (error) throw error
+      setAddText('')
+      setAddPagina('')
+      setShowAddForm(false)
+    } catch {
+      // realtime dispara o load automaticamente
+    } finally {
+      setAdding(false)
+    }
+  }
+
   return (
     <div style={{ padding: '28px 22px 120px' }}>
+
+      {/* Botão + Adicionar trecho / formulário inline */}
+      <div style={{ marginBottom: 20 }}>
+        {!showAddForm ? (
+          <button
+            onClick={() => setShowAddForm(true)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              fontSize: 12, fontWeight: 600, color: 'var(--accent)',
+              background: 'rgba(196,168,240,.07)',
+              border: '1px dashed rgba(196,168,240,.3)',
+              borderRadius: 12, padding: '11px 16px',
+              cursor: 'pointer', fontFamily: 'Figtree, sans-serif', width: '100%',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
+            </svg>
+            Adicionar trecho
+          </button>
+        ) : (
+          <div style={{ background: 'var(--sur)', border: '1px solid rgba(196,168,240,.2)', borderRadius: 14, padding: 16 }}>
+            <textarea
+              placeholder="Cole ou escreva o trecho do livro..."
+              value={addText}
+              onChange={e => setAddText(e.target.value)}
+              rows={4}
+              autoFocus
+              style={{
+                width: '100%', background: 'rgba(255,255,255,.04)',
+                border: '1px solid rgba(196,168,240,.15)', borderRadius: 8,
+                padding: '10px', fontFamily: 'Figtree, sans-serif',
+                fontSize: 13, color: 'var(--text)', outline: 'none',
+                resize: 'none', marginBottom: 10, fontStyle: 'italic',
+                boxSizing: 'border-box',
+              }}
+            />
+            <input
+              type="number"
+              placeholder="Página (opcional)"
+              value={addPagina}
+              onChange={e => setAddPagina(e.target.value)}
+              style={{
+                width: '100%', background: 'rgba(255,255,255,.04)',
+                border: '1px solid rgba(196,168,240,.15)', borderRadius: 8,
+                padding: '7px 10px', fontFamily: 'Figtree, sans-serif',
+                fontSize: 12, color: 'var(--text)', outline: 'none',
+                marginBottom: 12, boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => { setShowAddForm(false); setAddText(''); setAddPagina('') }}
+                className="post-cancel-btn"
+                style={{ flex: 1 }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={addTrecho}
+                disabled={adding || !addText.trim()}
+                className="post-publish-btn"
+                style={{ flex: 2, opacity: (!addText.trim() || adding) ? .5 : 1 }}
+              >
+                {adding ? 'Salvando...' : 'Salvar trecho'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {loading && (
         <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
           Carregando...
@@ -117,7 +266,7 @@ export default function ClubTrechos({ clubId, currentUserId }) {
             )}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--muted)' }}>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <path d="M14 2H2a1 1 0 00-1 1v9a1 1 0 001 1h3l3 3 3-3h3a1 1 0 001-1V3a1 1 0 00-1-1z"/>
                 </svg>

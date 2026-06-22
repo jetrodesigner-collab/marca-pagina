@@ -105,7 +105,52 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
   return (
     <div style={{ padding: '28px 22px 120px' }}>
 
-      {/* Composer — fixo no topo */}
+      {/* Acesso rápido — chips compactos (acima do composer) */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'nowrap', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+        {(activity || isAdmin) && (
+          <button
+            onClick={() => activity ? onViewAvaliacao() : onCriarAvaliacao()}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '5px 10px', borderRadius: 20,
+              border: '1px solid rgba(196,168,240,.22)',
+              background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
+              fontSize: 11, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
+              cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            📝 Avaliação
+          </button>
+        )}
+        <button
+          onClick={onViewPalpites}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            padding: '5px 10px', borderRadius: 20,
+            border: '1px solid rgba(196,168,240,.22)',
+            background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
+            fontSize: 11, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
+            cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+          }}
+        >
+          🔮 Palpites Secretos
+        </button>
+        <button
+          onClick={onViewApostas}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            padding: '5px 10px', borderRadius: 20,
+            border: '1px solid rgba(196,168,240,.22)',
+            background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
+            fontSize: 11, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
+            cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+          }}
+        >
+          📊 Apostas de Página
+        </button>
+      </div>
+
+      {/* Composer */}
       <div className="cl-composer">
         <div className="cl-comp-ava" style={{ background: userColor.bg, color: userColor.color }}>
           {profile?.avatar_url ? (
@@ -193,51 +238,6 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
         activeMeta={activeMeta}
         members={members}
       />
-
-      {/* Acesso rápido — chips compactos */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {(activity || isAdmin) && (
-          <button
-            onClick={() => activity ? onViewAvaliacao() : onCriarAvaliacao()}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '7px 13px', borderRadius: 20,
-              border: '1px solid rgba(196,168,240,.22)',
-              background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
-              fontSize: 12, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >
-            📝 Avaliação
-          </button>
-        )}
-        <button
-          onClick={onViewPalpites}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            padding: '7px 13px', borderRadius: 20,
-            border: '1px solid rgba(196,168,240,.22)',
-            background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
-            fontSize: 12, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
-            cursor: 'pointer', whiteSpace: 'nowrap',
-          }}
-        >
-          🔮 Palpites Secretos
-        </button>
-        <button
-          onClick={onViewApostas}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            padding: '7px 13px', borderRadius: 20,
-            border: '1px solid rgba(196,168,240,.22)',
-            background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
-            fontSize: 12, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
-            cursor: 'pointer', whiteSpace: 'nowrap',
-          }}
-        >
-          📊 Apostas de Página
-        </button>
-      </div>
 
       {loading && <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>Carregando...</div>}
 

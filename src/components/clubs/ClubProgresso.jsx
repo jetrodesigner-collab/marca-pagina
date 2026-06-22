@@ -3,6 +3,15 @@ import { supabase } from '../../lib/supabase'
 import MemberCard from './MemberCard'
 import MetaColetivaCard from './MetaColetivaCard'
 
+function timeAgo(ts) {
+  const diff = (Date.now() - new Date(ts)) / 1000
+  if (diff < 60) return 'agora'
+  if (diff < 3600) return `há ${Math.floor(diff / 60)}min`
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`
+  if (diff < 172800) return 'ontem'
+  return new Date(ts).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
+}
+
 const PROGRESS_RULES = [
   { pct: '100%',   icone: '✅', label: 'Meta Concluída' },
   { pct: '90–99%', icone: '⚡', label: 'Leitor Relâmpago' },
@@ -55,6 +64,8 @@ const BADGE_STYLES = {
 export default function ClubProgresso({ members, activeMeta, clubId, currentUserId, profile, clubName, onUpdateProgress, onBadgeClick, onToast }) {
   const [pokedToday, setPokedToday] = useState(new Set())
   const [showRegras, setShowRegras] = useState(false)
+  const [recentActivity, setRecentActivity] = useState([])
+  const [loadingActivity, setLoadingActivity] = useState(false)
 
   const avgPct = members.length > 0
     ? Math.round(members.reduce((s, m) => s + (m.pct || 0), 0) / members.length)
@@ -69,6 +80,37 @@ export default function ClubProgresso({ members, activeMeta, clubId, currentUser
     if (!currentUserId || !clubId) return
     loadPokedToday()
   }, [currentUserId, clubId])
+
+  useEffect(() => {
+    if (!clubId) return
+    loadActivity()
+  }, [clubId])
+
+  async function loadActivity() {
+    setLoadingActivity(true)
+    const { data: posts } = await supabase
+      .from('club_posts')
+      .select('*')
+      .eq('club_id', clubId)
+      .eq('tipo', 'progresso')
+      .order('criado_em', { ascending: false })
+      .limit(30)
+
+    const items = posts || []
+    if (items.length === 0) { setRecentActivity([]); setLoadingActivity(false); return }
+
+    const userIds = [...new Set(items.map(p => p.user_id))]
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, full_name, username, avatar_url')
+      .in('id', userIds)
+
+    const profileMap = {}
+    ;(profilesData || []).forEach(p => { profileMap[p.id] = p })
+
+    setRecentActivity(items.map(p => ({ ...p, profile: profileMap[p.user_id] || null })))
+    setLoadingActivity(false)
+  }
 
   async function loadPokedToday() {
     const today = new Date().toISOString().slice(0, 10)
@@ -286,6 +328,74 @@ export default function ClubProgresso({ members, activeMeta, clubId, currentUser
       {/* SEÇÃO 5: META COLETIVA DO GRUPO                 */}
       {/* ──────────────────────────────────────────────── */}
       <MetaColetivaCard members={members} activeMeta={activeMeta} />
+
+      {/* ──────────────────────────────────────────────── */}
+      {/* SEÇÃO 6: ATIVIDADE RECENTE DE PROGRESSO         */}
+      {/* ──────────────────────────────────────────────── */}
+      <div style={{ ...sectionLabel, marginTop: 8, marginBottom: 14 }}>
+        <span>🕐 Atividade Recente</span>
+      </div>
+
+      {loadingActivity && (
+        <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 12, color: 'var(--muted)' }}>
+          Carregando...
+        </div>
+      )}
+
+      {!loadingActivity && recentActivity.length === 0 && (
+        <div style={{ background: 'var(--sur)', border: '1px solid var(--bor)', borderRadius: 14, padding: '20px', textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+            Nenhuma atualização de progresso ainda.
+          </div>
+        </div>
+      )}
+
+      {recentActivity.map(item => {
+        const p = item.profile || {}
+        const name = p.full_name || p.username || 'Usuário'
+        const initial = name.charAt(0).toUpperCase()
+        const color = (() => {
+          const COLORS = [
+            { bg: 'rgba(196,168,240,.14)', color: '#C4A8F0' },
+            { bg: 'rgba(126,223,168,.13)', color: '#7EDFA8' },
+            { bg: 'rgba(240,201,122,.13)', color: '#F0C97A' },
+            { bg: 'rgba(240,122,122,.13)', color: '#F07A7A' },
+            { bg: 'rgba(122,170,206,.13)', color: '#7AAACE' },
+          ]
+          let h = 0
+          for (let i = 0; i < (item.user_id || '').length; i++) h = (h * 31 + item.user_id.charCodeAt(i)) % COLORS.length
+          return COLORS[Math.abs(h) % COLORS.length]
+        })()
+
+        return (
+          <div key={item.id} style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: 'var(--sur)', border: '1px solid var(--bor)',
+            borderRadius: 12, padding: '12px 14px', marginBottom: 8,
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%',
+              background: color.bg, color: color.color,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontWeight: 700, flexShrink: 0, overflow: 'hidden',
+            }}>
+              {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initial}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{name}</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+                {' '}atualizou para a{' '}
+                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                  página {item.trecho_pagina || '?'}
+                </span>
+              </span>
+            </div>
+            <span style={{ fontSize: 10, color: 'var(--muted)', flexShrink: 0 }}>
+              {timeAgo(item.criado_em)}
+            </span>
+          </div>
+        )
+      })}
 
     </div>
   )

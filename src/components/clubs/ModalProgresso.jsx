@@ -30,6 +30,16 @@ export default function ModalProgresso({ paginaAtual, paginaFim, userId, clubId,
         .eq('user_id', userId)
       if (error) throw error
 
+      // Registrar progresso no feed para todos os membros verem
+      await supabase.from('club_posts').insert({
+        club_id: clubId,
+        user_id: userId,
+        tipo: 'progresso',
+        trecho_pagina: pg,
+        conteudo: null,
+        is_spoiler: false,
+      })
+
       if (selectedMood && clubId) {
         // delete + insert garante que só existe um humor por usuário por clube
         await supabase.from('club_moods').delete().eq('club_id', clubId).eq('user_id', userId)
