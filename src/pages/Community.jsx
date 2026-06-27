@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useCommunity } from '../hooks/useCommunity'
 import { useFollows } from '../hooks/useFollows'
-import { usePosts } from '../hooks/usePosts'
+import { usePublicFeed } from '../hooks/usePublicFeed'
 import PostCard from '../components/community/PostCard'
+import ReviewCard from '../components/community/ReviewCard'
 
 const BLOBS = [
   { width: 260, height: 260, background: 'var(--bl1)', top: -80, left: -80 },
@@ -73,11 +74,11 @@ export default function Community({ session, onNavigate }) {
   const [theme]   = useState(() => localStorage.getItem('tema') || 'D')
   const [profile, setProfile] = useState(null)
   const [search, setSearch]   = useState('')
-  const [mainTab, setMainTab] = useState('P')
+  const [mainTab, setMainTab] = useState('F')
   const [peopleTab, setPeopleTab] = useState('A')
   const { users, loading } = useCommunity(session.user.id)
   const { following, toggleFollow } = useFollows(session.user.id)
-  const { posts, loading: postsLoading, toggleLike, deletePost } = usePosts(session.user.id)
+  const { items: feedItems, loading: feedLoading, toggleLikePost, toggleLikeReview, deletePost } = usePublicFeed(session.user.id)
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
 
@@ -136,8 +137,8 @@ export default function Community({ session, onNavigate }) {
         <div className="gl" />
 
         <div className="mtabs">
-          <div className={`mt${mainTab === 'P' ? ' on' : ''}`} onClick={() => setMainTab('P')}>👥 Pessoas</div>
           <div className={`mt${mainTab === 'F' ? ' on' : ''}`} onClick={() => setMainTab('F')}>📢 Posts públicos</div>
+          <div className={`mt${mainTab === 'P' ? ' on' : ''}`} onClick={() => setMainTab('P')}>👥 Pessoas</div>
         </div>
 
         {mainTab === 'P' ? (
@@ -204,28 +205,37 @@ export default function Community({ session, onNavigate }) {
           <div className="sc">
             <PostCTAButton onClick={handleNewPost} />
 
-            {postsLoading && (
+            {feedLoading && (
               <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
                 Carregando...
               </div>
             )}
 
-            {!postsLoading && posts.length === 0 && (
+            {!feedLoading && feedItems.length === 0 && (
               <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--muted)' }}>
-                Nenhum post ainda. Seja o primeiro a compartilhar!
+                Nenhuma publicação ainda. Seja o primeiro a compartilhar!
               </div>
             )}
 
-            {!postsLoading && posts.map(post => (
-              <PostCard
-                key={post.id}
-                post={post}
-                currentUserId={session.user.id}
-                onNavigate={onNavigate}
-                onToggleLike={toggleLike}
-                onDelete={deletePost}
-              />
-            ))}
+            {!feedLoading && feedItems.map(item =>
+              item.kind === 'post' ? (
+                <PostCard
+                  key={item.id}
+                  post={item}
+                  currentUserId={session.user.id}
+                  onNavigate={onNavigate}
+                  onToggleLike={toggleLikePost}
+                  onDelete={deletePost}
+                />
+              ) : (
+                <ReviewCard
+                  key={item.id}
+                  review={item}
+                  currentUserId={session.user.id}
+                  onToggleLike={toggleLikeReview}
+                />
+              )
+            )}
           </div>
         )}
 
