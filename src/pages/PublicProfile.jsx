@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { usePublicProfile } from '../hooks/usePublicProfile'
+import { useFollows } from '../hooks/useFollows'
 import { formatCommentDate } from '../utils/formatDate'
 import ExpandableText from '../components/ExpandableText'
 import CommentThread from '../components/comments/CommentThread'
@@ -112,6 +113,7 @@ export default function PublicProfile({ session, userId, onNavigate, onBack, ini
     profile, stats, recentBooks, recentMovies, publicReviews, privateReviews, posts, loading,
     toggleReviewLike, togglePostLike,
   } = usePublicProfile(userId, session.user.id)
+  const { following, toggleFollow } = useFollows(session.user.id)
 
   const themeClass = theme === 'L' ? 'light' : 'dark'
 
@@ -210,6 +212,16 @@ export default function PublicProfile({ session, userId, onNavigate, onBack, ini
                   <div className="pst"><span className="pstn">{stats.reviews}</span><span className="pstl">Resenhas</span></div>
                   <div className="pst pst-click" onClick={() => onNavigate('followers', { userId })}><span className="pstn">{stats.followers}</span><span className="pstl">Seguidores</span></div>
                 </div>
+
+                {userId !== session.user.id && (
+                  <button
+                    className={`follow-btn${following.has(userId) ? ' following' : ''}`}
+                    onClick={() => toggleFollow(userId)}
+                    style={{ marginTop: 14, padding: '9px 28px', fontSize: 12 }}
+                  >
+                    {following.has(userId) ? '✓ Seguindo' : '+ Seguir'}
+                  </button>
+                )}
               </div>
 
               {!hasRecent && !hasContent && privateReviews.length === 0 ? (

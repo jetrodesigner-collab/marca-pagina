@@ -217,26 +217,26 @@ export default function Community({ session, onNavigate }) {
               </div>
             )}
 
-            {!feedLoading && feedItems.map((item, idx) => (
-              <div key={item.id}>
-                {idx > 0 && <div className="feed-sep" />}
-                {item.kind === 'post' ? (
-                  <PostCard
-                    post={item}
-                    currentUserId={session.user.id}
-                    onNavigate={onNavigate}
-                    onToggleLike={toggleLikePost}
-                    onDelete={deletePost}
-                  />
-                ) : (
-                  <ReviewCard
-                    review={item}
-                    currentUserId={session.user.id}
-                    onToggleLike={toggleLikeReview}
-                  />
-                )}
-              </div>
-            ))}
+            {!feedLoading && feedItems.map(item =>
+              item.kind === 'post' ? (
+                <PostCard
+                  key={item.id}
+                  post={item}
+                  currentUserId={session.user.id}
+                  onNavigate={onNavigate}
+                  onToggleLike={toggleLikePost}
+                  onDelete={deletePost}
+                />
+              ) : (
+                <ReviewCard
+                  key={item.id}
+                  review={item}
+                  currentUserId={session.user.id}
+                  onNavigate={onNavigate}
+                  onToggleLike={toggleLikeReview}
+                />
+              )
+            )}
           </div>
         )}
 

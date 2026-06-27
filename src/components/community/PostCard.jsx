@@ -66,13 +66,18 @@ export default function PostCard({ post, currentUserId, onNavigate, onToggleLike
     <div className="post-feed-card">
       <div className="post-feed-top">
         <div className="post-feed-head">
-          <Avatar profile={post.profiles} userId={post.user_id} />
-          <div>
-            <div className="post-feed-name">
-              {displayName}
-              {isOwner && <span className="post-own-badge">Seu post</span>}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, cursor: isOwner ? 'default' : 'pointer' }}
+            onClick={!isOwner ? () => onNavigate('publicProfile', { userId: post.user_id }) : undefined}
+          >
+            <Avatar profile={post.profiles} userId={post.user_id} />
+            <div style={{ minWidth: 0 }}>
+              <div className="post-feed-name">
+                {displayName}
+                {isOwner && <span className="post-own-badge">Seu post</span>}
+              </div>
+              {handle && <div className="post-feed-handle">{handle}</div>}
             </div>
-            {handle && <div className="post-feed-handle">{handle}</div>}
           </div>
           <div className="post-feed-time">{formatCommentDate(post.created_at)}</div>
         </div>

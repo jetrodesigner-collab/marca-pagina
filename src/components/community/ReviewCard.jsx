@@ -62,12 +62,13 @@ function Stars({ rating }) {
   )
 }
 
-export default function ReviewCard({ review, currentUserId, onToggleLike }) {
+export default function ReviewCard({ review, currentUserId, onNavigate, onToggleLike }) {
   const [commentsOpen, setCommentsOpen] = useState(false)
   const threadRef = useRef(null)
   const displayName = review.profiles?.username || review.profiles?.full_name || 'Usuário'
   const handle = review.profiles?.username ? `@${review.profiles.username}` : ''
   const item = review.items
+  const isOwner = review.user_id === currentUserId
 
   function handleCommentClick() {
     setCommentsOpen(o => {
@@ -81,10 +82,15 @@ export default function ReviewCard({ review, currentUserId, onToggleLike }) {
     <div className="post-feed-card">
       <div className="post-feed-top">
         <div className="post-feed-head">
-          <Avatar profile={review.profiles} userId={review.user_id} />
-          <div>
-            <div className="post-feed-name">{displayName}</div>
-            {handle && <div className="post-feed-handle">{handle}</div>}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, cursor: isOwner ? 'default' : 'pointer' }}
+            onClick={!isOwner ? () => onNavigate('publicProfile', { userId: review.user_id }) : undefined}
+          >
+            <Avatar profile={review.profiles} userId={review.user_id} />
+            <div style={{ minWidth: 0 }}>
+              <div className="post-feed-name">{displayName}</div>
+              {handle && <div className="post-feed-handle">{handle}</div>}
+            </div>
           </div>
           <div className="post-feed-time">{formatCommentDate(review.created_at)}</div>
         </div>
