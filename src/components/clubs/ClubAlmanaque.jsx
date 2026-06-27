@@ -381,10 +381,7 @@ function NoteItem({ note, currentUserId, isAdmin, onDelete, onToggleLike, onAddC
 function CycleCard({ cycle, currentUserId }) {
   const [expanded, setExpanded] = useState(false)
   const preds = cycle.predictions || []
-  const bets = cycle.bets || []
   const correctCount = preds.filter(p => p.correct).length
-  const fulfilledCount = bets.filter(b => b.fulfilled === true).length
-  const allFulfilled = bets.length > 0 && fulfilledCount === bets.length
 
   return (
     <div style={{ marginBottom: 10, background: 'rgba(42,38,55,1)', border: '1px solid var(--bor)', borderRadius: 14, overflow: 'hidden' }}>
@@ -406,11 +403,6 @@ function CycleCard({ cycle, currentUserId }) {
               <span>
                 🔮 {preds.length} palpite{preds.length !== 1 ? 's' : ''}
                 {correctCount > 0 ? ` · ${correctCount} certo${correctCount !== 1 ? 's' : ''}` : ''}
-              </span>
-            )}
-            {bets.length > 0 && (
-              <span style={{ color: allFulfilled ? '#7EE8A2' : 'var(--muted)' }}>
-                📊 {fulfilledCount}/{bets.length} apostas cumpridas{allFulfilled ? ' 🎉' : ''}
               </span>
             )}
           </div>
@@ -454,40 +446,7 @@ function CycleCard({ cycle, currentUserId }) {
             </div>
           )}
 
-          {bets.length > 0 && (
-            <div style={{ marginTop: preds.length > 0 ? 12 : 12, paddingTop: preds.length > 0 ? 10 : 0, borderTop: preds.length > 0 ? '1px solid rgba(196,168,240,.08)' : 'none' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 8 }}>
-                📊 Apostas
-              </div>
-              {bets.map(b => {
-                const name = b.profile?.full_name || b.profile?.username || 'Membro'
-                const isOwn = b.user_id === currentUserId
-                return (
-                  <div key={b.id} style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
-                    <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 600, minWidth: 60 }}>
-                      {isOwn ? 'Você' : name}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--text)' }}>Apostou {b.bet_pages} pág.</span>
-                    {b.fulfilled === true && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#7EE8A2', background: 'rgba(126,232,162,.12)', borderRadius: 6, padding: '1px 6px' }}>
-                        ✓ Cumpriu{b.final_pages ? ` · ${b.final_pages} pág.` : ''}
-                      </span>
-                    )}
-                    {b.fulfilled === false && (
-                      <span style={{ fontSize: 10, fontWeight: 600, color: '#FF6464', background: 'rgba(255,100,100,.1)', borderRadius: 6, padding: '1px 6px' }}>
-                        ✗{b.final_pages ? ` ${b.final_pages} pág.` : ' Não cumpriu'}
-                      </span>
-                    )}
-                    {b.fulfilled === null && (
-                      <span style={{ fontSize: 10, color: 'rgba(90,84,104,1)' }}>pendente</span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {preds.length === 0 && bets.length === 0 && (
+          {preds.length === 0 && (
             <div style={{ padding: '12px 0', fontSize: 12, color: 'var(--muted)', textAlign: 'center' }}>
               Nenhum dado para este ciclo.
             </div>
@@ -537,14 +496,12 @@ export default function ClubAlmanaque({ club, clubId, currentUserId, isAdmin, on
 
     if (metas?.length) {
       const metaIds = metas.map(m => m.id)
-      const [predsRes, betsRes] = await Promise.all([
+      const [predsRes] = await Promise.all([
         supabase.from('club_predictions').select('*').in('meta_id', metaIds).order('created_at', { ascending: true }),
-        supabase.from('club_page_bets').select('id, user_id, meta_id, bet_pages, fulfilled, final_pages, created_at').in('meta_id', metaIds),
       ])
 
       const predsData = predsRes.data || []
-      const betsData = betsRes.data || []
-      const allUserIds = [...new Set([...predsData.map(p => p.user_id), ...betsData.map(b => b.user_id)])]
+      const allUserIds = [...new Set(predsData.map(p => p.user_id))]
 
       let profileMap = {}
       if (allUserIds.length) {
@@ -558,7 +515,6 @@ export default function ClubAlmanaque({ club, clubId, currentUserId, isAdmin, on
       setCycleHistory(metas.map(m => ({
         ...m,
         predictions: predsData.filter(p => p.meta_id === m.id).map(p => ({ ...p, profile: profileMap[p.user_id] || null })),
-        bets: betsData.filter(b => b.meta_id === m.id).map(b => ({ ...b, profile: profileMap[b.user_id] || null })),
       })))
     } else {
       setCycleHistory([])

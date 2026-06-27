@@ -7,7 +7,6 @@ import ClubTrechos from '../components/clubs/ClubTrechos'
 import ClubAlmanaque from '../components/clubs/ClubAlmanaque'
 import ClubGerenciar from '../components/clubs/ClubGerenciar'
 import ClubPalpites from '../components/clubs/ClubPalpites'
-import ClubApostas from '../components/clubs/ClubApostas'
 import ClubCriarAvaliacao from '../components/clubs/ClubCriarAvaliacao'
 import ClubAvaliacaoTela from '../components/clubs/ClubAvaliacaoTela'
 import { useClubActivity } from '../hooks/useClubActivity'
@@ -19,7 +18,7 @@ const BASE_TABS = ['Feed', 'Progresso', 'Trechos', 'Almanaque']
 
 export default function ClubeDetalhe({ session, club: initialClub, onBack, onNavigate }) {
   const [activeTab, setActiveTab] = useState(0)
-  const [subScreen, setSubScreen] = useState(null) // 'palpites' | 'apostas' | 'avaliacao' | 'criar-avaliacao' | null
+  const [subScreen, setSubScreen] = useState(null) // 'palpites' | 'avaliacao' | 'criar-avaliacao' | null
   const [club, setClub] = useState(initialClub)
   const [profile, setProfile] = useState(null)
   const [pendingBadge, setPendingBadge] = useState(null)
@@ -177,7 +176,6 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
             onToast={showToast}
             profile={profile}
             onViewPalpites={() => setSubScreen('palpites')}
-            onViewApostas={() => setSubScreen('apostas')}
             activity={activity}
             loadingActivity={loadingActivity}
             onViewAvaliacao={() => setSubScreen('avaliacao')}
@@ -256,22 +254,11 @@ export default function ClubeDetalhe({ session, club: initialClub, onBack, onNav
 
       {toast && <div className="toast">{toast}</div>}
 
-      {/* Sub-telas de palpites e apostas */}
+      {/* Sub-telas */}
       {subScreen === 'palpites' && (
         <ClubPalpites
           clubId={club.id}
           activeMeta={activeMeta}
-          currentUserId={session.user.id}
-          isAdmin={isAdmin}
-          onBack={() => setSubScreen(null)}
-          onToast={showToast}
-        />
-      )}
-      {subScreen === 'apostas' && (
-        <ClubApostas
-          clubId={club.id}
-          activeMeta={activeMeta}
-          members={members}
           currentUserId={session.user.id}
           isAdmin={isAdmin}
           onBack={() => setSubScreen(null)}

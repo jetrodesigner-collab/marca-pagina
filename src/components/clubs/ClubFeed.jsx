@@ -26,7 +26,7 @@ function colorFor(id) {
   return MEMBER_COLORS[Math.abs(h) % MEMBER_COLORS.length]
 }
 
-export default function ClubFeed({ club, activeMeta, members, currentUserId, isAdmin, onBadgeUnlock, onToast, profile, onViewPalpites, onViewApostas, activity, loadingActivity, onViewAvaliacao, onCriarAvaliacao }) {
+export default function ClubFeed({ club, activeMeta, members, currentUserId, isAdmin, onBadgeUnlock, onToast, profile, onViewPalpites, activity, loadingActivity, onViewAvaliacao, onCriarAvaliacao }) {
   const { posts, loading, addPost, toggleLike, deletePost, refresh } = useClubPosts(club.id, currentUserId)
   const { updateStreak } = useStreak()
   const [composerText, setComposerText] = useState('')
@@ -151,19 +151,6 @@ export default function ClubFeed({ club, activeMeta, members, currentUserId, isA
           }}
         >
           🔮 Palpites Secretos
-        </button>
-        <button
-          onClick={onViewApostas}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 4,
-            padding: '5px 10px', borderRadius: 20,
-            border: '1px solid rgba(196,168,240,.22)',
-            background: 'rgba(196,168,240,.08)', color: 'var(--accent)',
-            fontSize: 11, fontWeight: 600, fontFamily: 'Figtree, sans-serif',
-            cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-          }}
-        >
-          📊 Apostas de Página
         </button>
       </div>
 

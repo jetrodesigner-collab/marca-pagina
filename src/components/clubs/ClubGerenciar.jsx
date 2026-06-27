@@ -293,7 +293,7 @@ export default function ClubGerenciar({ club, userId, members, activeMeta, onUpd
           <div style={{ fontSize: 12, color: 'rgba(240,235,248,.7)', marginBottom: 14, lineHeight: 1.5 }}>
             Meta: <strong style={{ color: 'var(--text)' }}>{activeMeta.titulo}</strong>
             <br />
-            Encerrar revela automaticamente todos os palpites e registra o progresso das apostas. O ciclo vai para o Almanaque.
+            Encerrar revela automaticamente todos os palpites. O ciclo vai para o Almanaque.
           </div>
           {!confirmClose ? (
             <button

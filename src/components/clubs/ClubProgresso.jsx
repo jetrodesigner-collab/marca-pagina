@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import MemberCard from './MemberCard'
 import MetaColetivaCard from './MetaColetivaCard'
+import PostItem from './PostItem'
 
 function timeAgo(ts) {
   const diff = (Date.now() - new Date(ts)) / 1000
@@ -350,52 +351,19 @@ export default function ClubProgresso({ members, activeMeta, clubId, currentUser
         </div>
       )}
 
-      {recentActivity.map(item => {
-        const p = item.profile || {}
-        const name = p.full_name || p.username || 'Usuário'
-        const initial = name.charAt(0).toUpperCase()
-        const color = (() => {
-          const COLORS = [
-            { bg: 'rgba(196,168,240,.14)', color: '#C4A8F0' },
-            { bg: 'rgba(126,223,168,.13)', color: '#7EDFA8' },
-            { bg: 'rgba(240,201,122,.13)', color: '#F0C97A' },
-            { bg: 'rgba(240,122,122,.13)', color: '#F07A7A' },
-            { bg: 'rgba(122,170,206,.13)', color: '#7AAACE' },
-          ]
-          let h = 0
-          for (let i = 0; i < (item.user_id || '').length; i++) h = (h * 31 + item.user_id.charCodeAt(i)) % COLORS.length
-          return COLORS[Math.abs(h) % COLORS.length]
-        })()
-
-        return (
-          <div key={item.id} style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            background: 'var(--sur)', border: '1px solid var(--bor)',
-            borderRadius: 12, padding: '12px 14px', marginBottom: 8,
-          }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: '50%',
-              background: color.bg, color: color.color,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 11, fontWeight: 700, flexShrink: 0, overflow: 'hidden',
-            }}>
-              {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initial}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{name}</span>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-                {' '}atualizou para a{' '}
-                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
-                  página {item.trecho_pagina || '?'}
-                </span>
-              </span>
-            </div>
-            <span style={{ fontSize: 10, color: 'var(--muted)', flexShrink: 0 }}>
-              {timeAgo(item.criado_em)}
-            </span>
-          </div>
-        )
-      })}
+      {recentActivity.map(item => (
+        <PostItem
+          key={item.id}
+          post={item}
+          currentUserId={currentUserId}
+          isAdmin={false}
+          activeMeta={activeMeta}
+          onCutucar={(post) => {
+            const member = members.find(m => m.user_id === post.user_id)
+            if (member) handleCutucar(member)
+          }}
+        />
+      ))}
 
     </div>
   )
