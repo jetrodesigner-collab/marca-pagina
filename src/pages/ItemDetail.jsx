@@ -4,6 +4,7 @@ import ReadingProgress from '../components/books/ReadingProgress'
 import CommentThread, { Avatar } from '../components/comments/CommentThread'
 import { useComments } from '../hooks/useComments'
 import { formatCommentDate } from '../utils/formatDate'
+import { STREAMING_CONFIG } from '../data/streamingLinks'
 
 const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
 const FILM_COLORS  = ['f1','f2','f3','f4','f5','f6']
@@ -75,6 +76,54 @@ function PencilIcon() {
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
+  )
+}
+
+const chipStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '5px 12px',
+  borderRadius: 20,
+  fontSize: 11,
+  fontWeight: 700,
+  fontFamily: "'Figtree', sans-serif",
+  background: 'rgba(196, 168, 240, 0.12)',
+  border: '1px solid rgba(196, 168, 240, 0.30)',
+  color: '#C4A8F0',
+  textDecoration: 'none',
+  letterSpacing: '0.02em',
+}
+
+function WatchProvidersSection({ providers }) {
+  const seen = new Set()
+  const chips = providers
+    .map(p => {
+      const cfg = STREAMING_CONFIG[p.provider_id]
+      return { name: cfg?.name ?? p.provider_name, affiliateUrl: cfg?.affiliateUrl ?? null }
+    })
+    .filter(({ name }) => {
+      if (seen.has(name)) return false
+      seen.add(name)
+      return true
+    })
+
+  if (chips.length === 0) return null
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div className="bl">📺 Disponível para assistir</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+        {chips.map(chip =>
+          chip.affiliateUrl ? (
+            <a key={chip.name} href={chip.affiliateUrl} target="_blank" rel="noopener noreferrer" style={chipStyle}>
+              {chip.name}
+            </a>
+          ) : (
+            <span key={chip.name} style={chipStyle}>{chip.name}</span>
+          )
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -195,6 +244,7 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
   const [savingTrailer,   setSavingTrailer]   = useState(false)
   const [trailerMuted,    setTrailerMuted]    = useState(true)
   const [trailerPlaying,  setTrailerPlaying]  = useState(true)
+  const [watchProviders,  setWatchProviders]  = useState([])
   const synRef = useRef(null)
   const reviewRef = useRef(null)
   const trailerIframeRef = useRef(null)
@@ -314,6 +364,17 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
       if (!cancelled && key) setTrailerKey(key)
     })
     return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Busca plataformas de streaming disponíveis no Brasil (apenas assinatura/flatrate)
+  useEffect(() => {
+    if (isBook || localItem.is_manual || !localItem.api_id) return
+    const key = import.meta.env.VITE_TMDB_API_KEY
+    fetch(`https://api.themoviedb.org/3/movie/${localItem.api_id}/watch/providers?api_key=${key}`)
+      .then(r => r.json())
+      .then(data => setWatchProviders(data?.results?.BR?.flatrate || []))
+      .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -881,6 +942,11 @@ export default function ItemDetail({ session, item: itemProp, userItem: userItem
               )}
             </div>
           </div>
+
+          {/* Plataformas de streaming — apenas filmes com TMDB, apenas assinatura BR */}
+          {!isBook && !localItem.is_manual && (
+            <WatchProvidersSection providers={watchProviders} />
+          )}
 
           {canDeleteBook && (
             <button
