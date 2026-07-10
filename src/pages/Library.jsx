@@ -896,18 +896,17 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
       .then(({ data }) => setAllItems(data || []))
   }, [session.user.id])
 
-  // Contagem das estantes de livros = itens que aparecem nas coleções
-  // (não o total histórico em user_items, que pode incluir itens já
-  // removidos das coleções)
+  // Contagem das estantes de livros = itens em user_items com aquele status
   const loadShelfCounts = useCallback(() => {
     return supabase
-      .from('collections')
-      .select('category, collection_items(id)')
+      .from('user_items')
+      .select('status')
       .eq('user_id', session.user.id)
+      .not('status', 'is', null)
       .then(({ data }) => {
         const counts = { reading: 0, want_to_read: 0, read: 0 }
-        ;(data || []).forEach(col => {
-          if (col.category in counts) counts[col.category] += (col.collection_items || []).length
+        ;(data || []).forEach(ui => {
+          if (ui.status in counts) counts[ui.status]++
         })
         setShelfCounts(counts)
       })
@@ -934,7 +933,7 @@ export default function Library({ session, onNavigate, reopen, onReopenConsumed 
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'user_items',
         filter: `user_id=eq.${session.user.id}`,
-      }, loadAllItems)
+      }, () => { loadAllItems(); loadShelfCounts() })
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'collections',
         filter: `user_id=eq.${session.user.id}`,

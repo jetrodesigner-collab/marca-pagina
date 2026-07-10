@@ -3,6 +3,27 @@ import { useCollections } from '../../hooks/useCollections'
 import CollectionCard from './CollectionCard'
 import AddBookScreen from './AddBookScreen'
 
+const COVER_COLORS = ['c1','c2','c3','c4','c5','c6','c7','c8','c9']
+
+function StatusBookCard({ userItem, onClick }) {
+  const [imgErr, setImgErr] = useState(false)
+  const item = userItem.items
+  if (!item) return null
+  const initials = item.title.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
+  const cls = COVER_COLORS[item.title.charCodeAt(0) % COVER_COLORS.length]
+  return (
+    <div style={{ cursor: 'pointer' }} onClick={onClick}>
+      {item.cover_url && !imgErr ? (
+        <img className="gcov" src={item.cover_url} alt="" style={{ objectFit: 'cover' }} onError={() => setImgErr(true)} />
+      ) : (
+        <div className={`gcov ${cls}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: 13 }}>{initials}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function CategoryModal({ category, meta, userId, bookItems, onItemClick, onClose, onNavigate, autoExpandCollectionId }) {
   const {
     collections, loading,
@@ -21,7 +42,8 @@ export default function CategoryModal({ category, meta, userId, bookItems, onIte
     return () => clearTimeout(t)
   }, [toast])
 
-  const itemsInCategory = collections.reduce((sum, c) => sum + (c.collection_items?.length || 0), 0)
+  const booksInStatus = bookItems.filter(ui => ui.status === category)
+  const itemsInCategory = booksInStatus.length
 
   async function handleCreate() {
     setCreating(true)
@@ -61,6 +83,18 @@ export default function CategoryModal({ category, meta, userId, bookItems, onIte
       </div>
 
       <div className="sc">
+        {booksInStatus.length > 0 && (
+          <div className="grid-h" style={{ marginBottom: 20 }}>
+            {booksInStatus.map(ui => (
+              <StatusBookCard
+                key={ui.id}
+                userItem={ui}
+                onClick={() => onItemClick(ui.items, ui)}
+              />
+            ))}
+          </div>
+        )}
+
         <button
           className="addt"
           onClick={handleCreate}
@@ -74,9 +108,9 @@ export default function CategoryModal({ category, meta, userId, bookItems, onIte
           <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
             <div className="spin" />
           </div>
-        ) : collections.length === 0 ? (
+        ) : collections.length === 0 && booksInStatus.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--muted)', fontSize: 12 }}>
-            Nenhuma coleção ainda
+            Nenhum livro ainda
           </div>
         ) : (
           collections.map(col => (
